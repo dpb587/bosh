@@ -51,6 +51,7 @@ module Bosh::AwsCloud
       instance_params = {count: 1}
       instance_params[:image_id] = stemcell_id
       instance_params[:instance_type] = resource_pool["instance_type"]
+      instance_params[:iam_instance_profile] = resource_pool["iam_instance_profile"] if resource_pool["iam_instance_profile"]
 
       ephemeral_disk_options = resource_pool.fetch("ephemeral_disk", {})
       instance_params[:block_device_mappings] = block_device_mapping(ephemeral_disk_options)

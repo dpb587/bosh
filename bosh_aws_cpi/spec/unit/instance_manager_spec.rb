@@ -711,6 +711,27 @@ describe Bosh::AwsCloud::InstanceManager do
           end
         end
       end
+
+      describe 'iam_instance_profile' do
+        context 'when an IAM profile is provided' do
+          let(:resource_pool) do
+            {
+              'instance_type' => 'm1.small',
+              'iam_instance_profile' => 'foobaz'
+            }
+          end
+
+          it 'requests an instance with the IAM profile' do
+            allow(aws_instances).to receive(:create) { aws_instance }
+
+            create_instance
+
+            expect(aws_instances).to have_received(:create) do |instance_params|
+              expect(instance_params[:iam_instance_profile]).to eq('foobaz')
+            end
+          end
+        end
+      end
     end
 
   end
