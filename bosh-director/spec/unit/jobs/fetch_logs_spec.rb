@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/log_bundles_cleaner'
 
 module Bosh::Director
   describe Jobs::FetchLogs do
@@ -54,7 +53,6 @@ module Bosh::Director
         context 'when agent returns blobstore id in its response to fetch_logs' do
           it 'asks agent to fetch logs and returns blobstore id' do
             expect(agent).to receive(:fetch_logs).
-              with('job', 'filter1,filter2').
               and_return('blobstore_id' => 'fake-blobstore-id')
 
             expect(fetch_logs.perform).to eq('fake-blobstore-id')

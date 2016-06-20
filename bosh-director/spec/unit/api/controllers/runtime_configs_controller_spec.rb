@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'rack/test'
-require 'bosh/director/api/controllers/runtime_configs_controller'
 
 module Bosh::Director
   describe Api::Controllers::RuntimeConfigsController do
@@ -70,7 +69,6 @@ module Bosh::Director
       end
 
       describe 'when user has readonly access' do
-        before { basic_authorize 'reader', 'reader' }
 
         it 'denies access' do
           expect(post('/', Psych.dump(Bosh::Spec::Deployments.simple_runtime_config), {'CONTENT_TYPE' => 'text/yaml'}).status).to eq(401)
@@ -84,17 +82,12 @@ module Bosh::Director
 
         it 'returns the number of runtime configs specified by ?limit' do
           oldest_runtime_config = Bosh::Director::Models::RuntimeConfig.new(
-            properties: "config_from_time_immortal",
-            created_at: Time.now - 3,
           ).save
           older_runtime_config = Bosh::Director::Models::RuntimeConfig.new(
-            properties: "config_from_last_year",
-            created_at: Time.now - 2,
           ).save
           newer_runtime_config_properties = "---\nsuper_shiny: new_config"
           newer_runtime_config = Bosh::Director::Models::RuntimeConfig.new(
             properties: newer_runtime_config_properties,
-            created_at: Time.now - 1,
           ).save
 
           get '/?limit=2'
@@ -109,7 +102,6 @@ module Bosh::Director
           expect(last_response.status).to eq(400)
           expect(last_response.body).to eq("limit is required")
 
-          get "/?limit="
           expect(last_response.status).to eq(400)
           expect(last_response.body).to eq("limit is required")
 
@@ -122,7 +114,6 @@ module Bosh::Director
       describe 'when user has readonly access' do
         before { basic_authorize 'reader', 'reader' }
         before {
-          Bosh::Director::Models::RuntimeConfig.make(:properties => '{}')
         }
 
         it 'allows access' do

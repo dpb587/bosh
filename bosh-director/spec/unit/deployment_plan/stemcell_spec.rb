@@ -46,8 +46,6 @@ describe Bosh::Director::DeploymentPlan::Stemcell do
 
       context 'when only name is specified' do
         it 'is valid' do
-          valid_spec.delete('os')
-          valid_spec['name'] = 'stemcell-name'
           expect { make(valid_spec) }.to_not raise_error
         end
       end
@@ -55,14 +53,12 @@ describe Bosh::Director::DeploymentPlan::Stemcell do
       context 'when neither os or name are specified' do
         it 'raises' do
           valid_spec.delete('name')
-          valid_spec.delete('os')
           expect { make(valid_spec) }.to raise_error(BD::ValidationMissingField,
               "Required property 'os' or 'name' was not specified in object ({\"version\"=>\"0.5.2\"})")
         end
       end
       context 'when both os and name are specified' do
         it 'raises' do
-          valid_spec['name'] = 'stemcell-name'
           valid_spec['os'] = 'os1'
           expect { make(valid_spec) }.to raise_error(BD::StemcellBothNameAndOS,
               "Properties 'os' and 'name' are both specified for stemcell, choose one. ({\"name\"=>\"stemcell-name\", \"version\"=>\"0.5.2\", \"os\"=>\"os1\"})")
@@ -105,7 +101,6 @@ describe Bosh::Director::DeploymentPlan::Stemcell do
     it 'should bind to stemcell with specified OS and version' do
       deployment = make_deployment('mycloud')
       stemcell_model = make_stemcell('stemcell-name', '0.5.0', 'os2')
-      make_stemcell('stemcell-name', '0.5.2', 'os2')
 
       stemcell = make({
         'os' => 'os2',
@@ -122,8 +117,6 @@ describe Bosh::Director::DeploymentPlan::Stemcell do
       it 'returns error out if specified OS and version is not found' do
         deployment = make_deployment('mycloud')
 
-        make_stemcell('stemcell-name', '0.5.0', 'os2')
-        make_stemcell('stemcell-name', '0.5.2', 'os2')
 
         stemcell = make({
           'os' => 'os2',
@@ -135,8 +128,6 @@ describe Bosh::Director::DeploymentPlan::Stemcell do
       it 'returns error out if name and version is not found' do
         deployment = make_deployment('mycloud')
 
-        make_stemcell('stemcell-name1', '0.5.0')
-        make_stemcell('stemcell-name2', '0.5.2')
 
         stemcell = make({
           'name' => 'stemcell-name3',
@@ -158,8 +149,6 @@ describe Bosh::Director::DeploymentPlan::Stemcell do
     it 'binds stemcell to the first stemcell found when multiple stemcells match with OS and version' do
       deployment = make_deployment('mycloud')
 
-      make_stemcell('stemcell0', '0.5.0', 'os2')
-      make_stemcell('stemcell2', '0.5.2', 'os2')
 
       make_stemcell('stemcell1', '0.5.2', 'os2')
 

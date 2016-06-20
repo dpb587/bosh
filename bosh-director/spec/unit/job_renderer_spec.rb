@@ -4,12 +4,8 @@ module Bosh::Director
   describe JobRenderer do
     subject(:renderer) { described_class.new(blobstore, logger) }
     let(:job) { DeploymentPlan::InstanceGroup.new(logger) }
-    let(:blobstore) { instance_double('Bosh::Blobstore::Client') }
 
     before do
-      job.vm_type = DeploymentPlan::VmType.new({'name' => 'fake-vm-type'})
-      job.stemcell = DeploymentPlan::Stemcell.parse({'name' => 'fake-stemcell-name', 'version' => '1.0'})
-      job.env = DeploymentPlan::Env.new({})
     end
 
     let(:template_1) { DeploymentPlan::Template.new(release_version, 'fake-template-1') }
@@ -90,7 +86,6 @@ module Bosh::Director
       end
 
       context 'when instance does not have a latest archive' do
-        before { allow(instance_model).to receive(:latest_rendered_templates_archive).and_return(nil) }
 
         it 'persists new archive' do
           expect(rendered_job_instance).to receive(:persist).with(blobstore)
@@ -124,7 +119,6 @@ module Bosh::Director
 
         it 'does not render' do
           expect(job_instance_renderer).to_not receive(:render)
-          perform
         end
       end
 
@@ -133,19 +127,15 @@ module Bosh::Director
         let(:latest_archive) do
           # Not using an instance double since Sequel Model classes are a bit meta
           double('Bosh::Directore::Models::RenderedTemplatesArchive', {
-            instance: instance_model,
             blobstore_id: 'fake-latest-blob-id',
             sha1: 'fake-latest-sha1',
             content_sha1: 'fake-latest-content-sha1',
-            created_at: Time.new(2013, 02, 01),
           })
         end
 
         before { allow(Core::Templates::RenderedTemplatesArchive).to receive(:new).and_return(latest_rendered_templates_archive) }
         let(:latest_rendered_templates_archive) do
           instance_double('Bosh::Director::Core::Templates::RenderedTemplatesArchive', {
-            blobstore_id: 'fake-latest-blob-id',
-            sha1: 'fake-latest-sha1',
           })
         end
 
@@ -157,7 +147,6 @@ module Bosh::Director
 
             it 'does not persist new archive' do
               expect(rendered_job_instance).to_not receive(:persist)
-              perform
             end
 
             it 'sets rendered templates archive on the instance to archive with blobstore_id and sha1' do
@@ -184,7 +173,6 @@ module Bosh::Director
         end
 
         context 'when latest archive does not have matching content_sha1' do
-          let(:configuration_hash) { 'fake-latest-non-matching-content-sha1' }
 
           it 'persists new archive' do
             expect(rendered_job_instance).to receive(:persist).with(blobstore)

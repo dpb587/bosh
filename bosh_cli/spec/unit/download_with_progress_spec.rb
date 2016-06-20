@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'cli/download_with_progress'
 
 module Bosh::Cli
   describe DownloadWithProgress do
@@ -11,7 +10,6 @@ module Bosh::Cli
     end
 
     describe '#perform' do
-      let(:size) { 1234 }
       let(:chunk) { double('chunk', size: 'chunk-size') }
       let(:file) { instance_double('File', write: nil) }
       let(:http_client) { instance_double('HTTPClient') }

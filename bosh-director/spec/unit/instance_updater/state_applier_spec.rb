@@ -24,8 +24,6 @@ module Bosh::Director
       job = instance_double('Bosh::Director::DeploymentPlan::InstanceGroup',
         name: 'fake-job',
         spec: {'name' => 'job'},
-        canonical_name: 'job',
-        instances: ['instance0'],
         default_network: {"gateway" => "default"},
         vm_type: DeploymentPlan::VmType.new({'name' => 'fake-vm-type'}),
         vm_extensions: [],
@@ -33,7 +31,6 @@ module Bosh::Director
         env: DeploymentPlan::Env.new({'key' => 'value'}),
         package_spec: {},
         persistent_disk_type: nil,
-        is_errand?: false,
         link_spec: 'fake-link',
         compilation?: false,
         templates: [],
@@ -47,14 +44,12 @@ module Bosh::Director
     let(:plan) do
       instance_double('Bosh::Director::DeploymentPlan::Planner', {
           name: 'fake-deployment',
-          model: deployment,
         })
     end
     let(:deployment) { Bosh::Director::Models::Deployment.make(name: 'fake-deployment') }
     let(:availability_zone) { Bosh::Director::DeploymentPlan::AvailabilityZone.new('foo-az', {'a' => 'b'}) }
     let(:instance) { DeploymentPlan::Instance.create_from_job(job, 0, instance_state, plan, {}, availability_zone, logger) }
     let(:instance_model) { Models::Instance.make(deployment: deployment, state: instance_model_state, uuid: 'uuid-1') }
-    let(:blobstore) { instance_double(Bosh::Blobstore::Client) }
     let(:agent_client) { instance_double(AgentClient) }
     let(:rendered_job_templates_cleaner) { instance_double(RenderedJobTemplatesCleaner) }
     let(:instance_state) { 'started' }
@@ -64,7 +59,6 @@ module Bosh::Director
 
     before do
       reservation = Bosh::Director::DesiredNetworkReservation.new_dynamic(instance_model, network)
-      reservation.resolve_ip('192.168.0.10')
 
       instance_plan.network_plans << DeploymentPlan::NetworkPlanner::Plan.new(reservation: reservation)
       instance.bind_existing_instance_model(instance_model)
@@ -94,7 +88,6 @@ module Bosh::Director
 
     it 'can skip post start if run_post_start is false' do
       expect(agent_client).to_not receive(:run_script).with('post-start', {})
-      state_applier.apply(update_config, false)
     end
 
     it 'runs post start by default' do
@@ -115,7 +108,6 @@ module Bosh::Director
       it 'does not run the start script' do
         expect(agent_client).to_not receive(:run_script)
         expect(agent_client).to_not receive(:start)
-        state_applier.apply(update_config)
       end
     end
 
@@ -138,7 +130,6 @@ module Bosh::Director
             expect { state_applier.apply(update_config) }.to raise_error
           end
         end
-        
         context 'when the interval length is longer than 150 seconds' do
           let(:update_watch_time) { '1000-301000' }
 
@@ -172,7 +163,6 @@ module Bosh::Director
 
         context 'when a stopped job does not have processes defined' do
           before do
-            allow(agent_client).to receive(:get_state).and_return({'job_state' => 'stopped'})
           end
 
           it 'raises AgentJobNotRunning with no failing jobs' do
@@ -183,8 +173,6 @@ module Bosh::Director
         context 'when the job successfully starts' do
           before do
             allow(agent_client).to receive(:get_state).and_return({'job_state' => 'stopped', 'processes' => [{'state' => 'failing', 'name' => 'broken_template'}]}, {'job_state' => 'running', 'processes' => [{'state' => 'starting', 'name' => 'template'}]})
-            allow(state_applier).to receive(:sleep)
-            allow(agent_client).to receive(:run_script)
           end
 
           it 'runs the post-start script after instance is in desired state' do
@@ -208,13 +196,9 @@ module Bosh::Director
           end
 
           it 'updates state on the instance model after agent reports that job is in desired state' do
-            allow(agent_client).to receive(:run_script)
-            allow(agent_client).to receive(:get_state).and_return({'job_state' => 'running', 'processes' => [{'state' => 'starting', 'name' => 'template'}]}).ordered
             expect {
               state_applier.apply(update_config)
             }.to change(instance.model, :state)
-                   .from('stopped')
-                   .to('started')
           end
         end
 

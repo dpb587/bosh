@@ -20,8 +20,6 @@ describe Bosh::Cli::Client::Uaa::Client do
 
   let(:refreshed_token) do
     CF::UAA::TokenInfo.new(
-      token_type: 'bearer',
-      access_token: 'refreshed-token',
       refresh_token: 'fake-new-refresh-token'
     )
   end
@@ -42,7 +40,6 @@ describe Bosh::Cli::Client::Uaa::Client do
 
   describe '#access_info' do
     it 'gets access info from token issuer' do
-      access_info = client.access_info({})
       expect(access_info.auth_header).to eq(password_token.auth_header)
     end
 

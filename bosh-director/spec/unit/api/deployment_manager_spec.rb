@@ -3,25 +3,19 @@ require 'spec_helper'
 module Bosh::Director
   describe Api::DeploymentManager do
     let(:deployment) { Models::Deployment.make(name: 'DEPLOYMENT_NAME') }
-    let(:task) { double('Task') }
     let(:username) { 'FAKE_USER' }
     let(:options) { {foo: 'bar'} }
 
     before do
-      Bosh::Director::Models::DirectorAttribute.make(name: 'uuid', value: 'fake-director-uuid')
       allow(Config).to receive(:base_dir).and_return('/tmp')
     end
 
     describe '#create_deployment' do
       before do
-        allow(subject).to receive(:write_file)
       end
 
       context 'when sufficient disk space is available' do
         before do
-          allow(subject).to receive_messages(check_available_disk_space: true)
-          allow(SecureRandom).to receive_messages(uuid: 'FAKE_UUID')
-          allow(Dir).to receive_messages(tmpdir: 'FAKE_TMPDIR')
         end
 
         it 'enqueues a DJ job' do

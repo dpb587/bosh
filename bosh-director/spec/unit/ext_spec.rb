@@ -35,7 +35,6 @@ describe 'Monkey Patches' do
     it 'should not mutate the hashes being merged' do
       a = {:foo => {:bar => 1}}
       b = {:foo => 'value'}
-      a.recursive_merge(b)
       expect(a).to eq({:foo => {:bar => 1}})
     end
   end

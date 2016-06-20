@@ -1,8 +1,6 @@
 require 'spec_helper'
 
 describe Bosh::Cli::ManifestWarnings do
-  let(:manifest) { {} }
-  let(:warning_messages) { {} }
 
   subject { described_class.new(manifest) }
 
@@ -36,7 +34,6 @@ describe Bosh::Cli::ManifestWarnings do
       let(:manifest) {
         {
           'foo' => {
-            'bar' => 'anything'
           },
         }
       }
@@ -45,7 +42,6 @@ describe Bosh::Cli::ManifestWarnings do
       }
 
       it 'does not print anything' do
-        subject.report
 
         expect(subject).not_to have_received(:say)
       end
@@ -56,7 +52,6 @@ describe Bosh::Cli::ManifestWarnings do
         let(:manifest) {
           {
             'foo' => {
-              'bar' => 'anything'
             },
           }
         }
@@ -65,7 +60,6 @@ describe Bosh::Cli::ManifestWarnings do
         }
 
         it 'does not print anything' do
-          subject.report
 
           expect(subject).not_to have_received(:say)
         end
@@ -96,8 +90,6 @@ describe Bosh::Cli::ManifestWarnings do
         let(:manifest) {
           {
             'foo' => {
-              'bar' => 'anything',
-              '[]' => 'some value'
             },
           }
         }
@@ -106,7 +98,6 @@ describe Bosh::Cli::ManifestWarnings do
         }
 
         it 'does not print anything' do
-          subject.report
 
           expect(subject).not_to have_received(:say)
         end
@@ -118,7 +109,6 @@ describe Bosh::Cli::ManifestWarnings do
         {
           'foo' => [
             {
-              'bar' => 'anything',
             },
           ],
         }
@@ -128,7 +118,6 @@ describe Bosh::Cli::ManifestWarnings do
       }
 
       it 'does not print anything' do
-        subject.report
 
         expect(subject).not_to have_received(:say)
       end
@@ -141,7 +130,6 @@ describe Bosh::Cli::ManifestWarnings do
       }
 
       it 'does not print anything' do
-        subject.report
 
         expect(subject).not_to have_received(:say)
       end

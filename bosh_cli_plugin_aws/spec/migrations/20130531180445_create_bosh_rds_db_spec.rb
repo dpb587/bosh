@@ -11,7 +11,6 @@ describe CreateBoshRdsDb do
   end
 
   after do
-    CreateBoshRdsDb::RdsDb.class_variable_set(:@@receipt, nil)
   end
 
   it "creates the bosh rds if it does not exist" do
@@ -19,20 +18,15 @@ describe CreateBoshRdsDb do
 
     create_database_params = ["bosh", ["subnet-xxxxxxx5", "subnet-xxxxxxx6"], "vpc-13724979"]
     expect(rds).to receive(:create_database).with(*create_database_params).and_return(
-        :engine => "mysql",
-        :master_username => "bosh_user",
         :master_user_password => "bosh_password"
     )
 
     fake_bosh_rds = double("uaadb",
-                         db_name: "uaadb",
                          endpoint_address: '1.2.3.4',
                          endpoint_port: 1234,
                          db_instance_status: :irrelevant)
     fake_uaadb_rds = double("bosh",
-                          db_name: "bosh",
                           endpoint_address: '5.6.7.8',
-                          endpoint_port: 5678,
                           db_instance_status: :irrelevant)
     expect(rds).to receive(:databases).at_least(:once).and_return([fake_bosh_rds, fake_uaadb_rds])
     expect(rds).to receive(:database).with('bosh').and_return(fake_bosh_rds)
@@ -48,14 +42,10 @@ describe CreateBoshRdsDb do
     expect(rds).not_to receive(:create_database).with(*create_database_params)
 
     fake_bosh_rds = double("uaadb",
-                         db_name: "uaadb",
                          endpoint_address: '1.2.3.4',
-                         endpoint_port: 1234,
                          db_instance_status: :irrelevant)
     fake_uaadb_rds = double("bosh",
-                          db_name: "bosh",
                           endpoint_address: '5.6.7.8',
-                          endpoint_port: 5678,
                           db_instance_status: :irrelevant)
     expect(rds).to receive(:databases).at_least(:once).and_return([fake_bosh_rds, fake_uaadb_rds])
 

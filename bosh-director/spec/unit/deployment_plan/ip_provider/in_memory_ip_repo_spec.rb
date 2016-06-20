@@ -2,8 +2,6 @@ require 'spec_helper'
 
 module Bosh::Director::DeploymentPlan
   describe InMemoryIpRepo do
-    let(:restricted_ips) { [] }
-    let(:static_ips) { [] }
     let(:ip_repo) { InMemoryIpRepo.new(logger) }
     let(:ip_address) { NetAddr::CIDR.create('192.168.1.5') }
     let(:subnet) { ManualNetworkSubnet.parse(network.name, network_spec['subnets'].first, availability_zones, []) }
@@ -29,17 +27,11 @@ module Bosh::Director::DeploymentPlan
           {
             'range' => '192.168.1.0/24',
             'gateway' => '192.168.1.1',
-            'dns' => ['192.168.1.1', '192.168.1.2'],
-            'static' => [],
-            'reserved' => [],
-            'cloud_properties' => {},
-            'az' => 'zone_1',
           }
         ]
       }
     }
     let(:global_network_resolver) { instance_double(BD::DeploymentPlan::GlobalNetworkResolver, reserved_ranges: []) }
-    let(:ip_provider_factory) { BD::DeploymentPlan::IpProviderFactory.new(logger, {}) }
     let(:network_name) { network_spec['name'] }
     let(:instance_model) { BD::Models::Instance.make }
     let(:reservation) { BD::DesiredNetworkReservation.new_dynamic(instance_model, network) }
@@ -83,7 +75,6 @@ module Bosh::Director::DeploymentPlan
         ip_repo.delete(ip_address, network_name)
 
         expect {
-          ip_repo.add(reservation)
         }.to_not raise_error
       end
     end
@@ -101,7 +92,6 @@ module Bosh::Director::DeploymentPlan
         ip_repo.delete(ip_address_to_i, network_name)
 
         expect {
-          ip_repo.add(reservation)
         }.to_not raise_error
       end
     end
@@ -114,19 +104,13 @@ module Bosh::Director::DeploymentPlan
             {
               'range' => '192.168.1.0/29',
               'gateway' => '192.168.1.1',
-              'dns' => ['192.168.1.1', '192.168.1.2'],
-              'static' => [],
               'reserved' => ['192.168.1.2', '192.168.1.3', '192.168.1.4'],
-              'cloud_properties' => {},
               'az' => 'zone_1',
             },
             {
               'range' => '192.168.2.0/29',
               'gateway' => '192.168.2.1',
-              'dns' => ['192.168.2.1', '192.168.2.2'],
-              'static' => [],
               'reserved' => ['192.168.2.2', '192.168.2.3', '192.168.2.4'],
-              'cloud_properties' => {},
               'az' => 'zone_2',
             }
           ]
@@ -136,27 +120,17 @@ module Bosh::Director::DeploymentPlan
       it 'should allocate the least recently released IP' do
         subnet_1_ip_1 = NetAddr::CIDR.create('192.168.1.5')
         reservation.resolve_ip(subnet_1_ip_1)
-        ip_repo.add(reservation)
 
         subnet_1_ip_2 = NetAddr::CIDR.create('192.168.1.6')
-        reservation.resolve_ip(subnet_1_ip_2)
-        ip_repo.add(reservation)
 
         subnet_2_ip_1 = NetAddr::CIDR.create('192.168.2.5')
-        reservation.resolve_ip(subnet_2_ip_1)
-        ip_repo.add(reservation)
 
         subnet_2_ip_2 = NetAddr::CIDR.create('192.168.2.6')
-        reservation.resolve_ip(subnet_2_ip_2)
-        ip_repo.add(reservation)
 
         second_subnet = ManualNetworkSubnet.parse(network.name, network_spec['subnets'][1], availability_zones, [])
 
         # Release allocated IPs in random order
-        ip_repo.delete(subnet_2_ip_1, network_name)
-        ip_repo.delete(subnet_1_ip_2, network_name)
         ip_repo.delete(subnet_1_ip_1, network_name)
-        ip_repo.delete(subnet_2_ip_2, network_name)
 
         # Verify that re-acquiring the released IPs retains order
         expect(ip_repo.allocate_dynamic_ip(reservation, subnet)).to eq(subnet_1_ip_2)

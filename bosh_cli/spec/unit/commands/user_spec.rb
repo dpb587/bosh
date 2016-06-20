@@ -9,13 +9,11 @@ describe Bosh::Cli::Command::User do
     target = 'https://127.0.0.1:8080'
     stub_request(:get, "#{target}/info").to_return(body: '{}')
     command.options[:target] = target
-    allow(command).to receive(:show_current_state)
   end
 
   describe "creating a new user" do
     context "when interactive" do
       before do
-        command.options[:non_interactive] = false
         command.options[:username] = 'admin'
         command.options[:password] = 'admin'
       end
@@ -75,7 +73,6 @@ describe Bosh::Cli::Command::User do
   describe "deleting a user" do
     context "when user is not logged in" do
       before do
-        allow(command).to receive_messages(:logged_in? => false)
       end
 
       it "fails" do
@@ -86,7 +83,6 @@ describe Bosh::Cli::Command::User do
     context "when nothing is targetted" do
       before do
         allow(command).to receive_messages(:target => nil)
-        allow(command).to receive_messages(:logged_in? => true)
       end
 
       it "fails" do
@@ -115,14 +111,12 @@ describe Bosh::Cli::Command::User do
 
       context "when interactive" do
         before do
-          command.options[:non_interactive] = false
         end
 
         context "when the user confirms the user deletion" do
           it "deletes the user" do
             expect(command).
               to receive(:confirmed?).
-              with("Are you sure you would like to delete the user '#{user_to_delete}'?").
               and_return(true)
 
             expect(director).to receive(:delete_user).with(user_to_delete).and_return(true)
@@ -136,7 +130,6 @@ describe Bosh::Cli::Command::User do
           it "does not delete the user" do
             expect(command).
               to receive(:confirmed?).
-              with("Are you sure you would like to delete the user '#{user_to_delete}'?").
               and_return(false)
 
             expect(director).not_to receive(:delete_user)
@@ -149,7 +142,6 @@ describe Bosh::Cli::Command::User do
             expect(command).to receive(:ask).with("Username to delete: ").and_return("r00t")
             expect(command).
               to receive(:confirmed?).
-              with("Are you sure you would like to delete the user 'r00t'?").
               and_return(true)
             expect(director).to receive(:delete_user).with("r00t").and_return(true)
 

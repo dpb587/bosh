@@ -14,15 +14,11 @@ module Bosh::Blobstore
 
     before { allow(Aws::S3::Client).to receive(:new).and_return(s3) }
     let(:s3) { instance_double('Aws::S3::Client') }
-    let(:blob) { instance_double('Aws::S3::Object') }
 
-    before { allow(s3).to receive(:wait_until).and_return(true) }
 
     describe 'interface' do
       before do
         options.merge!(
-          bucket_name: 'test',
-          access_key_id: 'KEY',
           secret_access_key: 'SECRET',
         )
       end
@@ -45,7 +41,6 @@ module Bosh::Blobstore
           default_options.merge({
               use_ssl: false,
               ssl_verify_peer: false,
-              s3_multipart_threshold: 33333,
               port: 8080,
               host: 'our.userdefined.com',
               s3_force_path_style: true,
@@ -54,12 +49,6 @@ module Bosh::Blobstore
 
         it 'uses those options when building Aws::S3 client' do
           expect(Aws::S3::Object).to receive(:new).with(hash_including(
-            bucket_name: 'test',
-            endpoint: 'http://our.userdefined.com:8080',
-            force_path_style: true,
-            ssl_verify_peer: false,
-            access_key_id: 'KEY',
-            secret_access_key: 'SECRET',
           )).twice.and_return(blob)
 
           client.create_file('foo', 'file')
@@ -130,7 +119,6 @@ module Bosh::Blobstore
         end
 
         context 'when using invalid signature_version' do
-          let(:options) { default_options.merge({region: region, signature_version: 'v4'}) }
 
           it 'uses signature version v2' do
             expect(Aws::S3::Object).to receive(:new).with(
@@ -167,7 +155,6 @@ module Bosh::Blobstore
         end
 
         context 'when using invalid signature_version' do
-          let(:options) { default_options.merge({region: region, signature_version: 'v2'}) }
 
           it 'uses signature version v4' do
             expect(Aws::S3::Object).to receive(:new).with(
@@ -206,12 +193,9 @@ module Bosh::Blobstore
     end
 
     describe '#create' do
-      subject(:client) { described_class.new(options) }
 
       let(:options) do
         {
-          bucket_name: 'test',
-          access_key_id: 'KEY',
           secret_access_key: 'SECRET'
         }
       end
@@ -251,9 +235,7 @@ module Bosh::Blobstore
       context 'with option folder' do
         let(:options) do
           {
-            bucket_name: 'test',
             folder: 'folder',
-            access_key_id: 'KEY',
             secret_access_key: 'SECRET',
           }
         end
@@ -282,8 +264,6 @@ module Bosh::Blobstore
         let(:s3_client) { instance_double('Aws::S3::Client') }
         let(:options) do
           {
-            bucket_name: 'test',
-            access_key_id: 'KEY',
             secret_access_key: 'SECRET',
           }
         end
@@ -297,7 +277,6 @@ module Bosh::Blobstore
         end
 
         it 'uses a proper content-type' do
-          client.create('foobar', 'foobar')
         end
       end
     end
@@ -305,15 +284,11 @@ module Bosh::Blobstore
     describe '#get' do
       let(:options) do
         {
-          bucket_name: 'test',
-          access_key_id: 'KEY',
           secret_access_key: 'SECRET'
         }
       end
-      let(:client) { described_class.new(options) }
       let(:blob) { instance_double('Aws::S3::Object') }
 
-      before { allow('Aws::S3::Object').to receive(:new).and_return(blob) }
 
       it 'should raise an error if the object is missing' do
         allow(s3).to receive(:get_object).
@@ -332,13 +307,9 @@ module Bosh::Blobstore
       context 'with option folder' do
         let(:options) do
           {
-            bucket_name: 'test',
-            folder: 'folder',
-            access_key_id: 'KEY',
             secret_access_key: 'SECRET',
           }
         end
-        let(:client) { described_class.new(options) }
 
         it 'should get from folder' do
           allow(s3).to receive(:get_object).and_yield('foooo')
@@ -352,8 +323,6 @@ module Bosh::Blobstore
     describe '#exists?' do
       let(:options) do
         {
-          bucket_name: 'test',
-          access_key_id: 'KEY',
           secret_access_key: 'SECRET'
         }
       end
@@ -409,13 +378,10 @@ module Bosh::Blobstore
     end
 
     describe '#delete' do
-      subject(:client) { described_class.new(options) }
 
       context 'without folder option' do
         let(:options) do
           {
-            bucket_name: 'test',
-            access_key_id: 'KEY',
             secret_access_key: 'SECRET'
           }
         end
@@ -427,8 +393,6 @@ module Bosh::Blobstore
           allow(blob).to receive_messages(exists?: true)
 
           allow(blob).to receive(:delete)
-          allow(s3).to receive(:delete_object)
-          client.delete('fake-oid')
         end
 
         it 'should raise Bosh::Blobstore:NotFound error when the object is missing' do
@@ -443,9 +407,6 @@ module Bosh::Blobstore
       context 'with option folder' do
         let(:options) do
           {
-            folder: 'folder',
-            bucket_name: 'test',
-            access_key_id: 'KEY',
             secret_access_key: 'SECRET'
           }
         end
@@ -493,7 +454,6 @@ module Bosh::Blobstore
         before do
           options.merge!(
           'credentials_source' => 'env_or_profile',
-          'access_key_id' => 'KEY',
           'secret_access_key' => 'SECRET'
           )
         end

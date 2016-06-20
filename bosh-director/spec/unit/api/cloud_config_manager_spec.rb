@@ -3,8 +3,6 @@ require 'spec_helper'
 describe Bosh::Director::Api::CloudConfigManager do
   subject(:manager) { Bosh::Director::Api::CloudConfigManager.new }
   let(:valid_cloud_manifest) { Psych.dump(Bosh::Spec::Deployments.simple_cloud_config) }
-  let(:user) {'username-1'}
-  let(:event_manager) {Bosh::Director::Api::EventManager.new(true)}
 
   describe '#update' do
     it 'saves the cloud config' do
@@ -33,16 +31,10 @@ describe Bosh::Director::Api::CloudConfigManager do
       days = 24*60*60
 
       oldest_cloud_config = Bosh::Director::Models::CloudConfig.new(
-        properties: 'config_from_time_immortal',
-        created_at: Time.now - 3*days,
       ).save
       older_cloud_config = Bosh::Director::Models::CloudConfig.new(
-        properties: 'config_from_last_year',
-        created_at: Time.now - 2*days,
       ).save
       newer_cloud_config = Bosh::Director::Models::CloudConfig.new(
-        properties: "---\nsuper_shiny: new_config",
-        created_at: Time.now - 1*days,
       ).save
 
       cloud_configs = manager.list(2)
@@ -58,12 +50,8 @@ describe Bosh::Director::Api::CloudConfigManager do
       days = 24*60*60
 
       older_cloud_config = Bosh::Director::Models::CloudConfig.new(
-        properties: 'config_from_last_year',
-        created_at: Time.now - 2*days,
       ).save
       newer_cloud_config = Bosh::Director::Models::CloudConfig.new(
-        properties: "---\nsuper_shiny: new_config",
-        created_at: Time.now - 1*days,
       ).save
 
       cloud_config = manager.latest

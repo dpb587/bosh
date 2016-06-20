@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/compile_task_generator'
 
 module Bosh::Director
   describe CompileTaskGenerator do
@@ -24,7 +23,6 @@ module Bosh::Director
       let(:compile_tasks) { {} }
 
       before do
-        release_version_model.packages << package_a
         release_version_model.packages << package_b
         release_version_model.packages << package_c
       end

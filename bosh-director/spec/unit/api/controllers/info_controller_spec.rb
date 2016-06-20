@@ -33,7 +33,6 @@ module Bosh::Director
         end
 
         it 'allows invalid credentials' do
-          basic_authorize 'notadmin', 'admin'
           get '/'
           expect(last_response.status).to eq(200)
           info_response = Yajl::Parser.parse(last_response.body)
@@ -43,7 +42,6 @@ module Bosh::Director
 
       it 'allows Basic HTTP Auth with admin/admin credentials for ' +
              "test purposes (even though user doesn't exist)" do
-        basic_authorize 'admin', 'admin'
         get '/'
         expect(last_response.status).to eq(200)
       end
@@ -87,7 +85,6 @@ module Bosh::Director
           cfg['cloud'].delete('plugin')
           cfg['cloud']['provider'] = {
             'name' => 'test-cpi',
-            'path' => '/path/to/test-cpi/bin/cpi'
           }
           cfg
         end
@@ -102,7 +99,6 @@ module Bosh::Director
         let(:test_config) { base_config.merge(
           'user_management' => {'provider' => 'uaa', 'uaa' => {
             'url' => 'http://localhost:8080/uaa',
-            'key' => 'super secret!',
           }}
         ) }
 

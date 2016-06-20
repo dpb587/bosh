@@ -20,7 +20,6 @@ describe Bhm::Plugins::Graphite do
     context "when we omit port or host" do
       let(:options) do
         {
-          "host" => "localhost"
         }
       end
 
@@ -45,10 +44,8 @@ describe Bhm::Plugins::Graphite do
 
       it "does not send metrics" do
         EM.run do
-          plugin.run
           expect(connection).to_not receive(:send_metric)
 
-          plugin.process(event)
 
           EM.stop
         end
@@ -75,11 +72,9 @@ describe Bhm::Plugins::Graphite do
       it "skips sending metrics if node_id is missing" do
         event = make_heartbeat(timestamp: Time.now.to_i, node_id: nil)
         EM.run do
-          plugin.run
 
           expect(connection).not_to receive(:send_metric)
 
-          plugin.process(event)
 
           EM.stop
         end

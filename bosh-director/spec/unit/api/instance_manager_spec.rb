@@ -6,7 +6,6 @@ module Bosh::Director
     let(:instance) { Models::Instance.make(uuid: 'fakeId123', deployment: deployment, job: job) }
     let(:task) { double('Task') }
     let(:username) { 'FAKE_USER' }
-    let(:instance_lookup) { Api::InstanceLookup.new }
     let(:job_queue) { instance_double('Bosh::Director::JobQueue') }
     let(:options) { { foo: 'bar' } }
     let(:deployment_name) { 'FAKE_DEPLOYMENT_NAME' }
@@ -43,10 +42,8 @@ module Bosh::Director
     end
 
     describe '#ssh' do
-      let(:deployment_lookup) { Api::DeploymentLookup.new }
       let(:options) do
         {
-          'deployment_name' => deployment_name,
           'command' => 'COMMAND',
           'target' => 'TARGET'
         }
@@ -68,7 +65,6 @@ module Bosh::Director
 
     describe '#find_instances_by_deployment' do
       it 'uses InstanceLookup#by_deployment' do
-        deployment = Models::Deployment.make(name: 'given_deployment')
 
         expect_any_instance_of(Api::InstanceLookup).to receive(:by_deployment).with(deployment)
 
@@ -77,8 +73,6 @@ module Bosh::Director
     end
 
     describe '#find_by_name' do
-      let(:deployment_name) { 'FAKE_DEPLOYMENT_NAME' }
-      let(:job) { 'FAKE_JOB' }
       let(:index) { 3 }
       let(:id) { '9A0A5D0E-868A-431C-A6EA-9E8EDF4DBF81' }
 
@@ -99,10 +93,8 @@ module Bosh::Director
 
     describe '#fetch_instances_with_vm' do
 
-      before { allow(JobQueue).to receive(:new).and_return(job_queue) }
 
       it 'enqueues a DJ job' do
-        allow(Dir).to receive_messages(mktmpdir: 'FAKE_TMPDIR')
 
         expect(job_queue).to receive(:enqueue).with(
             username, Jobs::VmState, 'retrieve vm-stats', [deployment.id, 'FAKE_FORMAT'], deployment).and_return(task)
@@ -113,10 +105,8 @@ module Bosh::Director
 
     describe '#fetch_instances' do
 
-      before { allow(JobQueue).to receive(:new).and_return(job_queue) }
 
       it 'enqueues a DJ job' do
-        allow(Dir).to receive_messages(mktmpdir: 'FAKE_TMPDIR')
 
         expect(job_queue).to receive(:enqueue).with(
             username, Jobs::VmState, 'retrieve vm-stats', [deployment.id, 'FAKE_FORMAT', true], deployment).and_return(task)

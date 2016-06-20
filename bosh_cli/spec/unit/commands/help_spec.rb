@@ -59,7 +59,6 @@ describe Bosh::Cli::Command::Help do
     let(:keywords) { ['vms'] }
 
     it 'only shows records for keyword' do
-      allow(runner).to receive(:usage).and_return('fake runner usage')
       allow(vm_command).to receive(:keywords).and_return(['vms'])
       allow(target_command).to receive(:keywords).and_return(['target'])
 
@@ -73,12 +72,8 @@ describe Bosh::Cli::Command::Help do
   end
 
   context 'when multiple keywords are passed' do
-    let(:keywords) { ['vms', 'target'] }
 
     it 'shows records for all keywords' do
-      allow(runner).to receive(:usage).and_return('fake runner usage')
-      allow(vm_command).to receive(:keywords).and_return(['vms'])
-      allow(target_command).to receive(:keywords).and_return(['target'])
 
       allow(Bosh::Cli::Config).to receive(:commands).and_return(all_commands)
 

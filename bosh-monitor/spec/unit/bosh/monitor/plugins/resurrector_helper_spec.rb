@@ -31,14 +31,12 @@ describe Bhm::Plugins::ResurrectorHelper::AlertTracker do
 
     it 'is not melting down if less than 30% of agents are down' do
       alert_tracker = described_class.new('percent_threshold' => 0.3)
-      29.times { |i| alert_tracker.record(job_instance_keys[i], Time.now) }
 
       expect(alert_tracker.melting_down?('deployment')).to be(false)
     end
 
     it 'is not melting down if less than 7 agents are down' do
       alert_tracker = described_class.new('minimum_down_jobs' => 7, 'percent_threshold' => 0.01)
-      6.times { |i| alert_tracker.record(job_instance_keys[i], Time.now) }
 
       expect(alert_tracker.melting_down?('deployment')).to be(false)
     end

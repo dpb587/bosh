@@ -1,6 +1,4 @@
 require 'spec_helper'
-require 'bosh/deployer/job_template'
-require 'blobstore_client/base'
 
 module Bosh::Deployer
   describe JobTemplate do

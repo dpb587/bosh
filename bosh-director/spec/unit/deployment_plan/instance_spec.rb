@@ -7,27 +7,19 @@ module Bosh::Director::DeploymentPlan
     subject(:instance) { Instance.create_from_job(job, index, state, deployment, current_state, availability_zone, logger) }
     let(:index) { 0 }
     let(:state) { 'started' }
-    let(:in_memory_ip_repo) { InMemoryIpRepo.new(logger) }
-    let(:ip_provider) { IpProvider.new(in_memory_ip_repo, {}, logger) }
 
-    before { allow(Bosh::Director::Config).to receive(:dns).and_return({'domain_name' => 'test_domain'}) }
     before do
       Bosh::Director::Config.current_job = Bosh::Director::Jobs::BaseJob.new
-      Bosh::Director::Config.current_job.task_id = 'fake-task-id'
-      allow(SecureRandom).to receive(:uuid).and_return('uuid-1')
     end
 
     let(:deployment) { Bosh::Director::Models::Deployment.make(name: 'fake-deployment') }
-    let(:network_resolver) { GlobalNetworkResolver.new(plan, [], logger) }
     let(:job) do
       instance_double('Bosh::Director::DeploymentPlan::InstanceGroup',
         vm_type: vm_type,
         stemcell: stemcell,
         env: env,
         name: 'fake-job',
-        persistent_disk_type: disk_type,
         compilation?: false,
-        is_errand?: false,
         vm_extensions: vm_extensions
       )
     end
@@ -35,23 +27,17 @@ module Bosh::Director::DeploymentPlan
     let(:vm_extensions) {[]}
     let(:stemcell) { make_stemcell({:name => 'fake-stemcell-name', :version => '1.0'}) }
     let(:env) { Env.new({'key' => 'value'}) }
-    let(:disk_type) { nil }
-    let(:net) { instance_double('Bosh::Director::DeploymentPlan::Network', name: 'net_a') }
     let(:availability_zone) { Bosh::Director::DeploymentPlan::AvailabilityZone.new('foo-az', {'a' => 'b'}) }
 
     let(:instance_model) { Bosh::Director::Models::Instance.make(deployment: deployment, bootstrap: true, uuid: 'uuid-1') }
 
     let(:current_state) { {'current' => 'state'} }
-    let(:desired_instance) { DesiredInstance.new(job, current_state, plan, availability_zone, 1)}
 
     describe '#bind_existing_instance_model' do
-      let(:job) { InstanceGroup.new(logger) }
 
       let(:network) do
-        instance_double('Bosh::Director::DeploymentPlan::Network', name: 'fake-network', reserve: nil)
       end
 
-      let(:instance_model) { Bosh::Director::Models::Instance.make(bootstrap: true) }
 
       it 'raises an error if instance already has a model' do
         instance.bind_existing_instance_model(instance_model)
@@ -79,7 +65,6 @@ module Bosh::Director::DeploymentPlan
     end
 
     context 'applying state' do
-      let(:job) { InstanceGroup.new(logger) }
 
       let(:agent_client) { instance_double('Bosh::Director::AgentClient') }
 
@@ -91,15 +76,6 @@ module Bosh::Director::DeploymentPlan
       describe 'apply_vm_state' do
         let(:state) do
           {
-            'deployment' => 'fake-deployment',
-            'job' => 'fake-job-spec',
-            'index' => 0,
-            'id' => 'uuid-1',
-            'networks' => {'fake-network' => {'fake-network-settings' => {}}},
-            'packages' => {},
-            'configuration_hash' => 'fake-desired-configuration-hash',
-            'dns_domain_name' => 'test-domain',
-            'persistent_disk' => 0
           }
         end
         let(:instance_spec) { InstanceSpec.new(state, instance) }
@@ -120,7 +96,6 @@ module Bosh::Director::DeploymentPlan
             'index' => 5,
             'id' => 'fake-uuid',
             'env' => 'fake-env',
-            'unneeded-properties' => 'nope'
           }
         end
         let(:instance_spec) { InstanceSpec.new(apply_spec, instance) }
@@ -228,8 +203,6 @@ module Bosh::Director::DeploymentPlan
           let(:availability_zone) { nil }
           let(:instance_model) {
             model = Bosh::Director::Models::Instance.make(deployment: deployment)
-            model.cloud_properties_hash = {}
-            model
           }
 
           describe 'and resource pool cloud properties has not changed' do
@@ -254,11 +227,9 @@ module Bosh::Director::DeploymentPlan
     describe '#cloud_properties' do
       context 'when the instance has an availability zone' do
         it 'merges the resource pool cloud properties into the availability zone cloud properties' do
-          availability_zone = instance_double(Bosh::Director::DeploymentPlan::AvailabilityZone)
           allow(availability_zone).to receive(:cloud_properties).and_return({'foo' => 'az-foo', 'zone' => 'the-right-one'})
           allow(vm_type).to receive(:cloud_properties).and_return({'foo' => 'rp-foo', 'resources' => 'the-good-stuff'})
 
-          instance = Instance.create_from_job(job, index, state, deployment, current_state, availability_zone, logger)
 
           expect(instance.cloud_properties).to eq(
               {'zone' => 'the-right-one', 'resources' => 'the-good-stuff', 'foo' => 'rp-foo'},
@@ -272,13 +243,11 @@ module Bosh::Director::DeploymentPlan
             let(:vm_extensions) {[vm_extension_1, vm_extension_2]}
 
             it 'uses the vm_type cloud_properties then the availability zones then rightmost vm_extension for overlapping values' do
-              availability_zone = instance_double(Bosh::Director::DeploymentPlan::AvailabilityZone)
               allow(availability_zone).to receive(:cloud_properties).and_return({'foo' => 'az-foo', 'zone' => 'the-right-one', 'other-stuff' => 'who-chares'})
               allow(vm_type).to receive(:cloud_properties).and_return({'foo' => 'rp-foo', 'resources' => 'the-good-stuff', 'other-stuff' => 'i-chares'})
               allow(vm_extension_1).to receive(:cloud_properties).and_return({'fooz' => 'bar', 'resources' => 'the-new-stuff', 'food' => 'drink'})
               allow(vm_extension_2).to receive(:cloud_properties).and_return({'foo' => 'baaaz', 'food' => 'eat'})
 
-              instance = Instance.create_from_job(job, index, state, deployment, current_state, availability_zone, logger)
 
               expect(instance.cloud_properties).to eq({'resources' => 'the-new-stuff', 'foo' => 'baaaz', 'zone' => 'the-right-one', 'food' => 'eat', 'fooz' => 'bar', 'other-stuff' => 'i-chares'})
             end
@@ -333,11 +302,9 @@ module Bosh::Director::DeploymentPlan
 
     describe '#update_cloud_properties' do
       it 'saves the cloud properties' do
-        availability_zone = instance_double(Bosh::Director::DeploymentPlan::AvailabilityZone)
         allow(availability_zone).to receive(:cloud_properties).and_return({'foo' => 'az-foo', 'zone' => 'the-right-one'})
         allow(vm_type).to receive(:cloud_properties).and_return({'foo' => 'rp-foo', 'resources' => 'the-good-stuff'})
 
-        instance = Instance.create_from_job(job, index, state, deployment, current_state, availability_zone, logger)
         instance.bind_existing_instance_model(instance_model)
 
         instance.update_cloud_properties!

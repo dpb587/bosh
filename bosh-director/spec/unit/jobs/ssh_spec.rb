@@ -3,16 +3,13 @@ require 'fakefs/spec_helpers'
 
 module Bosh::Director
   describe Jobs::Ssh do
-    include FakeFS::SpecHelpers
 
     subject(:job) { described_class.new(deployment.id, {'target' => target, 'command' => 'fake-command', 'params' => {'user' => 'user-ssh'}, :blobstore => {}}) }
 
     let(:deployment) { Models::Deployment.make(name: 'name-1') }
     let(:target) { {'job' => 'fake-job', 'indexes' => [1]} }
     let (:agent) { double(AgentClient)}
-    let(:config) { double(Config) }
     let(:instance_manager) { Api::InstanceManager.new }
-    let (:instance) { instance_double(Models::Instance)}
     let(:result_file_path) { 'ssh-spec' }
     let(:result_file) { TaskResultFile.new(result_file_path) }
     let(:task) {Bosh::Director::Models::Task.make(:id => 42, :username => 'user')}
@@ -39,7 +36,6 @@ module Bosh::Director
       Yajl.load(File.read(result_file_path))
     end
 
-    after { FileUtils.rm_rf(result_file_path) }
 
     it 'returns default_ssh_options if they exist' do
       job.perform

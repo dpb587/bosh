@@ -7,7 +7,6 @@ describe Bosh::Cli::Command::Snapshot do
   before do
     allow(command).to receive(:director).and_return(director)
     allow(command).to receive(:nl)
-    allow(command).to receive(:show_current_state)
     allow(command).to receive(:prepare_deployment_manifest).and_return(double(:manifest, name: 'bosh'))
   end
 
@@ -17,7 +16,6 @@ describe Bosh::Cli::Command::Snapshot do
     context 'when the user is logged in' do
       before do
         allow(command).to receive_messages(:logged_in? => true)
-        command.options[:target] = 'http://bosh-target.example.com'
       end
 
       context 'when there are snapshots' do
@@ -32,11 +30,6 @@ describe Bosh::Cli::Command::Snapshot do
           expect(director).to receive(:list_snapshots).with('bosh', nil, nil).and_return(snapshots)
           expect(command).to receive(:say) do |display_output|
             expect(display_output.to_s).to match_output '
-              +-----------------+--------------+---------------------------+-------+
-              | Job/ID          | Snapshot CID | Created at                | Clean |
-              +-----------------+--------------+---------------------------+-------+
-              | job/unknown (0) | snap0a       | 2015-12-21 14:53:28 -0800 | true  |
-              +-----------------+--------------+---------------------------+-------+
               '
           end
           expect(command).to receive(:say).with('Snapshots total: 1')
@@ -48,12 +41,6 @@ describe Bosh::Cli::Command::Snapshot do
           expect(director).to receive(:list_snapshots).with('bosh', nil, nil).and_return(snapshots)
           expect(command).to receive(:say) do |display_output|
             expect(display_output.to_s).to match_output '
-              +-------------------+--------------+---------------------------+-------+
-              | Job/ID            | Snapshot CID | Created at                | Clean |
-              +-------------------+--------------+---------------------------+-------+
-              | job/12xyz4561 (0) | snap0a       | 2015-12-21 14:53:28 -0800 | true  |
-              | job/12abdc456 (1) | snap1a       | 2015-12-27 14:53:28 -0800 | true  |
-              +-------------------+--------------+---------------------------+-------+
               '
           end
           expect(command).to receive(:say).with('Snapshots total: 2')
@@ -65,11 +52,6 @@ describe Bosh::Cli::Command::Snapshot do
           expect(director).to receive(:list_snapshots).with('bosh', 'foo', '0').and_return([snapshots[0]])
           expect(command).to receive(:say) do |display_output|
             expect(display_output.to_s).to match_output '
-               +-------------------+--------------+---------------------------+-------+
-               | Job/ID            | Snapshot CID | Created at                | Clean |
-               +-------------------+--------------+---------------------------+-------+
-               | job/12xyz4561 (0) | snap0a       | 2015-12-21 14:53:28 -0800 | true  |
-               +-------------------+--------------+---------------------------+-------+
               '
           end
           expect(command).to receive(:say).with('Snapshots total: 1')
@@ -97,18 +79,15 @@ describe Bosh::Cli::Command::Snapshot do
     context 'when the user is logged in' do
       before do
         allow(command).to receive_messages(:logged_in? => true)
-        command.options[:target] = 'http://bosh-target.example.com'
       end
 
       context 'for all deployment' do
         context 'when interactive' do
           before do
-            command.options[:non_interactive] = false
           end
 
           context 'when the user confirms taking the snapshot' do
             it 'deletes the snapshot' do
-              allow(command).to receive(:prepare_deployment_manifest).and_return(double(:manifest, name: 'bosh'))
               expect(command).to receive(:confirmed?).with("Are you sure you want to take a snapshot of all deployment 'bosh'?").and_return(true)
 
               expect(director).to receive(:take_snapshot).with('bosh', nil, nil)
@@ -119,7 +98,6 @@ describe Bosh::Cli::Command::Snapshot do
 
           context 'when the user does not confirms taking the snapshot' do
             it 'does not delete the snapshot' do
-              allow(command).to receive(:prepare_deployment_manifest).and_return(double(:manifest, name: 'bosh'))
               expect(command).to receive(:confirmed?).with("Are you sure you want to take a snapshot of all deployment 'bosh'?").and_return(false)
 
               expect(director).not_to receive(:take_snapshot)
@@ -166,12 +144,10 @@ describe Bosh::Cli::Command::Snapshot do
     context 'when the user is logged in' do
       before do
         allow(command).to receive_messages(:logged_in? => true)
-        command.options[:target] = 'http://bosh-target.example.com'
       end
 
       context 'when interactive' do
         before do
-          command.options[:non_interactive] = false
         end
 
         context 'when the user confirms the snapshot deletion' do
@@ -215,12 +191,10 @@ describe Bosh::Cli::Command::Snapshot do
     context 'when the user is logged in' do
       before do
         allow(command).to receive_messages(:logged_in? => true)
-        command.options[:target] = 'http://bosh-target.example.com'
       end
 
       context 'when interactive' do
         before do
-          command.options[:non_interactive] = false
         end
 
         context 'when the user confirms the snapshot deletion' do
@@ -237,7 +211,6 @@ describe Bosh::Cli::Command::Snapshot do
         context 'when the user does not confirms the snapshot deletion' do
           it 'does not delete snapshots' do
             expect(command).to receive(:confirmed?)
-                .with("Are you sure you want to delete all snapshots of deployment 'bosh'?").and_return(false)
 
             expect(director).not_to receive(:delete_all_snapshots)
 

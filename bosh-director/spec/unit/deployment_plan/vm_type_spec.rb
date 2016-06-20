@@ -3,7 +3,6 @@ require 'spec_helper'
 module Bosh::Director::DeploymentPlan
   describe VmType do
     subject(:vm_type) { VmType.new(valid_spec) }
-    let(:max_size) { 2 }
 
     let(:valid_spec) do
       {
@@ -12,7 +11,6 @@ module Bosh::Director::DeploymentPlan
       }
     end
 
-    let(:plan) { instance_double('Bosh::Director::DeploymentPlan::Planner') }
 
     describe 'creating' do
       it 'parses name, cloud properties' do
@@ -38,7 +36,6 @@ module Bosh::Director::DeploymentPlan
 
       %w(size).each do |key|
         context "when #{key} is missing" do
-          before { valid_spec.delete(key) }
 
           it 'does not raise an error' do
             expect { VmType.new(valid_spec) }.to_not raise_error

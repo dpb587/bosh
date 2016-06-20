@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'cli/deployment_manifest'
 
 describe Bosh::Cli::DeploymentManifest do
   let(:manifest_hash) do
@@ -24,7 +23,6 @@ describe Bosh::Cli::DeploymentManifest do
         {
           'name' => 'fake-resource-pool',
           'stemcell' => {
-            'name' => 'fake-stemcell',
             'version' => 12321
           }
         }
@@ -38,7 +36,6 @@ describe Bosh::Cli::DeploymentManifest do
 
   it "doesn't modify the provided manifest hash" do
     expect {
-      subject.normalize
     }.not_to change { manifest_hash['networks'].first['subnets'] }
   end
 

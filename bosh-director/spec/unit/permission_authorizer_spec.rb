@@ -3,7 +3,6 @@ require 'spec_helper'
 module Bosh::Director
   describe PermissionAuthorizer do
     before do
-      Bosh::Director::Models::DirectorAttribute.make(name: 'uuid', value: 'fake-director-uuid')
     end
     let(:config) { double(:config, :uuid => 'fake-director-uuid') }
     subject(:app) { Bosh::Director::PermissionAuthorizer.new(Api::DirectorUUIDProvider.new(config)) }
@@ -26,9 +25,6 @@ module Bosh::Director
           it 'denies others' do
             expect(subject.is_granted?(acl_subject, acl_right, [
                   'bosh.unexpected-uuid.admin',   # other director-specific admin scope
-                  'bosh.teams.security.admin',    # team specific admins
-                  'bosh.read',                    # read != admin
-                  'bosh.fake-director-uuid.read', # other director-specific read != admin
                 ])).to eq(false)
           end
         end
@@ -56,7 +52,6 @@ module Bosh::Director
             expect(subject.is_granted?(acl_subject, acl_right, [
                   'bosh.unexpected-uuid.admin', # other director-specific admin scope
                   'bosh.unexpected-uuid.read',  # other director-specific read != admin
-                  'bosh.teams.security.admin',  # team specific admins
                 ])).to eq(false)
           end
         end
@@ -78,11 +73,8 @@ module Bosh::Director
 
           it 'denies others' do
             expect(subject.is_granted?(acl_subject, acl_right, [
-                  'bosh.read', # denies global read scope
-                  'bosh.fake-director-uuid.read', # denies director-specific read scope
                   'bosh.unexpected-uuid.admin', # other director-specific admin scope
                   'bosh.unexpected-uuid.read',  # other director-specific read != admin
-                  'bosh.teams.security.read',  # team specific reads
                 ])).to eq(false)
           end
         end
@@ -175,8 +167,6 @@ module Bosh::Director
             it 'denies others' do
               expect(subject.is_granted?(acl_subject, acl_right, [
                   'bosh.unexpected-uuid.admin',   # other director-specific admin scope
-                  'bosh.teams.fraud.admin',       # unrelated team specific admins
-                  'bosh.teams.security.haha',     # team specific unsupported scope
               ])).to eq(false)
             end
           end
@@ -207,8 +197,6 @@ module Bosh::Director
             it 'denies others' do
               expect(subject.is_granted?(acl_subject, acl_right, [
                   'bosh.unexpected-uuid.admin',   # other director-specific admin scope
-                  'bosh.teams.fraud.admin',       # unrelated team specific admins
-                  'bosh.teams.security.haha',     # team specific unsupported scope
               ])).to eq(false)
             end
           end
@@ -241,10 +229,6 @@ module Bosh::Director
           it 'denies others' do
             expect(subject.is_granted?(acl_subject, acl_right, [
                   'bosh.unexpected-uuid.admin',   # other director-specific admin scope
-                  'bosh.teams.fraud.admin',       # unrelated team specific admins
-                  'bosh.teams.security.read',     # team specific read
-                  'bosh.read',                    # read != admin
-                  'bosh.fake-director-uuid.read', # other director-specific read != admin
                 ])).to eq(false)
           end
         end
@@ -276,7 +260,6 @@ module Bosh::Director
             expect(subject.is_granted?(acl_subject, acl_right, [
                   'bosh.unexpected-uuid.admin', # other director-specific admin scope
                   'bosh.unexpected-uuid.read',  # other director-specific read != admin
-                  'bosh.teams.fraud.admin',     # unrelated team specific scope
                 ])).to eq(false)
           end
         end

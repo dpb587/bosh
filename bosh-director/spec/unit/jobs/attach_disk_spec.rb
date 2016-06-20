@@ -43,7 +43,6 @@ module Bosh::Director
           Models::PersistentDisk.make(
             disk_cid: 'original-disk-cid',
             instance_id: instance_model.id,
-            active: true,
             size: 50)
         end
 
@@ -121,32 +120,24 @@ module Bosh::Director
         context 'when orphaned disk is attached' do
           let!(:original_disk) do
             Models::PersistentDisk.make(
-                disk_cid: 'original-disk-cid',
                 instance_id: instance_model.id,
-                active: true,
                 size: 50)
           end
 
           let!(:orphan_disk) do
             Models::OrphanDisk.make(
-                disk_cid: 'orphan-disk-cid',
-                instance_name: 'fake-instance',
-                availability_zone: 'o-zone',
-                deployment_name: deployment_name,
                 cloud_properties: {})
           end
 
           let!(:snapshot) do
             Models::Snapshot.make(
                 persistent_disk: original_disk,
-                clean: true,
                 snapshot_cid: original_disk.disk_cid)
           end
 
           let!(:orphan_disk_snapshot) do
             Models::OrphanSnapshot.make(
                 orphan_disk: orphan_disk,
-                clean: false,
                 snapshot_cid: orphan_disk.disk_cid,
                 snapshot_created_at: Date.today)
           end
@@ -229,9 +220,7 @@ module Bosh::Director
 
         let!(:original_disk) do
           Models::PersistentDisk.make(
-              disk_cid: 'original-disk-cid',
               instance_id: instance_model.id,
-              active: true,
               size: 50)
         end
 
@@ -266,17 +255,12 @@ module Bosh::Director
         let(:vm_cid) { nil }
 
         let(:instance_state) {'stopped'}
-        
         let(:original_disk) { nil }
 
         let(:disk_manager) { instance_double(DiskManager)}
 
         before {
           allow(DiskManager).to receive(:new).and_return(disk_manager)
-          allow(disk_manager).to receive(:detach_disk)
-          allow(disk_manager).to receive(:unmount_disk)
-          allow(disk_manager).to receive(:orphan_disk)
-          allow(disk_manager).to receive(:attach_disk)
         }
 
         it 'attaches the new disk' do

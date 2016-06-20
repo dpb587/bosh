@@ -3,7 +3,6 @@ require 'spec_helper'
 module Bosh
   module Director
     describe DeploymentPlan::ManifestMigrator do
-      subject { DeploymentPlan::ManifestMigrator.new }
       let(:manifest_hash) { Bosh::Spec::Deployments.simple_manifest }
       let(:cloud_config) { nil }
       let(:migrated_manifest) { subject.migrate(manifest_hash, cloud_config)[0] }
@@ -12,7 +11,6 @@ module Bosh
       describe '#migrate' do
         context 'when a "release" key is not found' do
           it 'retains the "releases" entry' do
-            manifest_hash.delete('release')
             manifest_hash['releases'] = [{ some: :stuff }]
             expect(migrated_manifest['releases']).to eq([{ some: :stuff }])
           end
@@ -42,13 +40,10 @@ module Bosh
 
           it 'blows up if both release and releases keys are present' do
             manifest_hash['release'] = {some: :stuff}
-            manifest_hash['releases'] = [{other: :stuff}]
 
             expect {
               subject.migrate(manifest_hash, cloud_config)
             }.to raise_error(
-              DeploymentAmbiguousReleaseSpec,
-              "Deployment manifest contains both 'release' and 'releases' sections, please use one of the two."
             )
           end
         end

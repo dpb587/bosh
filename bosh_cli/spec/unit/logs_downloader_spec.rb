@@ -7,7 +7,6 @@ describe Bosh::Cli::LogsDownloader do
 
   describe '#build_destination_path' do
     before { Timecop.freeze(Time.new(2011, 10, 9, 11, 55, 45)) }
-    after { Timecop.return }
 
     it 'returns timestamped tgz file name in given directory' do
       path = subject.build_destination_path('fake-job-name', 'fake-job-index', '/fake-dir')
@@ -24,7 +23,6 @@ describe Bosh::Cli::LogsDownloader do
 
     it 'downloads resource for given blobstore id' do
       expect(director).to receive(:download_resource).
-        with('fake-blobstore-id').
         and_return('/fake-tmp-path')
 
       perform

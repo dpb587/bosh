@@ -1,9 +1,7 @@
 require 'spec_helper'
-require 'blobstore_client'
 require 'fakefs/spec_helpers'
 
 describe Bosh::Director::Jobs::ScheduledBackup do
-  include FakeFS::SpecHelpers
 
   let(:backup_job) { instance_double('Bosh::Director::Jobs::Backup', backup_file: 'backup_dest') }
   let(:backup_destination) { instance_double('Bosh::Blobstore::BaseClient', create: nil) }

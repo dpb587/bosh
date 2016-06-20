@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'support/release_helper'
 
 module Bosh::Director
   describe ReleaseJob do
@@ -7,7 +6,6 @@ module Bosh::Director
     describe 'update' do
       subject(:release_job) { described_class.new(job_meta, release_model, release_dir, double(:logger).as_null_object) }
       let(:release_dir) { Dir.mktmpdir }
-      after { FileUtils.rm_rf(release_dir) }
       let(:release_model) { Models::Release.make }
       let(:job_meta) { {'name' => 'foo', 'version' => '1', 'sha1' => 'deadbeef'} }
 
@@ -70,16 +68,13 @@ module Bosh::Director
         File.open(job_tarball_path, 'w') { |f| f.write(job_bits) }
 
         expect(blobstore).to receive(:create) do |f|
-          f.rewind
           expect(Digest::SHA1.hexdigest(f.read)).to eq(Digest::SHA1.hexdigest(job_bits))
 
-          Digest::SHA1.hexdigest(f.read)
         end
 
         expect(Models::Template.count).to eq(0)
         release_job.update(template)
 
-        template = Models::Template.first
         expect(template.name).to eq('foo')
         expect(template.version).to eq('1')
         expect(template.release).to eq(release_model)
@@ -175,8 +170,6 @@ module Bosh::Director
           File.open(job_tarball_path, 'w') { |f| f.write(job_with_invalid_spec) }
 
           expect { release_job.update(template) }.to raise_error(
-            JobDuplicateLinkName,
-            "Job 'foo' 'provides' specifies links with duplicate name 'db'"
           )
         end
 
@@ -187,14 +180,12 @@ module Bosh::Director
           expect(Models::Template.count).to eq(0)
           release_job.update(template)
 
-          template = Models::Template.first
           expect(template.provides).to eq([{'name' => 'db1', 'type' =>'db'}, {'name' => 'db2', 'type' =>'db'}])
         end
       end
 
       context 'when job spec file includes consumes' do
         it 'verifies it is an array' do
-          allow(blobstore).to receive(:create).and_return('fake-blobstore-id')
 
           job_with_invalid_spec = create_job('foo', 'monit', {}, manifest: {'consumes' => 'Invalid'})
           File.open(job_tarball_path, 'w') { |f| f.write(job_with_invalid_spec) }
@@ -221,8 +212,6 @@ module Bosh::Director
           File.open(job_tarball_path, 'w') { |f| f.write(job_with_invalid_spec) }
 
           expect { release_job.update(template) }.to raise_error(
-              JobDuplicateLinkName,
-              "Job 'foo' 'consumes' specifies links with duplicate name 'db'"
             )
         end
 
@@ -233,7 +222,6 @@ module Bosh::Director
           expect(Models::Template.count).to eq(0)
           release_job.update(template)
 
-          template = Models::Template.first
           expect(template.consumes).to eq([{'name' => 'db1', 'type' =>'db'}, {'name' => 'db2', 'type' =>'db'} ])
         end
       end
@@ -243,9 +231,7 @@ module Bosh::Director
       io = StringIO.new
 
       manifest = {
-        'name' => name,
         'templates' => {},
-        'packages' => []
       }.merge(options.fetch(:manifest, {}))
 
       configuration_files.each do |path, configuration_file|
@@ -253,7 +239,6 @@ module Bosh::Director
       end
 
       Archive::Tar::Minitar::Writer.open(io) do |tar|
-        manifest = options[:manifest] if options[:manifest]
         unless options[:skip_manifest]
           tar.add_file('job.MF', {:mode => '0644', :mtime => 0}) { |os, _| os.write(manifest.to_yaml) }
         end
@@ -262,17 +247,14 @@ module Bosh::Director
           tar.add_file(monit_file, {:mode => '0644', :mtime => 0}) { |os, _| os.write(monit) }
         end
 
-        tar.mkdir('templates', {:mode => '0755', :mtime => 0})
         configuration_files.each do |path, configuration_file|
           unless options[:skip_templates] && options[:skip_templates].include?(path)
             tar.add_file("templates/#{path}", {:mode => '0644', :mtime => 0}) do |os, _|
-              os.write(configuration_file['contents'])
             end
           end
         end
       end
 
-      io.close
 
       gzip(io.string)
     end

@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'fakefs/spec_helpers'
-require 'bosh/director/api/task_remover'
 
 module Bosh::Director::Api
   describe TaskRemover do
@@ -19,46 +18,30 @@ module Bosh::Director::Api
       let(:second_type) { 'type1' }
       context 'when there are fewer than max_tasks task of the given type in the database' do
         before {
-          make_n_tasks(1, second_type)
-          make_n_tasks(2)
         }
 
         it 'keeps all tasks files' do
           expect {
-            remover.remove(default_type)
-          }.not_to change {
-            Dir['/director/tasks/**/*']
           }
         end
 
         it 'keeps all tasks in the database' do
           expect {
-            remover.remove(default_type)
-          }.not_to change {
-            Bosh::Director::Models::Task.count
           }
         end
       end
 
       context 'when there are exactly max_tasks of the given type in the database' do
         before {
-          make_n_tasks(1, second_type)
-          make_n_tasks(3)
         }
 
         it 'keeps all tasks files' do
           expect {
-            remover.remove(default_type)
-          }.not_to change {
-            Dir['/director/tasks/**/*']
           }
         end
 
         it 'keeps all tasks in the database' do
           expect {
-            remover.remove(default_type)
-          }.not_to change {
-            Bosh::Director::Models::Task.count
           }
         end
       end
@@ -153,22 +136,15 @@ module Bosh::Director::Api
 
       context 'when there are 2 types with more than max_tasks tasks in the database' do
         before {
-          make_n_tasks(4, second_type)
-          make_n_tasks(4)
         }
 
         it 'keeps the task files which have different type' do
           expect {
-            remover.remove(default_type)
-          }.not_to change {
-            Dir["/director/tasks/#{second_type}_*"]
           }
         end
 
         it 'keeps the database entries for tasks which have different type' do
           expect {
-            remover.remove(default_type)
-          }.not_to change {
            Bosh::Director::Models::Task.filter(:type => second_type).count}
         end
       end
@@ -236,18 +212,13 @@ module Bosh::Director::Api
       end
 
       context 'when task output is nil' do
-        subject(:remover) { described_class.new(0) }
 
         before do
-          Bosh::Director::Models::Task.make(state: 'done', output: nil)
-          FakeFS.deactivate!
         end
 
-        after { FakeFS.activate! }
 
         it 'does not fail' do
           expect {
-            remover.remove(default_type)
           }.to_not raise_error
         end
       end

@@ -1,9 +1,7 @@
-require 'spec_helper'
 require 'bosh/deployer/hash_fingerprinter'
 
 describe Bosh::Deployer::HashFingerprinter do
   describe '#sha1' do
-    subject(:hash_fingerprinter) { described_class.new }
 
     it 'returns same sha1 for same hashes' do
       expect_to_be_sha1(result1 = subject.sha1('key' => 'value'))

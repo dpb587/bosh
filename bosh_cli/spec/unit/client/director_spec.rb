@@ -6,7 +6,6 @@ describe Bosh::Cli::Client::Director do
   before do
     allow(Resolv).to receive(:getaddresses).with('target.example.com').and_return(['127.0.0.1'])
     @director = Bosh::Cli::Client::Director.new(DUMMY_TARGET, credentials)
-    allow(@director).to receive(:retry_wait_interval).and_return(0)
   end
 
   let(:credentials) { Bosh::Cli::Client::BasicCredentials.new('user', 'pass') }
@@ -53,7 +52,6 @@ describe Bosh::Cli::Client::Director do
 
   describe '#login' do
     before do
-      @director = Bosh::Cli::Client::Director.new(DUMMY_TARGET)
     end
 
     context 'new director versions (have version key)' do
@@ -123,32 +121,26 @@ describe Bosh::Cli::Client::Director do
         stub_request(:get, 'https://127.0.0.1:8080/info').
           with(headers: request_headers).to_return(body: '{}', status: 200)
 
-        @director.get_status
       end
     end
 
     context 'using token credentials' do
-      let(:credentials) { Bosh::Cli::Client::UaaCredentials.new(token_provider) }
-      let(:token_provider) { instance_double(Bosh::Cli::Client::Uaa::TokenProvider, token: 'bearer token') }
       let(:request_headers) { { 'Content-Type' => 'application/json', 'Authorization' => 'bearer token' } }
 
       it 'adds authorization header with UAA token' do
         stub_request(:get, 'https://127.0.0.1:8080/info').
           with(headers: request_headers).to_return(body: '{}', status: 200)
 
-        @director.get_status
       end
     end
 
     context 'when credentials are not provided' do
-      let(:credentials) { nil }
       let(:request_headers) { { 'Content-Type' => 'application/json' } }
 
       it 'adds authorization header with UAA token' do
         stub_request(:get, 'https://127.0.0.1:8080/info').
           with(headers: request_headers).to_return(body: '{}', status: 200)
 
-        @director.get_status
       end
     end
   end
@@ -168,21 +160,10 @@ describe Bosh::Cli::Client::Director do
     describe '#list_vms' do
       let(:vms) do
         [{
-            'agent_id' => 'agent-id1',
-            'cid'      => 'vm-id1',
-            'job'      => 'dummy',
             'index'    => 0 },
           {
-            'agent_id' => 'agent-id2',
-            'cid'      => 'vm-id2',
-            'job'      => 'dummy',
-            'index'    => 1
           },
           {
-            'agent_id' => 'agent-id3',
-            'cid'      => 'vm-id3',
-            'job'      => 'dummy',
-            'index'    => 2
           }]
       end
 
@@ -250,14 +231,12 @@ describe Bosh::Cli::Client::Director do
 
     it 'deletes users' do
       expect(@director).to receive(:delete).
-        with('/users/joe').
         and_return([204, '', {}])
       expect(@director.delete_user('joe')).to eql(true)
     end
 
     it 'fails to delete users' do
       expect(@director).to receive(:delete).
-        with('/users/joe').
         and_return([500, '', {}])
       expect(@director.delete_user('joe')).to eql(false)
     end
@@ -312,7 +291,6 @@ describe Bosh::Cli::Client::Director do
 
     it 'updates cloud config' do
       expect(@director).to receive(:post).
-          with('/cloud_configs', 'text/yaml', 'cloud config manifest').
           and_return(true)
       @director.update_cloud_config('cloud config manifest')
     end
@@ -325,7 +303,6 @@ describe Bosh::Cli::Client::Director do
 
     it 'updates runtime config' do
       expect(@director).to receive(:post).
-          with('/runtime_configs', 'text/yaml', 'runtime config manifest').
           and_return(true)
       @director.update_runtime_config('runtime config manifest')
     end
@@ -370,22 +347,18 @@ describe Bosh::Cli::Client::Director do
 
     it 'lists recent tasks' do
       expect(@director).to receive(:get).
-        with('/tasks?limit=30&verbose=1', 'application/json').
         and_return([200, JSON.generate([]), {}])
       @director.list_recent_tasks
 
       expect(@director).to receive(:get).
-        with('/tasks?limit=100000&verbose=1', 'application/json').
         and_return([200, JSON.generate([]), {}])
       @director.list_recent_tasks(100000)
 
       expect(@director).to receive(:get).
-        with('/tasks?limit=50&verbose=2', 'application/json').
         and_return([200, JSON.generate([]), {}])
       @director.list_recent_tasks(50, 2)
 
       expect(@director).to receive(:get).
-          with('/tasks?limit=50&verbose=2&deployment=deployment-name', 'application/json').
           and_return([200, JSON.generate([]), {}])
       @director.list_recent_tasks(50, 2, 'deployment-name')
     end
@@ -409,7 +382,6 @@ describe Bosh::Cli::Client::Director do
     it 'uploads remote release' do
       expect(@director).to receive(:request_and_track).
         with(:post, '/releases', hash_including(
-               :content_type => 'application/json',
                :payload      => JSON.generate('location' => 'release_uri'))).
         and_return(true)
       @director.upload_remote_release('release_uri')
@@ -418,7 +390,6 @@ describe Bosh::Cli::Client::Director do
     it 'uploads remote release (with options)' do
       expect(@director).to receive(:request_and_track).
         with(:post, '/releases?rebase=true&skip_if_exists=true&sha1=abcd1234', hash_including(
-               :content_type => 'application/json',
                :payload      => JSON.generate('location' => 'release_uri'))).
         and_return(true)
       @director.upload_remote_release('release_uri', rebase: true, skip_if_exists: true, sha1: 'abcd1234')
@@ -426,14 +397,12 @@ describe Bosh::Cli::Client::Director do
 
     it 'gets release info' do
       expect(@director).to receive(:get).
-        with('/releases/foo', 'application/json').
         and_return([200, JSON.generate([]), {}])
       @director.get_release('foo')
     end
 
     it 'gets deployment info' do
       expect(@director).to receive(:get).
-        with('/deployments/foo', 'application/json').
         and_return([200, JSON.generate([]), {}])
       @director.get_deployment('foo')
     end
@@ -486,7 +455,6 @@ describe Bosh::Cli::Client::Director do
 
     it 'attaches a disk to an instance' do
       expect(@director).to receive(:request_and_track).
-        with(:put, '/disks/vol-af4a3e40/attachments?deployment=foo&job=dea&instance_id=17f01a35').
         and_return(true)
       @director.attach_disk('foo', 'dea', '17f01a35', 'vol-af4a3e40')
     end
@@ -551,7 +519,6 @@ describe Bosh::Cli::Client::Director do
 
     it 'gets task state' do
       expect(@director).to receive(:get).
-        with("/tasks/#{task_number}").
         and_return([200, JSON.generate({ 'state' => 'done' })])
       expect(@director.get_task_state(task_number)).to eql('done')
     end
@@ -583,7 +550,6 @@ describe Bosh::Cli::Client::Director do
     it 'know how to find time difference with director' do
       now         = Time.now
       server_time = now - 100
-      allow(Time).to receive(:now).and_return(now)
 
       expect(@director).to receive(:get).with('/info').
         and_return([200, JSON.generate('version' => 1),
@@ -593,14 +559,12 @@ describe Bosh::Cli::Client::Director do
 
     it 'takes snapshot for a deployment' do
       expect(@director).to receive(:request_and_track).
-        with(:post, '/deployments/foo/snapshots', {}).
         and_return(true)
       @director.take_snapshot('foo')
     end
 
     it 'takes snapshot for a job and index' do
       expect(@director).to receive(:request_and_track).
-        with(:post, '/deployments/foo/jobs/bar/0/snapshots', {}).
         and_return(true)
       @director.take_snapshot('foo', 'bar', '0')
     end
@@ -635,34 +599,12 @@ describe Bosh::Cli::Client::Director do
 
       let(:manifest) do
         <<-MANIFEST
----
-name: test
-releases:
-- name: simple
-  version: 2
-resource_pools:
-- name: rp
-  stemcell:
-    name: ubuntu
-    version: 1
-networks:
-- name: default
-jobs:
-- name: job1
-  template: xyz
-  networks:
-  - name: default
-- name: old_job
-  template: xyz
-  networks:
-  - name: default
         MANIFEST
       end
 
       context 'redacting' do
         it 'does not pass redact=false parameter' do
           stub_request(:post, 'https://127.0.0.1:8080/deployments/foo/diff').
-            with(headers: request_headers).
             to_return(status: 200, body: '{}')
           expect(@director).to receive(:post).with('/deployments/foo/diff', 'text/yaml', manifest)
                                  .and_return([200, '{}'])
@@ -673,7 +615,6 @@ jobs:
       context 'not redacting' do
         it 'passes redact=false parameter' do
           stub_request(:post, 'https://127.0.0.1:8080/deployments/foo/diff?redact=false').
-            with(headers: request_headers).
             to_return(status: 200, body: '{}')
           expect(@director).to receive(:post).with('/deployments/foo/diff?redact=false', 'text/yaml', manifest)
                                  .and_return([200, '{}'])
@@ -701,7 +642,6 @@ jobs:
       expect(@director).to receive(:request_and_track).with(:post, '/deployments/foo/ssh',
                                                             { :payload => JSON.generate(payload),
                                                               :content_type => 'application/json'})
-                               .and_return([200, JSON.generate([]), {}])
 
       @director.setup_ssh('foo', 'bar', 'fake-id', 'user', 'public_key', 'password')
     end
@@ -724,7 +664,6 @@ jobs:
                                                               :task_success_state => :queued
                                                             }
                                                             )
-                               .and_return([200, JSON.generate([]), {}])
 
       @director.cleanup_ssh('foo', 'bar', 'bosh_', ['fake-id'])
     end
@@ -739,14 +678,12 @@ jobs:
       before do
         status_response = { name: target_name }
         stub_request(:get, 'https://127.0.0.1:8080/info').
-          with(headers: request_headers).
           to_return(body: JSON.generate(status_response), status: 200)
       end
 
       context 'when requesting tasks' do
         it 'raises error' do
           expect(@director).to receive(:get).
-            with("/tasks/#{task_number}").
             and_return([404, 'Not Found'])
           expect {
             @director.get_task_state(task_number)
@@ -783,7 +720,6 @@ jobs:
     describe 'check_director_restart' do
       it 'wait until the director is restarted successfully' do
         expect(@director).to receive(:get).
-                                with('/info', 'application/json').twice.
                                 and_return([100, '{}'], [200, '{}'])
         expect(@director.check_director_restart(1, 10)).to eql(true)
       end
@@ -800,8 +736,6 @@ jobs:
   describe 'create_backup' do
     it 'tracks the backup task' do
       expect(@director).to receive(:request_and_track)
-      .with(:post, '/backups', {})
-      .and_return(true)
       @director.create_backup
     end
   end
@@ -822,7 +756,6 @@ jobs:
 
     it 'fetches full vm state with a task by default' do
       expect(@director).to receive(:request_and_track).
-          with(:get, "/deployments/#{dummy_deployment_name}/vms?format=full", {}).
           and_return([:done, 14])
 
       expect(@director).to receive(:get_task_result_log).with(14).
@@ -833,7 +766,6 @@ jobs:
 
     it 'fetches short form vm state without a task if full = false' do
       expect(@director).to receive(:get).
-          with("/deployments/#{dummy_deployment_name}/vms", nil, nil, {}, {}).
           and_return([200, "[#{dummy_vm_state}]", nil])
 
       expect(@director.fetch_vm_state(dummy_deployment_name, {}, false)).to eq(JSON.parse dummy_vm_state)
@@ -851,14 +783,12 @@ jobs:
   describe 'checking status' do
     it 'considers target valid if it responds with 401 (for compatibility)' do
       allow(@director).to receive(:get).
-        with('/info', 'application/json').
         and_return([401, 'Not authorized'])
       expect(@director.exists?).to eql(true)
     end
 
     it 'considers target valid if it responds with 200' do
       allow(@director).to receive(:get).
-        with('/info', 'application/json').
         and_return([200, JSON.generate('name' => 'Director is your friend')])
       expect(@director.exists?).to eql(true)
     end
@@ -869,19 +799,15 @@ jobs:
       options = { :arg1 => 1, :arg2 => 2 }
 
       expect(@director).to receive(:request).
-        with(:get, '/stuff', 'text/plain', 'abc').
         and_return([302, 'body', { :location => '/tasks/502' }])
 
       tracker = double('tracker', :track => 'polling result', :output => 'foo')
 
       expect(Bosh::Cli::TaskTracking::TaskTracker).to receive(:new).
-        with(@director, '502', options).
         and_return(tracker)
 
       expect(@director.request_and_track(:get, '/stuff',
                                   { content_type: 'text/plain',
-                                    payload: 'abc',
-                                    arg1: 1, arg2: 2
                                   })).
         to eql(['polling result', '502'])
     end
@@ -890,19 +816,15 @@ jobs:
       options = { :arg1 => 1, :arg2 => 2 }
 
       expect(@director).to receive(:request).
-        with(:get, '/stuff', 'text/plain', 'abc').
         and_return([303, 'body', { :location => '/tasks/502' }])
 
       tracker = double('tracker', :track => 'polling result', :output => 'foo')
 
       expect(Bosh::Cli::TaskTracking::TaskTracker).to receive(:new).
-        with(@director, '502', options).
         and_return(tracker)
 
       expect(@director.request_and_track(:get, '/stuff',
                                   { :content_type => 'text/plain',
-                                    :payload      => 'abc',
-                                    :arg1         => 1, :arg2 => 2
                                   })).
         to eql(['polling result', '502'])
     end
@@ -916,19 +838,14 @@ jobs:
         @director = Bosh::Cli::Client::Director.new(DUMMY_TARGET, credentials, :no_track => true)
 
         expect(@director).to receive(:request).
-          with(:get, '/stuff', 'text/plain', 'abc').
           and_return([302, 'body', { :location => '/tasks/502' }])
 
-        tracker = double('tracker', :track => 'polling result', :output => 'foo')
 
         expect(Bosh::Cli::TaskTracking::TaskTracker).to receive(:new).
-          with(@director, '502', options).
           never
 
         expect(@director.request_and_track(:get, '/stuff',
                                     { :content_type => 'text/plain',
-                                      :payload      => 'abc',
-                                      :arg1         => 1, :arg2 => 2
                                     })).
           to eql([:running, '502'])
       end
@@ -937,24 +854,18 @@ jobs:
     it 'considers all responses but 302 and 303 a failure' do
       [200, 404, 403].each do |code|
         expect(@director).to receive(:request).
-          with(:get, '/stuff', 'text/plain', 'abc').
           and_return([code, 'body', {}])
         expect(@director.request_and_track(:get, '/stuff',
                                     { :content_type => 'text/plain',
-                                      :payload      => 'abc',
-                                      :arg1         => 1, :arg2 => 2
                                     })).to eql([:failed, nil])
       end
     end
 
     it 'reports task as non-trackable if its URL is unfamiliar' do
       expect(@director).to receive(:request).
-        with(:get, '/stuff', 'text/plain', 'abc').
         and_return([302, 'body', { :location => '/track-task/502' }])
       expect(@director.request_and_track(:get, '/stuff',
                                   { :content_type => 'text/plain',
-                                    :payload      => 'abc',
-                                    :arg1         => 1, :arg2 => 2
                                   })).
         to eql([:non_trackable, nil])
     end

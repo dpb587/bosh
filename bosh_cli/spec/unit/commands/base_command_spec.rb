@@ -2,7 +2,6 @@ require 'spec_helper'
 
 describe Bosh::Cli::Command::Base do
   before do
-    @runner = double(Bosh::Cli::Runner)
     @config_file = File.join(Dir.mktmpdir, 'bosh_config')
   end
 
@@ -35,7 +34,6 @@ describe Bosh::Cli::Command::Base do
   end
 
   it 'respects target option' do
-    add_config('target' => 'localhost:8080', 'target_name' => 'microbosh')
 
     cmd = make
     cmd.add_option(:target, 'new-target')
@@ -73,7 +71,6 @@ describe Bosh::Cli::Command::Base do
 
     cmd.blob_manager
     expect(Bosh::Cli::BlobManager).to have_received(:new).with(release, max_parallel_downloads, anything)
-    Bosh::Cli::Config.max_parallel_downloads = nil
   end
 
   context 'target' do
@@ -124,7 +121,6 @@ describe Bosh::Cli::Command::Base do
       before do
         director_status = {'user_authentication' => {
           'type' => 'uaa',
-          'options' => {'url' => 'https://127.0.0.1:8080/uaa'}
         }}
         stub_request(:get, 'https://127.0.0.1:8080/info').to_return(body: JSON.dump(director_status))
       end

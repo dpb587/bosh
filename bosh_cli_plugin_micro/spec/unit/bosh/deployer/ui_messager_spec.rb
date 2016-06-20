@@ -1,4 +1,3 @@
-require 'spec_helper'
 require 'bosh/deployer/ui_messager'
 
 describe Bosh::Deployer::UiMessager do
@@ -20,7 +19,6 @@ describe Bosh::Deployer::UiMessager do
 
         it 'does not show message to the user' do
           expect(ui_messenger).not_to receive(:say)
-          ui_messenger.info(:known)
         end
       end
     end
@@ -29,7 +27,6 @@ describe Bosh::Deployer::UiMessager do
       def self.it_raises_an_error
         it 'raises an UnknownMessageName' do
           expect { ui_messenger.info(:unknown) }
-            .to raise_error(described_class::UnknownMessageName, 'unknown')
         end
 
         it 'does show any message to the user' do
@@ -43,7 +40,6 @@ describe Bosh::Deployer::UiMessager do
       end
 
       context 'when silent option is set' do
-        before { options[:silent] = true }
         it_raises_an_error
       end
     end
@@ -54,7 +50,6 @@ describe Bosh::Deployer::UiMessager do
       def self.it_raises_an_error
         it 'raises an ArgumentError' do
           expect { ui_messenger.info(invalid_value) }
-            .to raise_error(ArgumentError, 'message_name must be a Symbol')
         end
 
         it 'does show any message to the user' do
@@ -68,7 +63,6 @@ describe Bosh::Deployer::UiMessager do
       end
 
       context 'when silent option is set' do
-        before { options[:silent] = true }
         it_raises_an_error
       end
     end

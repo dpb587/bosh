@@ -1,6 +1,4 @@
 require 'spec_helper'
-require 'bosh/deployer/microbosh_job_instance'
-require 'bosh/deployer/deployments_state'
 
 module Bosh::Deployer
   describe InstanceManager do
@@ -21,12 +19,9 @@ module Bosh::Deployer
       allow(config).to receive(:base_dir)
       allow(config).to receive(:name)
       allow(config).to receive(:uuid=)
-      allow(config).to receive(:agent_services_ip)
-      allow(config).to receive(:internal_services_ip)
       allow(config).to receive(:agent_url).and_return('http://user:password@agent-url.com')
       allow(config).to receive(:uuid)
 
-      class_double('Bosh::Deployer::MicroboshJobInstance').as_stubbed_const
       allow(MicroboshJobInstance).to receive(:new).and_return(microbosh_job_instance)
       allow(microbosh_job_instance).to receive(:render_templates).and_return(spec)
       allow(spec).to receive(:update).and_return(spec)
@@ -34,12 +29,9 @@ module Bosh::Deployer
       allow(described_class).to receive(:require).with('bosh/deployer/instance_manager/fake')
       fake_plugin_class = double(:fake_plugin_class, new: infrastructure)
       allow(described_class).to receive(:const_get).with('Fake').and_return(fake_plugin_class)
-      allow(infrastructure).to receive(:update_spec)
       allow(infrastructure).to receive(:client_services_ip).and_return('client-ip')
 
-      allow(Bosh::Agent::HTTPClient).to receive(:new).and_return(double('agent', run_task: nil))
 
-      class_double('Bosh::Deployer::DeploymentsState').as_stubbed_const
       allow(DeploymentsState).to receive(:load_from_dir).and_return(deployments_state)
       allow(deployments_state).to receive(:load_deployment)
       allow(deployments_state).to receive(:state).and_return(state)
@@ -48,13 +40,11 @@ module Bosh::Deployer
     end
 
     describe '.create' do
-      let(:config_hash) { { 'cloud' => { 'plugin' => 'fake' } } }
 
       it 'tries to require instance manager specific class' +
            '(this allows custom gems to specify instance manager plugin)' do
         expect(described_class).to receive(:require).with(
           'bosh/deployer/instance_manager/fake')
-        allow(described_class).to receive(:new)
         described_class.create(config_hash)
       end
 
@@ -68,13 +58,10 @@ module Bosh::Deployer
         expect {
           described_class.create(config_hash_with_non_existent_plugin)
         }.to raise_error(
-               Bosh::Cli::CliError,
-               /Could not find Provider Plugin: does not exist/,
              )
       end
 
       it 'returns the plugin specific instance manager' do
-        allow(described_class).to receive(:require)
 
         fingerprinter = instance_double('Bosh::Deployer::HashFingerprinter')
         expect(HashFingerprinter)
@@ -83,7 +70,6 @@ module Bosh::Deployer
 
         expect(fingerprinter)
         .to receive(:sha1)
-        .with(config_hash)
         .and_return('fake-config-hash-sha1')
 
         ui_messager = instance_double('Bosh::Deployer::UiMessager')
@@ -172,7 +158,6 @@ module Bosh::Deployer
       before do
         allow(instance_manager).to receive(:err)
 
-        allow(state).to receive(:vm_cid)
         allow(deployments_state).to receive(:save)
 
         allow(config).to receive(:resources).and_return({})
@@ -187,7 +172,6 @@ module Bosh::Deployer
         allow(Specification).to receive(:new).and_return(spec)
         allow(spec).to receive(:director_port).and_return(80808)
 
-        class_double('Bosh::Common').as_stubbed_const
         allow(Bosh::Common).to receive(:retryable).and_yield(0, nil)
 
         allow(Bosh::Agent::HTTPClient).to receive(:new).and_return(agent)

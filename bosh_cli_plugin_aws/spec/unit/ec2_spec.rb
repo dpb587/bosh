@@ -83,7 +83,6 @@ describe Bosh::AwsCliPlugin::EC2 do
 
   describe "instances" do
     before do
-      allow(Bosh::AwsCloud::ResourceWait).to receive(:for_instance)
     end
 
     describe "termination" do
@@ -94,7 +93,6 @@ describe Bosh::AwsCliPlugin::EC2 do
         fake_aws_ec2 = double("aws_ec2", instances: [instance_1, instance_2, instance_3])
 
         allow(ec2).to receive(:aws_ec2).and_return(fake_aws_ec2)
-        allow(ec2).to receive(:sleep)
 
         expect(instance_1).to receive :terminate
         expect(instance_2).to receive :terminate
@@ -187,7 +185,6 @@ describe Bosh::AwsCliPlugin::EC2 do
 
         expect(nat_instance).
           to receive(:associate_elastic_ip).
-          with(elastic_ip).
           and_raise(AWS::EC2::Errors::InvalidAddress::NotFound)
         expect(nat_instance).to receive(:associate_elastic_ip).with(elastic_ip)
 
@@ -330,7 +327,6 @@ describe Bosh::AwsCliPlugin::EC2 do
 
     describe "adding" do
       let(:public_key_path) { asset("id_spec_rsa.pub") }
-      let(:private_key_path) { asset("id_spec_rsa") }
 
       describe "when the provided SSH key does not yet exist on the machine" do
         let(:public_key_path) { asset("id_new_rsa.pub") }
@@ -395,7 +391,6 @@ describe Bosh::AwsCliPlugin::EC2 do
 
       it "should not attempt to remove a non-existent keypair" do
         expect {
-          ec2.remove_key_pair("foobar")
         }.not_to raise_error
       end
 

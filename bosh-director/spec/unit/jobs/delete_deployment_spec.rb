@@ -2,8 +2,6 @@ require 'spec_helper'
 
 module Bosh::Director
   describe Jobs::DeleteDeployment do
-    include Support::FakeLocks
-    before { fake_locks }
 
     subject(:job) { described_class.new('test_deployment', job_options) }
     let(:job_options) { {} }

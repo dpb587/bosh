@@ -15,27 +15,20 @@ module Bosh
         let(:runtime_config_hash) { Bosh::Spec::Deployments.simple_runtime_config }
         let(:manifest) { Manifest.new(manifest_hash, cloud_config_hash, runtime_config_hash)}
         let(:plan_options) { {} }
-        let(:event_log_io) { StringIO.new("") }
         let(:logger_io) { StringIO.new("") }
-        let(:event_log) {Bosh::Director::EventLog::Log.new(event_log_io)}
         let(:logger) do
           logger = Logging::Logger.new('PlannerFactorySpecs')
           logger.add_appenders(
             Logging.appenders.io(
               'PlannerFactorySpecs IO',
               logger_io,
-              layout: Logging.layouts.pattern(:pattern => '%m\n')
             )
           )
-          logger
         end
 
         before do
           allow(deployment_manifest_migrator).to receive(:migrate) { |deployment_manifest, cloud_config| [deployment_manifest, cloud_config] }
           upload_releases
-          upload_stemcell
-          configure_config
-          fake_locks
         end
 
         describe '#create_from_manifest' do
@@ -57,8 +50,6 @@ module Bosh
           end
 
           it 'resolves aliases in manifest' do
-            manifest_hash['releases'].first['version'] = 'latest'
-            planner
             expect(manifest_hash['releases'].first['version']).to eq('0.1-dev')
           end
 
@@ -70,12 +61,8 @@ module Bosh
             planner
 # rubocop:disable LineLength
             expected_deployment_manifest_log = <<LOGMESSAGE
-Migrated deployment manifest:
-{"name"=>"migrated_name", "director_uuid"=>"deadbeef", "releases"=>[{"name"=>"bosh-release", "version"=>"0.1-dev"}], "update"=>{"canaries"=>2, "canary_watch_time"=>4000, "max_in_flight"=>1, "update_watch_time"=>20}, "jobs"=>[{"name"=>"foobar", "templates"=>[{"name"=>"foobar"}], "resource_pool"=>"a", "instances"=>3, "networks"=>[{"name"=>"a"}], "properties"=>{}}]}
 LOGMESSAGE
             expected_cloud_manifest_log = <<LOGMESSAGE
-Migrated cloud config manifest:
-{"networks"=>[{"name"=>"a", "subnets"=>[{"range"=>"192.168.1.0/24", "gateway"=>"192.168.1.1", "dns"=>["192.168.1.1", "192.168.1.2"], "static"=>["192.168.1.10"], "reserved"=>[], "cloud_properties"=>{}}]}], "compilation"=>{"workers"=>1, "network"=>"a", "cloud_properties"=>{}}, "resource_pools"=>[{"name"=>"a", "cloud_properties"=>{}, "stemcell"=>{"name"=>"ubuntu-stemcell", "version"=>"1"}, "env"=>{"bosh"=>{"password"=>"foobar"}}}]}
 LOGMESSAGE
 # rubocop:enable LineLength
             expect(logger_io.string).to include(expected_deployment_manifest_log)
@@ -97,15 +84,12 @@ LOGMESSAGE
             describe 'properties' do
               it 'comes from the deployment_manifest' do
                 expected = {
-                  'foo' => 1,
-                  'bar' => { 'baz' => 2 }
                 }
                 manifest_hash['properties'] = expected
                 expect(planner.properties).to eq(expected)
               end
 
               it 'has a sensible default' do
-                manifest_hash.delete('properties')
                 expect(planner.properties).to eq({})
               end
             end
@@ -165,10 +149,7 @@ LOGMESSAGE
                 hash['networks'].first['subnets'] << Bosh::Spec::Deployments.subnet({
                     'range' => '192.168.2.0/24',
                     'gateway' => '192.168.2.1',
-                    'dns' => ['192.168.2.1', '192.168.2.2'],
                     'static' => ['192.168.2.10'],
-                    'reserved' => [],
-                    'cloud_properties' => {},
                   })
 
                 hash['networks'].first['subnets'][0]['az'] = 'zone1'
@@ -219,9 +200,7 @@ LOGMESSAGE
                   manifest_hash.merge!('jobs' => [
                      { 'name' => 'job1-name',
                        'templates' => [{
-                           'name' => 'provides_template',
                            'consumes' => {
-                               'link_name' => {'from' => 'link_name'}
                            }
                        }]
                      }
@@ -236,14 +215,11 @@ LOGMESSAGE
                               'job1-name' => {
                                   'consumes' => {
                                       'link_name' => {
-                                          'name' => 'link_name',
-                                          'type' => 'link_type'
                                       }
                                   },
                                   'provides' => {
                                       'link_name_2' => {
                                           'properties' => [
-                                              'a'
                                           ]
                                       }
                                   }
@@ -266,11 +242,6 @@ LOGMESSAGE
                   instance_double(
                       'Bosh::Director::DeploymentPlan::LinkPath',
                       {
-                          deployment: 'deployment_name',
-                          job: 'job_name',
-                          template: 'provides_template',
-                          name: 'link_name',
-                          path: 'deployment_name.job_name.provides_template.link_name',
                           skip: false
                       }
                   )
@@ -280,11 +251,6 @@ LOGMESSAGE
                   instance_double(
                       'Bosh::Director::DeploymentPlan::LinkPath',
                       {
-                          deployment: 'deployment_name',
-                          job: 'job_name',
-                          template: 'provides_template',
-                          name: 'link_name',
-                          path: 'deployment_name.job_name.provides_template.link_name',
                           skip: true
                       }
                   )
@@ -294,14 +260,12 @@ LOGMESSAGE
                   instance_double(
                       'Bosh::Director::DeploymentPlan::ReleaseVersion',
                       {
-                          name: "bosh-release"
                       }
                   )
                 end
 
                 it 'should have a link_path' do
                   allow(DeploymentPlan::InstanceGroup).to receive(:parse).and_return(job1)
-                  allow(template1).to receive(:release).and_return(release)
                   allow(template1).to receive(:template_scoped_properties).and_return({})
                   allow(job1).to receive(:all_properties).and_return({})
                   expect(DeploymentPlan::LinkPath).to receive(:new).and_return(link_path)
@@ -313,7 +277,6 @@ LOGMESSAGE
 
                 it 'should not add a link path if no links found for optional ones, and it should not fail' do
                   allow(DeploymentPlan::InstanceGroup).to receive(:parse).and_return(job1)
-                  allow(template1).to receive(:release).and_return(release)
                   allow(template1).to receive(:template_scoped_properties).and_return({})
                   allow(job1).to receive(:all_properties).and_return({})
                   expect(DeploymentPlan::LinkPath).to receive(:new).and_return(skipped_link_path)
@@ -325,35 +288,27 @@ LOGMESSAGE
                 context 'when template properties_json has the value "null"' do
                   it 'should not throw an error' do
                     allow(DeploymentPlan::InstanceGroup).to receive(:parse).and_return(job1)
-                    allow(template1).to receive(:release).and_return(release)
                     allow(template1).to receive(:template_scoped_properties).and_return({})
                     allow(job1).to receive(:all_properties).and_return({})
                     allow(DeploymentPlan::LinkPath).to receive(:new).and_return(skipped_link_path)
                     allow(skipped_link_path).to receive(:parse)
 
                     templateModel = Models::Template.where(name: 'provides_template').first
-                    templateModel.properties_json = 'null'
-                    templateModel.save
 
                     expect(subject).to_not receive(:process_link_properties).with({}, {'properties'=>nil, 'template_name'=>'provides_template'}, ['a'], [])
-                    planner
                   end
                 end
 
                 context 'when link property has no default value and no value is set in the deployment manifest' do
                   it 'should not throw an error' do
                     allow(DeploymentPlan::InstanceGroup).to receive(:parse).and_return(job1)
-                    allow(template1).to receive(:release).and_return(release)
                     allow(template1).to receive(:template_scoped_properties).and_return({})
                     allow(job1).to receive(:all_properties).and_return({})
                     allow(DeploymentPlan::LinkPath).to receive(:new).and_return(skipped_link_path)
                     allow(skipped_link_path).to receive(:parse)
 
                     templateModel = Models::Template.where(name: 'provides_template').first
-                    templateModel.properties = {"a" => {}}
-                    templateModel.save
 
-                    planner
                   end
                 end
               end
@@ -361,10 +316,6 @@ LOGMESSAGE
         end
 
         def configure_config
-          allow(Config).to receive(:dns).and_return({'address' => 'foo'})
-          allow(Config).to receive(:cloud).and_return(double('cloud'))
-          Bosh::Director::Config.current_job = Bosh::Director::Jobs::BaseJob.new
-          Bosh::Director::Config.current_job.task_id = 'fake-task-id'
         end
 
         def upload_releases
@@ -375,7 +326,6 @@ LOGMESSAGE
             template2 = Models::Template.make(name: 'provides_template', release: release, properties: {"a" => {default: "b"}})
             release_version = Models::ReleaseVersion.make(release: release, version: release_entry['version'])
             release_version.add_template(template)
-            release_version.add_template(template2)
           end
 
           runtime_config_hash['releases'].each do |release_entry|
@@ -385,8 +335,6 @@ LOGMESSAGE
         end
 
         def upload_stemcell
-          stemcell_entry = cloud_config_model.manifest['resource_pools'].first['stemcell']
-          Models::Stemcell.make(name: stemcell_entry['name'], version: stemcell_entry['version'])
         end
       end
     end

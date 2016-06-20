@@ -28,17 +28,14 @@ module Bosh::Director
           final_state = {'other' => 'data', 'job' => {}}
           allow(client).to receive(:get_state).and_return(legacy_state)
 
-          allow(agent_state_migrator).to receive(:verify_state).with(instance_model, legacy_state)
           expect(agent_state_migrator.get_state(instance_model)).to eq(final_state)
         end
 
         context 'and the returned state contains a job level release' do
           it 'prunes the legacy "release" in job section so as to avoid unnecessary update' do
             legacy_state = {
-              'release' => 'cf',
               'other' => 'data',
               'job' => {
-                'release' => 'sql-release',
                 'more' => 'data',
               },
             }
@@ -50,8 +47,6 @@ module Bosh::Director
             }
             allow(client).to receive(:get_state).and_return(legacy_state)
 
-            allow(agent_state_migrator).to receive(:verify_state).with(instance_model, legacy_state)
-            allow(agent_state_migrator).to receive(:migrate_legacy_state).with(instance_model, legacy_state)
 
             expect(agent_state_migrator.get_state(instance_model)).to eq(final_state)
           end
@@ -60,7 +55,6 @@ module Bosh::Director
         context 'and the returned state does not contain a job level release' do
           it 'returns the job section as-is' do
             legacy_state = {
-              'release' => 'cf',
               'other' => 'data',
               'job' => {
                 'more' => 'data',
@@ -74,8 +68,6 @@ module Bosh::Director
             }
             allow(client).to receive(:get_state).and_return(legacy_state)
 
-            allow(agent_state_migrator).to receive(:verify_state).with(instance_model, legacy_state)
-            allow(agent_state_migrator).to receive(:migrate_legacy_state).with(instance_model, legacy_state)
 
             expect(agent_state_migrator.get_state(instance_model)).to eq(final_state)
           end
@@ -88,7 +80,6 @@ module Bosh::Director
             legacy_state = {
               'other' => 'data',
               'job' => {
-                'release' => 'sql-release',
                 'more' => 'data',
               },
             }
@@ -100,8 +91,6 @@ module Bosh::Director
             }
             allow(client).to receive(:get_state).and_return(legacy_state)
 
-            allow(agent_state_migrator).to receive(:verify_state).with(instance_model, legacy_state)
-            allow(agent_state_migrator).to receive(:migrate_legacy_state).with(instance_model, legacy_state)
 
             expect(agent_state_migrator.get_state(instance_model)).to eq(final_state)
           end
@@ -110,7 +99,6 @@ module Bosh::Director
         context 'and the returned state does not contain a job level release' do
           it 'returns the job section as-is' do
             legacy_state = {
-              'release' => 'cf',
               'other' => 'data',
               'job' => {
                 'more' => 'data',
@@ -124,8 +112,6 @@ module Bosh::Director
             }
             allow(client).to receive(:get_state).and_return(legacy_state)
 
-            allow(agent_state_migrator).to receive(:verify_state).with(instance_model, legacy_state)
-            allow(agent_state_migrator).to receive(:migrate_legacy_state).with(instance_model, legacy_state)
 
             expect(agent_state_migrator.get_state(instance_model)).to eq(final_state)
           end
@@ -136,23 +122,17 @@ module Bosh::Director
     describe '#verify_state' do
       before do
         @deployment = Models::Deployment.make(:name => 'foo')
-        allow(deployment_plan).to receive(:name).and_return('foo')
-        allow(deployment_plan).to receive(:model).and_return(@deployment)
       end
 
       it 'should do nothing when VM is ok' do
-        agent_state_migrator.verify_state(instance_model, {'deployment' => 'foo'})
       end
 
       it 'should do nothing when instance is ok' do
         Models::Instance.make(
           :deployment => @deployment, :vm_cid => 'foo-vm', :job => 'bar', :index => 11)
         agent_state_migrator.verify_state(instance_model, {
-            'deployment' => 'foo',
             'job' => {
-              'name' => 'bar'
             },
-            'index' => 11
           })
       end
 

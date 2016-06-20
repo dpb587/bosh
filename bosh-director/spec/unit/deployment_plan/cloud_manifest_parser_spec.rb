@@ -5,11 +5,8 @@ module Bosh::Director
     subject(:parser) { described_class.new(logger) }
     let(:planner_attributes) {
       {
-        name: 'deployment-name',
-        properties: {}
       }
     }
-    let(:event_log) { Config.event_log }
     let(:global_network_resolver) { instance_double(BD::DeploymentPlan::GlobalNetworkResolver, reserved_ranges: []) }
     let(:ip_provider_factory) { Bosh::Director::DeploymentPlan::IpProviderFactory.new(false, logger) }
 
@@ -85,8 +82,6 @@ module Bosh::Director
             expect {
               parsed_cloud_planner
             }.to raise_error(
-                ValidationMissingField,
-                /Required property 'compilation' was not specified in object .+/,
               )
           end
         end
@@ -95,7 +90,6 @@ module Bosh::Director
           before do
             cloud_manifest.merge!('compilation' => {
                 'network' => 'nonexistent-network',
-                'cloud_properties' => {'super' => 'important'},
                 'workers' => 3
               })
           end
@@ -104,7 +98,6 @@ module Bosh::Director
             expect {
               parsed_cloud_planner
             }.to raise_error(
-                /unknown network 'nonexistent-network'/,
               )
           end
         end
@@ -113,19 +106,16 @@ module Bosh::Director
           before do
             cloud_manifest.merge!('compilation' => {
                 'network' => 'a',
-                'cloud_properties' => {'super' => 'important'},
                 'workers' => 3,
                 'az' => 'z1'
               })
             cloud_manifest['azs'] = [{'name' => 'z1'}, {'name' => 'z2'}, {'name' => 'z3'}]
-            cloud_manifest['networks'].first['subnets'].first['azs'] = ['z2', 'z3']
           end
 
           it 'raises an error' do
             expect {
               parsed_cloud_planner
             }.to raise_error(
-                "Compilation config refers to az 'z1' but network 'a' has no matching subnet(s).",
               )
           end
         end
@@ -161,39 +151,26 @@ module Bosh::Director
                       },
                       {
                         'name' => 'fake-network',
-                        'type' => 'manual',
                         'subnets' => [
                           {
                             'range' => '192.168.1.0/24',
                             'gateway' => '192.168.1.1',
-                            'dns' => ['192.168.1.1', '192.168.1.2'],
-                            'static' => ['192.168.1.10'],
-                            'reserved' => [],
-                            'cloud_properties' => {},
-                            'az' => 'fake-zone'
                           }
                         ]
                       }]
                   })
                 expect {
-                  subject.parse(valid_manifest, global_network_resolver, ip_provider_factory)
                 }.to_not raise_error
               end
 
               it 'errors if no zone with that name is present' do
                 invalid_manifest = cloud_manifest.merge({
-                    'azs' => [{'name' => 'fake-zone'}],
                     'networks' => [{
                         'name' => 'fake-network',
-                        'type' => 'manual',
                         'subnets' => [
                           {
                             'range' => '192.168.1.0/24',
                             'gateway' => '192.168.1.1',
-                            'dns' => ['192.168.1.1', '192.168.1.2'],
-                            'static' => ['192.168.1.10'],
-                            'reserved' => [],
-                            'cloud_properties' => {},
                             'az' => 'nonexistent-zone'
                           }
                         ]
@@ -222,28 +199,21 @@ module Bosh::Director
                         'type' => 'dynamic',
                         'subnets' => [
                           {
-                            'dns' => ['192.168.1.1', '192.168.1.2'],
-                            'cloud_properties' => {},
-                            'az' => 'fake-zone'
                           }
                         ]
                       }]
                   })
                 expect {
-                  subject.parse(valid_manifest, global_network_resolver, ip_provider_factory)
                 }.to_not raise_error
               end
 
               it 'errors if no zone with that name is present' do
                 invalid_manifest = cloud_manifest.merge({
-                    'azs' => [{'name' => 'fake-zone'}],
                     'networks' => [{
                         'name' => 'fake-network',
                         'type' => 'dynamic',
                         'subnets' => [
                           {
-                            'dns' => ['192.168.1.1', '192.168.1.2'],
-                            'cloud_properties' => {},
                             'az' => 'nonexistent-zone'
                           }
                         ]
@@ -257,8 +227,6 @@ module Bosh::Director
             end
           end
 
-          context 'when network type is vip'
-          context 'when network type is unknown'
 
           context 'when more than one network have same canonical name' do
             before do
@@ -272,8 +240,6 @@ module Bosh::Director
               expect {
                 parsed_cloud_planner
               }.to raise_error(
-                  DeploymentCanonicalNetworkNameTaken,
-                  "Invalid network name 'Bar', canonical name already taken",
                 )
             end
           end
@@ -296,8 +262,6 @@ module Bosh::Director
             expect {
               parsed_cloud_planner
             }.to raise_error(
-                ValidationMissingField,
-                /Required property 'networks' was not specified in object .+/,
               )
           end
         end
@@ -336,8 +300,6 @@ module Bosh::Director
               expect {
                 parsed_cloud_planner
               }.to raise_error(
-                  DeploymentDuplicateResourcePoolName,
-                  "Duplicate resource pool name 'same-name'",
                 )
             end
           end
@@ -353,15 +315,12 @@ module Bosh::Director
             expect {
               parsed_cloud_planner
             }.to raise_error(
-                DeploymentNoResourcePools,
-                "No resource_pools specified",
               )
           end
         end
 
         context 'when there are no resource pools' do
           before do
-            cloud_manifest.delete('resource_pools')
           end
 
           it 'does not raise an error' do
@@ -403,8 +362,6 @@ module Bosh::Director
               expect {
                 parsed_cloud_planner
               }.to raise_error(
-                  DeploymentDuplicateVmTypeName,
-                  "Duplicate vm type name 'same-name'",
                 )
             end
           end
@@ -460,8 +417,6 @@ module Bosh::Director
               expect {
                 parsed_cloud_planner
               }.to raise_error(
-                  DeploymentDuplicateDiskTypeName,
-                  "Duplicate disk pool name 'same-name'",
                 )
             end
           end
@@ -500,8 +455,6 @@ module Bosh::Director
                 expect {
                   parsed_cloud_planner
                 }.to raise_error(
-                    DeploymentDuplicateDiskTypeName,
-                    "Duplicate disk type name 'same-name'",
                   )
               end
             end
@@ -521,8 +474,6 @@ module Bosh::Director
               expect {
                 parsed_cloud_planner
               }.to raise_error(
-                  DeploymentInvalidDiskSpecification,
-                  "Both 'disk_types' and 'disk_pools' are specified, only one key is allowed. 'disk_pools' key will be DEPRECATED in the future."
                 )
             end
           end

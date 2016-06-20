@@ -2,7 +2,6 @@ require 'spec_helper'
 
 describe Bhm::Plugins::CloudWatch do
   let(:aws_cloud_watch) { double('AWS CloudWatch') }
-  subject { described_class.new }
 
   before do
     allow(subject).to receive_messages(aws_cloud_watch: aws_cloud_watch)
@@ -64,7 +63,6 @@ describe Bhm::Plugins::CloudWatch do
       expect(aws_cloud_watch).not_to receive(:put_metric_data)
       heartbeat = make_heartbeat({timestamp: Time.now, node_id: nil})
 
-      subject.process(heartbeat)
     end
   end
 
@@ -72,7 +70,6 @@ describe Bhm::Plugins::CloudWatch do
     it "does nothing" do
       expect(aws_cloud_watch).not_to receive(:put_metric_data)
       alert = make_alert
-      subject.process(alert)
     end
   end
 end

@@ -15,7 +15,6 @@ module Bosh::Director::Jobs
     let(:task) {Bosh::Director::Models::Task.make(:id => 42, :username => 'user')}
 
     before do
-      allow(Bosh::Director::Config).to receive(:cloud) { instance_double(Bosh::Cloud) }
       Bosh::Director::App.new(config)
       allow(job).to receive(:task_id).and_return(task.id)
       allow(Time).to receive_messages(now: Time.parse('2016-02-15T09:55:40Z'))
@@ -28,7 +27,6 @@ module Bosh::Director::Jobs
       let(:job_renderer) { instance_double('Bosh::Director::JobRenderer') }
 
       before do
-        allow(Bosh::Director::DeploymentPlan::Steps::PackageCompileStep).to receive(:new).and_return(compile_step)
         allow(Bosh::Director::DeploymentPlan::Steps::UpdateStep).to receive(:new).and_return(update_step)
         allow(Bosh::Director::DeploymentPlan::Notifier).to receive(:new).and_return(notifier)
         allow(Bosh::Director::JobRenderer).to receive(:create).and_return(job_renderer)
@@ -57,7 +55,6 @@ module Bosh::Director::Jobs
           allow(job_renderer).to receive(:render_job_instances)
           allow(planner).to receive(:bind_models)
           allow(planner).to receive(:instance_models).and_return([])
-          allow(planner).to receive(:validate_packages)
           allow(planner).to receive(:compile_packages)
           allow(planner).to receive(:instance_groups).and_return([deployment_job])
         end
@@ -72,14 +69,12 @@ module Bosh::Director::Jobs
         end
 
         context 'when a cloud_config is passed in' do
-          let(:cloud_config_id) { Bosh::Director::Models::CloudConfig.make.id }
           it 'uses the cloud config' do
             expect(job.perform).to eq("/deployments/deployment-name")
           end
         end
 
         context 'when a runtime_config is passed in' do
-          let(:runtime_config_id) { Bosh::Director::Models::RuntimeConfig.make.id }
           it 'uses the runtime config' do
             expect(job.perform).to eq("/deployments/deployment-name")
           end
@@ -103,10 +98,8 @@ module Bosh::Director::Jobs
         end
 
         context "when the deployment makes changes to existing vms" do
-          let (:instance_plan) { instance_double('Bosh::Director::DeploymentPlan::InstancePlan') }
 
           it 'will run post-deploy scripts' do
-            allow(planner).to receive(:instance_groups).and_return([deployment_job])
             allow(deployment_job).to receive(:did_change).and_return(true)
 
             expect(Bosh::Director::PostDeploymentScriptRunner).to receive(:run_post_deploys_after_deployment)

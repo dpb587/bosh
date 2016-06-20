@@ -10,22 +10,18 @@ module Bosh::Director
               'compiled_packages' => [
                   {
                       'name' => 'fake-pkg1',
-                      'version' => 'fake-pkg1-version',
-                      'fingerprint' => 'fake-pkg1-fingerprint',
                       'stemcell' => 'ubuntu-trusty/3000',
                       'dependencies' => ['fake-pkg2', 'fake-pkg3']
                   },
                   {
                       'name' => 'fake-pkg2',
                       'version' => 'fake-pkg2-version',
-                      'fingerprint' => 'fake-pkg2-fingerprint',
                       'stemcell' => 'ubuntu-trusty/3000',
                       'dependencies' => []
                   },
                   {
                       'name' => 'fake-pkg3',
                       'version' => 'fake-pkg3-version',
-                      'fingerprint' => 'fake-pkg3-fingerprint',
                       'stemcell' => 'ubuntu-trusty/3000',
                       'dependencies' => []
                   },

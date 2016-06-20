@@ -24,7 +24,6 @@ module Bosh::Director
     end
 
     context 'when old and new are the same' do
-      let(:new) { old }
 
       it 'returns no changes' do
         described_class.new({'foo'=>['bar']}, {'foo'=>['bar']}).diff.order
@@ -856,16 +855,9 @@ module Bosh::Director
 
       it 'does not redact if properties/env is not a hash' do
         manifest_obj = {
-          'name' => 'test_name',
-          'uuid' => '12324234234234234234',
-          'env' => 'hello',
           'jobs' => [
             {
-              'name' => 'test_job',
               'properties' => [
-                'a',
-                'b',
-                'c'
               ]
             }
           ]

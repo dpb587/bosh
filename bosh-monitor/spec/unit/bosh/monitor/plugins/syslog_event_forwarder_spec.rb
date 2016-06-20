@@ -22,7 +22,6 @@ require 'spec_helper'
 
       expect(plugin.sys_logger).not_to receive(:info)
 
-      plugin.process(heartbeat)
     end
   end
 end

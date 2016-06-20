@@ -37,10 +37,8 @@ module Bosh::Director
         end
 
         context 'when the task does exist' do
-          let(:state) { :processing }
           let!(:task) {
             Models::Task.make(
-              type: :update_deployment,
               state: state
             )
           }

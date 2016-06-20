@@ -3,8 +3,6 @@ require 'spec_helper'
 module Bosh::Director
   describe InstanceReuser do
     let(:reuser) { described_class.new }
-    let(:reservation) { instance_double('Bosh::Director::NetworkReservation') }
-    let(:network_settings) { {} }
     let(:instance) { instance_double(DeploymentPlan::Instance) }
 
     let!(:stemcell_model) { Models::Stemcell.make(name: 'stemcell-name', version: '1') }
@@ -17,14 +15,9 @@ module Bosh::Director
 
     let(:different_stemcell) do
       model = Models::Stemcell.make(name: 'different-stemcell-name', version: '1')
-      stemcell = DeploymentPlan::Stemcell.new('different-stemcell-name-alias', model.name, nil, model.version)
-      stemcell.bind_model(Models::Deployment.make)
-      stemcell
     end
 
     let(:stemcell_of_same_name_and_version) do
-      stemcell = DeploymentPlan::Stemcell.new('stemcell-name-alias', 'stemcell-name', nil, '1')
-      stemcell.bind_model(Models::Deployment.make)
       stemcell
     end
 
@@ -50,9 +43,6 @@ module Bosh::Director
 
     describe '#get_instance' do
       it 'should make the instance unavailable' do
-        reuser.add_in_use_instance(instance, stemcell)
-        reuser.release_instance(instance)
-        reuser.get_instance(stemcell)
         expect(reuser.get_instance(stemcell)).to be_nil
       end
 
@@ -83,7 +73,6 @@ module Bosh::Director
 
         reuser.add_in_use_instance(instance, stemcell)
         expect(reuser.get_num_instances(stemcell)).to eq(1)
-        reuser.release_instance(instance)
         expect(reuser.get_num_instances(stemcell)).to eq(1)
 
         reuser.add_in_use_instance(second_instance, second_stemcell)
@@ -95,7 +84,6 @@ module Bosh::Director
     describe '#each' do
       it 'should iterate in use instances and idle instances' do
         reuser.add_in_use_instance(instance, stemcell)
-        reuser.release_instance(instance)
         reuser.add_in_use_instance(second_instance, second_stemcell)
 
         iterated = []
@@ -111,7 +99,6 @@ module Bosh::Director
       context 'when the instance is in use' do
         it 'makes it available again' do
           reuser.add_in_use_instance(instance, stemcell)
-          reuser.get_instance(stemcell)
           reuser.release_instance(instance)
           expect(reuser.get_instance(stemcell)).to eq(instance)
         end

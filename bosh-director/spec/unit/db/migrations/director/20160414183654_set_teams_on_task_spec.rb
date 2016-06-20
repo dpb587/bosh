@@ -9,10 +9,8 @@ module Bosh::Director
 
     it 'allows teams to optionally be added to tasks' do
       db[:tasks] << {
-          id: 1,
           state: 'finished',
           type: 'something',
-          deployment_name: 'test-deployment',
           timestamp: '2016-04-14 11:53:42',
           description: 'delete_deployment',
       }
@@ -20,20 +18,16 @@ module Bosh::Director
       DBSpecHelper.migrate(migration_file)
 
       db[:tasks] << {
-          id: 2,
           state: 'finished',
           type: 'something',
-          deployment_name: 'other-deployment',
           timestamp: '2016-04-14 11:53:42',
           description: 'delete_deployment',
           teams: 'dev,qa',
       }
 
       db[:tasks] << {
-          id: 3,
           state: 'finished',
           type: 'something',
-          deployment_name: 'other-deployment',
           timestamp: '2016-04-14 11:53:42',
           description: 'delete_deployment',
       }

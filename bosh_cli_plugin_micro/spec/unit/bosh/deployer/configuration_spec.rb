@@ -14,7 +14,6 @@ module Bosh::Deployer
         config.configure(configuration_hash)
       end
 
-      after { FileUtils.remove_entry_secure(dir) }
 
       it 'should default agent properties' do
         properties = config.cloud_options['properties']
@@ -146,7 +145,6 @@ module Bosh::Deployer
         before do
           configuration_hash.merge!(
             'network' => {
-              'type' => 'manual',
               'ip' => 'fake-bosh-ip'
             }
           )
@@ -198,7 +196,6 @@ module Bosh::Deployer
         expect(Bosh::Clouds::Provider).to receive(:create)
                                           .with(expected_cloud_properties, anything)
                                           .once.and_return(:cloud)
-        config.cloud
         expect(config.cloud).to eq(:cloud)
       end
     end

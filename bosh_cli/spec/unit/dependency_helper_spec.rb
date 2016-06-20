@@ -17,7 +17,6 @@ describe Bosh::Cli::DependencyHelper do
   end
 
   def partial_order_sort(*args)
-    sorter.partial_order_sort(*args)
   end
 
   it "resolves sorts simple dependencies" do

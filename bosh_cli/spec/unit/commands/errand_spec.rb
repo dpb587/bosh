@@ -12,10 +12,8 @@ describe Bosh::Cli::Command::Errand do
     with_director
 
     context 'when some director is targeted' do
-      with_target
 
       context 'when user is logged in' do
-        with_logged_in_user
 
         context 'when deployment is selected' do
           with_deployment
@@ -48,7 +46,6 @@ describe Bosh::Cli::Command::Errand do
     let(:errands_client) { instance_double('Bosh::Cli::Client::ErrandsClient') }
 
     context 'when some director is targeted' do
-      with_target
 
       context 'when user is logged in' do
         with_logged_in_user
@@ -65,14 +62,12 @@ describe Bosh::Cli::Command::Errand do
 
           before do
             allow(Bosh::Cli::LogsDownloader).to receive(:new).
-              with(director, command).
               and_return(logs_downloader)
           end
           let(:logs_downloader) { instance_double('Bosh::Cli::LogsDownloader', build_destination_path: nil) }
 
           it 'tells director to start running errand with given name on given instance' do
             expect(errands_client).to receive(:run_errand).
-              with('fake-dep-name', 'fake-errand-name', FALSE).
               and_return([:done, 'fake-task-id', errand_result])
             perform
           end
@@ -82,7 +77,6 @@ describe Bosh::Cli::Command::Errand do
 
             it 'tells the director to not delete/stop the instance' do
               expect(errands_client).to receive(:run_errand).
-                with('fake-dep-name', 'fake-errand-name', TRUE).
                 and_return([:done, 'fake-task-id', errand_result])
               perform
             end
@@ -95,23 +89,16 @@ describe Bosh::Cli::Command::Errand do
             end
 
             context 'when errand finished with 0 exit code' do
-              let(:errand_result) { ec::ErrandResult.new(0, 'fake-stdout', 'fake-stderr', nil) }
 
               it 'exits with exit code 0' do
-                perform
                 expect(command.exit_code).to eq(0)
               end
 
               it 'does not raise an error' do
                 perform
                 expect(actual).to match_output %(
-                  [stdout]
-                  fake-stdout
 
-                  [stderr]
-                  fake-stderr
 
-                  Errand 'fake-errand-name' completed successfully (exit code 0)
                 )
               end
             end
@@ -123,16 +110,10 @@ describe Bosh::Cli::Command::Errand do
                 expect {
                   perform
                 }.to raise_error(
-                  Bosh::Cli::CliError,
-                  /Errand 'fake-errand-name' completed with error \(exit code 123\)/,
                 )
 
                 expect(actual).to match_output %(
-                  [stdout]
-                  fake-stdout
 
-                  [stderr]
-                  fake-stderr
                 )
               end
             end
@@ -144,33 +125,21 @@ describe Bosh::Cli::Command::Errand do
                 expect {
                   perform
                 }.to raise_error(
-                  Bosh::Cli::CliError,
-                  /Errand 'fake-errand-name' was canceled \(exit code 143\)/,
                 )
 
                 expect(actual).to match_output %(
-                  [stdout]
-                  fake-stdout
 
-                  [stderr]
-                  fake-stderr
                 )
               end
             end
 
             context 'when errand has stdout and stderr' do
-              let(:errand_result) { ec::ErrandResult.new(0, 'fake-stdout', 'fake-stderr', nil) }
 
               it 'prints actual output for stdout and stderr' do
                 perform
                 expect(actual).to match_output %(
-                  [stdout]
-                  fake-stdout
 
-                  [stderr]
-                  fake-stderr
 
-                  Errand 'fake-errand-name' completed successfully (exit code 0)
                 )
               end
             end
@@ -181,13 +150,8 @@ describe Bosh::Cli::Command::Errand do
               it 'prints None for both stderr and actual output for stdout' do
                 perform
                 expect(actual).to match_output %(
-                  [stdout]
-                  fake-stdout
 
-                  [stderr]
-                  None
 
-                  Errand 'fake-errand-name' completed successfully (exit code 0)
                 )
               end
             end
@@ -198,13 +162,8 @@ describe Bosh::Cli::Command::Errand do
               it 'prints None for both stdout and actual output for stderr' do
                 perform
                 expect(actual).to match_output %(
-                  [stdout]
-                  None
 
-                  [stderr]
-                  fake-stderr
 
-                  Errand 'fake-errand-name' completed successfully (exit code 0)
                 )
               end
             end
@@ -215,13 +174,8 @@ describe Bosh::Cli::Command::Errand do
               it 'prints None for both stdout and stderr' do
                 perform
                 expect(actual).to match_output %(
-                  [stdout]
-                  None
 
-                  [stderr]
-                  None
 
-                  Errand 'fake-errand-name' completed successfully (exit code 0)
                 )
               end
             end
@@ -234,7 +188,6 @@ describe Bosh::Cli::Command::Errand do
 
                 it 'downloads the file and moves it to a timestamped file in a current directory' do
                   expect(logs_downloader).to receive(:build_destination_path).
-                    with('fake-errand-name', 0, Dir.pwd).
                     and_return('fake-logs-destination-path')
 
                   expect(logs_downloader).to receive(:download).
@@ -247,7 +200,6 @@ describe Bosh::Cli::Command::Errand do
                   command.options[:logs_dir] = '/fake-path'
 
                   expect(logs_downloader).to receive(:build_destination_path).
-                    with('fake-errand-name', 0, '/fake-path').
                     and_return('fake-logs-destination-path')
 
                   expect(logs_downloader).to receive(:download).
@@ -264,14 +216,8 @@ describe Bosh::Cli::Command::Errand do
 
                     perform
                     expect(actual).to match_output %(
-                      [stdout]
-                      fake-stdout
 
-                      [stderr]
-                      fake-stderr
 
-                      fake-download-output
-                      Errand 'fake-errand-name' completed successfully (exit code 0)
                     )
                   end
                 end
@@ -285,13 +231,8 @@ describe Bosh::Cli::Command::Errand do
                       expect { perform }.to raise_error(error)
 
                       expect(actual).to match_output %(
-                        [stdout]
-                        fake-stdout
 
-                        [stderr]
-                        fake-stderr
 
-                        Errand 'fake-errand-name' completed successfully (exit code 0)
                       )
                     end
                   end
@@ -303,16 +244,10 @@ describe Bosh::Cli::Command::Errand do
                       expect {
                         perform
                       }.to raise_error(
-                        Bosh::Cli::CliError,
-                        /Errand 'fake-errand-name' completed with error \(exit code 123\)/,
                       )
 
                       expect(actual).to match_output %(
-                        [stdout]
-                        fake-stdout
 
-                        [stderr]
-                        fake-stderr
                       )
                     end
                   end
@@ -324,16 +259,10 @@ describe Bosh::Cli::Command::Errand do
                       expect {
                         perform
                       }.to raise_error(
-                        Bosh::Cli::CliError,
-                        /Errand 'fake-errand-name' was canceled \(exit code 143\)/,
                       )
 
                       expect(actual).to match_output %(
-                        [stdout]
-                        fake-stdout
 
-                        [stderr]
-                        fake-stderr
                       )
                     end
                   end
@@ -343,17 +272,14 @@ describe Bosh::Cli::Command::Errand do
               context 'when --download-logs option is not set' do
                 it 'does not try to download errand logs' do
                   expect(logs_downloader).to_not receive(:download)
-                  perform
                 end
               end
             end
 
             context 'when errand result does not include logs blobstore id' do
-              let(:errand_result) { ec::ErrandResult.new(0, 'fake-stdout', 'fake-stderr', nil) }
 
               it 'does not try to download errand logs' do
                 expect(logs_downloader).to_not receive(:download)
-                perform
               end
             end
           end
@@ -364,9 +290,7 @@ describe Bosh::Cli::Command::Errand do
             it 'reports task information to the user' do
               perform
               expect(actual).to match_output %(
-                Errand 'fake-errand-name' did not complete
 
-                For a more detailed error report, run: bosh task fake-task-id --debug
               )
             end
 
@@ -390,7 +314,6 @@ describe Bosh::Cli::Command::Errand do
     def perform; command.run_errand; end
 
     with_director
-    with_target
     with_logged_in_user
     with_deployment
 

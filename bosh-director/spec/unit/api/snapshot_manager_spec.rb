@@ -11,7 +11,6 @@ module Bosh::Director
     let(:options) { { foo: 'bar' } }
 
     before do
-      allow(Config).to receive_messages(cloud: cloud)
 
       # instance 1: one disk with two snapshots
       @instance = Models::Instance.make(vm_cid: 'vm-cid0', agent_id: 'agent0', deployment: deployment, job: 'job', index: 0, uuid: '12abdc456')
@@ -30,7 +29,6 @@ module Bosh::Director
       @instance2 = Models::Instance.make(vm_cid: 'vm-cid2', agent_id: 'agent2', deployment: deployment, job: 'job2', index: 0, uuid: '12def456')
 
       # snapshot from another deployment
-      Models::Snapshot.make
 
       allow(JobQueue).to receive(:new).and_return(job_queue)
     end

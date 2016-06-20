@@ -6,7 +6,6 @@ describe Bosh::Cli::Command::Task do
   before do
     allow(command).to receive_messages(director: director, logged_in?: true, nl: nil, say: nil)
     allow(command).to receive(:show_current_state)
-    command.options[:target] = target
   end
   let(:director) { double(Bosh::Cli::Client::Director) }
 
@@ -41,7 +40,6 @@ describe Bosh::Cli::Command::Task do
             'state' => 'done',
             'description' => 'create deployment',
             'timestamp' => 1455635708,
-            'started_at' => nil,
             'result' => '/deployments/dummy',
             'user' => 'admin'
         }
@@ -54,13 +52,6 @@ describe Bosh::Cli::Command::Task do
         it 'lists all recent tasks' do
           expect(command).to receive(:say) do |display_output|
             expect(display_output.to_s).to match_output '
-+---+-------+-------------------------+-------------------------+-------+------------+-------------------+--------------------+
-| # | State | Started                 | Last Activity           | User  | Deployment | Description       | Result             |
-+---+-------+-------------------------+-------------------------+-------+------------+-------------------+--------------------+
-| 1 | done  | -                       | 2016-02-16 15:15:08 UTC | admin |            | create deployment | /deployments/dummy |
-| 2 | error | 2016-02-16 15:11:40 UTC | 2016-02-16 15:15:08 UTC | admin |            | create deployment | Action Failed      |
-| 1 | done  | 2016-02-16 15:11:40 UTC | 2016-02-16 15:15:08 UTC | admin |            | create deployment | /deployments/dummy |
-+---+-------+-------------------------+-------------------------+-------+------------+-------------------+--------------------+
 '
           end
           command.list_recent

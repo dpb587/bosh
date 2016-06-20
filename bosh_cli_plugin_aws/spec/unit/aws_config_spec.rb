@@ -15,7 +15,6 @@ module ConfigSupport
     context "when #{key} is present" do
       it "does not raise an error" do
         expect {
-          config.configuration
         }.not_to raise_error
       end
     end
@@ -37,8 +36,6 @@ describe Bosh::AwsCliPlugin::AwsConfig do
       environment["BOSH_AWS_ACCESS_KEY_ID"]       = "access_key_id"
       environment["BOSH_AWS_SECRET_ACCESS_KEY"]   = "secret_access_key"
       environment["BOSH_VPC_SUBDOMAIN"]           = "burritos"
-      environment["BOSH_CACHE_SECRET_ACCESS_KEY"] = "subdomain"
-      environment["BOSH_AWS_REGION"]              = "us-east-1"
     end
 
     describe "validating yaml content" do
@@ -49,8 +46,6 @@ describe Bosh::AwsCliPlugin::AwsConfig do
 
       context "package cache configuration disabled" do
         it "does not validate the presence of BOSH_CACHE_SECRET_ACCESS_KEY" do
-          environment.delete('BOSH_CACHE_ACCESS_KEY_ID')
-          environment.delete('BOSH_CACHE_SECRET_ACCESS_KEY')
           expect { config.configuration }.not_to raise_error
         end
       end
@@ -207,7 +202,6 @@ describe Bosh::AwsCliPlugin::AwsConfig do
 
       context "when the cache credentials are not set" do
         before do
-          environment.delete("BOSH_CACHE_ACCESS_KEY_ID")
         end
 
         it "should not set the package cache keys" do
@@ -264,10 +258,8 @@ describe Bosh::AwsCliPlugin::AwsConfig do
       environment["BOSH_VPC_PRIMARY_AZ"]          = "primary_az"
       environment["BOSH_AWS_ACCESS_KEY_ID"]       = "access_key_id"
       environment["BOSH_AWS_SECRET_ACCESS_KEY"]   = "secret_access_key"
-      environment["BOSH_CACHE_SECRET_ACCESS_KEY"] = "subdomain"
       environment["BOSH_VPC_DOMAIN"]              = "example.com"
 
-      environment.delete("BOSH_VPC_SUBDOMAIN")
     end
 
     context "when the domain is not set" do

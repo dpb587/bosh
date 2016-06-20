@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/stopper'
 
 module Bosh::Director
   describe Stopper do
@@ -32,12 +31,8 @@ module Bosh::Director
     let(:spec) do
       {
         'vm_type' => {
-          'name' => 'vm-type-name',
-          'cloud_properties' => {}
         },
         'stemcell' => {
-          'name' => 'stemcell-name',
-          'version' => '2.0.6'
         },
         'networks' => {},
       }
@@ -75,7 +70,6 @@ module Bosh::Director
           expect(agent_client).to_not receive(:drain)
           expect(stopper).to_not receive(:sleep)
           expect(agent_client).to_not receive(:stop)
-          stopper.stop
         end
       end
 
@@ -86,7 +80,6 @@ module Bosh::Director
           expect(agent_client).to_not receive(:drain)
           expect(stopper).to_not receive(:sleep)
           expect(agent_client).to_not receive(:stop)
-          stopper.stop
         end
       end
 
@@ -160,7 +153,6 @@ module Bosh::Director
         before do
           allow(instance_plan).to receive(:needs_shutting_down?).and_return(false)
           allow(instance_plan).to receive(:persistent_disk_changed?).and_return(true)
-          instance_plan.existing_instance.add_persistent_disk(Models::PersistentDisk.make)
         end
 
         it 'drains with shutdown' do
@@ -209,7 +201,6 @@ module Bosh::Director
       end
 
       context 'when "target state" is "started"' do
-        let(:target_state) { 'started' }
 
         before do
           allow(instance_plan).to receive(:needs_shutting_down?).and_return(false)

@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 require 'bosh/deployer/registry'
-require 'yaml'
 
 module Bosh::Deployer
   describe Registry do
@@ -21,7 +20,6 @@ module Bosh::Deployer
       allow(File).to receive(:exist?).with('/bin/bosh-registry').and_return(true)
       allow(Process).to receive(:waitpid2).and_return(nil)
       allow(Process).to receive(:spawn).and_return('fake-pid')
-      allow(Kernel).to receive(:sleep)
       allow(Bosh::Common).to receive(:retryable).and_yield
       allow(HTTPClient).to receive(:new).and_return(http_client)
       allow(Sequel).to receive(:connect).and_yield(db)
@@ -76,7 +74,6 @@ module Bosh::Deployer
         subject.start
         expect(db).to have_received(:create_table).with(:registry_instances)
         expect(Sequel).to have_received(:connect)
-                          .with('adapter' => 'sqlite', 'database' => 'fake-db-path')
       end
 
       context 'with previous deployments' do
@@ -90,7 +87,6 @@ module Bosh::Deployer
           subject.start
 
           expect(fake_instances_table).to have_received(:multi_insert)
-                                          .with(fake_registry_instances)
         end
 
       end
@@ -101,14 +97,11 @@ module Bosh::Deployer
       end
 
       it 'waits for the registry to spawn' do
-        allow(Process).to receive(:waitpid2).with('fake-pid', Process::WNOHANG).and_return(nil)
 
-        subject.start
       end
 
       context 'when registry exits before 5 waits' do
         it 'raises' do
-          allow(Process).to receive(:spawn).and_return('fake-pid')
 
           status = instance_double('Process::Status', exitstatus: 5)
           allow(Process).to receive(:waitpid2).with('fake-pid', Process::WNOHANG)
@@ -130,12 +123,10 @@ module Bosh::Deployer
         def retryable(options = {})
           @options = options
           yield
-          callback.call
         end
       end
 
       it 'waits for the registry to be listening on a port' do
-        allow(Process).to receive(:waitpid).and_return(nil)
 
         retryable_callback = proc do
           expect(http_client).to have_received(:head).with('http://127.0.0.1:1234')
@@ -190,14 +181,12 @@ module Bosh::Deployer
 
         it 'attempts to kill the registry process and waits for it to exit' do
           expect(Process).to receive(:kill).with('INT', 'fake-pid').ordered
-          allow(Process).to receive(:waitpid2).with('fake-pid').ordered
 
           subject.stop
         end
 
         context 'when the registry process has already exited' do
           it 'does not blow up' do
-            allow(Process).to receive(:kill).and_raise(Errno::ESRCH)
 
             expect { subject.stop }.to_not raise_error
           end
@@ -226,12 +215,10 @@ module Bosh::Deployer
 
       context 'when stop is called before start' do
         it 'does not try to kill anything' do
-          subject.stop
           expect(Process).to_not have_received(:kill)
         end
 
         it 'does not record registry_instances' do
-          subject.stop
           expect(Sequel).to_not have_received(:connect)
         end
       end

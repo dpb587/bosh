@@ -35,7 +35,6 @@ module Bosh::Director
 
     describe 'performing the job' do
       before do
-        allow(Time).to receive(:now).and_return(time)
         allow(cloud).to receive(:delete_disk).with('disk-cid-1')
       end
 

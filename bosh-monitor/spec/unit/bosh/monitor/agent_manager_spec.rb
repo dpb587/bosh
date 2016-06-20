@@ -13,17 +13,13 @@ describe Bhm::AgentManager do
   context "stubbed config" do
 
     before do
-      Bhm.config = {"director" => {}}
 
       # Just use 2 loggers to test multiple agents without having to care
       # about stubbing delivery operations and providing well formed configs
-      Bhm.plugins = [{"name" => "logger"}, {"name" => "logger"}]
-      Bhm.intervals = OpenStruct.new(:agent_timeout => 10, :rogue_agent_alert => 10)
     end
 
     it "can process heartbeats" do
       expect(manager.agents_count).to eq(0)
-      manager.process_event(:heartbeat, "hm.agent.heartbeat.agent007")
       manager.process_event(:heartbeat, "hm.agent.heartbeat.agent007")
       manager.process_event(:heartbeat, "hm.agent.heartbeat.agent008")
 
@@ -44,7 +40,6 @@ describe Bhm::AgentManager do
       alert = Yajl::Encoder.encode({"id" => "778", "severity" => -2, "title" => nil, "summary" => "zbb", "created_at" => Time.now.utc.to_i})
 
       expect {
-        manager.process_event(:alert, "hm.agent.alert.007", alert)
         manager.process_event(:alert, "hm.agent.alert.007", alert)
       }.to_not change(manager, :alerts_processed)
     end
@@ -107,9 +102,6 @@ describe Bhm::AgentManager do
 
       agents = manager.get_agents_for_deployment("mycloud")
       expect(agents.size).to eq(3)
-      agents["007"].deployment == "mycloud"
-      agents["007"].job == "mutator"
-      agents["007"].index == "0"
     end
 
     it "refuses to register agents with malformed director vm data" do
@@ -157,14 +149,12 @@ describe Bhm::AgentManager do
       alert = Yajl::Encoder.encode({"id" => "778", "severity" => 2, "title" => "zb", "summary" => "zbb", "created_at" => Time.now.utc.to_i})
 
       # Alert for already managed agent
-      manager.process_event(:alert, "hm.agent.alert.007", alert)
       expect(manager.analyze_agents).to eq(3)
 
       # Alert for non managed agent
       manager.process_event(:alert, "hm.agent.alert.256", alert)
       expect(manager.analyze_agents).to eq(4)
 
-      manager.process_event(:heartbeat, "256", nil) # Heartbeat from managed agent
       manager.process_event(:heartbeat, "512", nil) # Heartbeat from unmanaged agent
 
       expect(manager.analyze_agents).to eq(5)
@@ -187,7 +177,6 @@ describe Bhm::AgentManager do
       Bhm::config=Psych.load_file(sample_config)
       allow(mock_nats).to receive(:subscribe)
       allow(Bhm).to receive(:nats).and_return(mock_nats)
-      allow(EM).to receive(:schedule).and_yield
     end
 
     it "has the cloudwatch plugin" do

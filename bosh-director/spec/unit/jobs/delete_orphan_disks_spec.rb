@@ -27,11 +27,9 @@ module Bosh::Director
       let(:event_log_stage){instance_double(Bosh::Director::EventLog::Stage)}
 
       before do
-        Bosh::Director::Models::OrphanDisk.make(disk_cid: 'fake-cid-1')
         Bosh::Director::Models::OrphanDisk.make(disk_cid: 'fake-cid-2')
 
         allow(Config).to receive(:event_log).and_return(event_log)
-        allow(event_log).to receive(:begin_stage).and_return(event_log_stage)
         allow(event_log_stage).to receive(:advance_and_track).and_yield
 
         allow(Config).to receive(:cloud).and_return(cloud)
@@ -40,14 +38,11 @@ module Bosh::Director
       context 'when deleting a disk' do
         it 'logs and returns the result' do
           pool = instance_double(ThreadPool)
-          allow(ThreadPool).to receive(:new).and_return(pool)
-          allow(pool).to receive(:wrap).and_yield(pool)
 
           expect(event_log).to receive(:begin_stage).with('Deleting orphaned disks', 2).and_return(event_log_stage)
           allow(cloud).to receive(:delete_disk)
 
           delete_orphan_disks = Jobs::DeleteOrphanDisks.new(['fake-cid-1', 'fake-cid-2'])
-          allow(pool).to receive(:process).twice.and_yield
           result = delete_orphan_disks.perform
 
           expect(result).to eq('orphaned disk(s) fake-cid-1, fake-cid-2 deleted')

@@ -8,7 +8,6 @@ describe Bosh::Director::DeploymentPlan::UpdateConfig do
         'max_in_flight' => 4,
         'canary_watch_time' => 60000,
         'update_watch_time' => 30000,
-        'serial' => true,
       )
 
       expect(config.canaries).to eq(2)
@@ -45,8 +44,6 @@ describe Bosh::Director::DeploymentPlan::UpdateConfig do
     it 'should require canaries when there is no default config' do
       expect {
         BD::DeploymentPlan::UpdateConfig.new(
-          'max_in_flight' => 4,
-          'canary_watch_time' => 60000,
           'update_watch_time' => 30000,
         )
       }.to raise_error(BD::ValidationMissingField)
@@ -55,8 +52,6 @@ describe Bosh::Director::DeploymentPlan::UpdateConfig do
     it 'should require max_in_flight when there is no default config' do
       expect {
         BD::DeploymentPlan::UpdateConfig.new(
-          'canaries' => 2,
-          'canary_watch_time' => 60000,
           'update_watch_time' => 30000,
         )
       }.to raise_error(BD::ValidationMissingField)
@@ -65,8 +60,6 @@ describe Bosh::Director::DeploymentPlan::UpdateConfig do
     it 'should require update_watch_time when there is no default config' do
       expect {
         BD::DeploymentPlan::UpdateConfig.new(
-          'canaries' => 2,
-          'max_in_flight' => 4,
           'canary_watch_time' => 60000
         )
       }.to raise_error(BD::ValidationMissingField)
@@ -75,8 +68,6 @@ describe Bosh::Director::DeploymentPlan::UpdateConfig do
     it 'should require canary_watch_time when there is no default config' do
       expect {
         BD::DeploymentPlan::UpdateConfig.new(
-          'canaries' => 2,
-          'max_in_flight' => 4,
           'update_watch_time' => 30000,
         )
       }.to raise_error(BD::ValidationMissingField)
@@ -110,7 +101,6 @@ describe Bosh::Director::DeploymentPlan::UpdateConfig do
         end
 
         it 'is serial (not parallel) if serial option is not set' do
-          other_opts.delete('serial')
           config = BD::DeploymentPlan::UpdateConfig.new(other_opts, default_config)
           expect(config).to be_serial
         end
@@ -130,7 +120,6 @@ describe Bosh::Director::DeploymentPlan::UpdateConfig do
         end
 
         it 'is serial if serial option is not set' do
-          other_opts.delete('serial')
           config = BD::DeploymentPlan::UpdateConfig.new(other_opts, default_config)
           expect(config).to be_serial
         end
@@ -150,7 +139,6 @@ describe Bosh::Director::DeploymentPlan::UpdateConfig do
         end
 
         it 'is not serial (parallel) if serial option is not set' do
-          other_opts.delete('serial')
           config = BD::DeploymentPlan::UpdateConfig.new(other_opts, default_config)
           expect(config).to_not be_serial
         end

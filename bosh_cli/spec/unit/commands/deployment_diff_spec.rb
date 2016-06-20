@@ -154,7 +154,6 @@ No changes
       end
 
       context 'when colorizing is turned off' do
-        before { Bosh::Cli::Config.colorize = false }
 
         it 'colorizes and displays the diff' do
           output = ''
@@ -191,7 +190,6 @@ Detecting deployment changes
       context 'when diffing incompatible manifests' do
         let(:diff_json) do
           {
-            'context' => {'cloud_config_id' => 47},
             'diff' => [],
             'error' => 'Unable to diff manifest: something went wrong'
           }

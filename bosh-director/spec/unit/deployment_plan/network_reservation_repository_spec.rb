@@ -40,7 +40,6 @@ module Bosh::Director
               {
                 'name-7' => {
                   'ip' => '192.168.1.1',
-                  'type' => 'dynamic'
                 }
               }
           }

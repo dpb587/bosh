@@ -24,10 +24,8 @@ describe Bosh::Director::VmCreator do
   let(:network_settings) { BD::DeploymentPlan::NetworkSettings.new(job.name, 'deployment_name', {'gateway' => 'name'}, [reservation], {}, availability_zone, 5, 'uuid-1',  BD::DnsManagerProvider.create).to_hash }
   let(:deployment) { Bosh::Director::Models::Deployment.make(name: 'deployment_name') }
   let(:deployment_plan) do
-    instance_double(Bosh::Director::DeploymentPlan::Planner, model: deployment, name: 'deployment_name', recreate: false)
   end
   let(:availability_zone) do
-    BD::DeploymentPlan::AvailabilityZone.new('az-1', {})
   end
   let(:vm_type) { Bosh::Director::DeploymentPlan::VmType.new({'name' => 'fake-vm-type', 'cloud_properties' => {'ram' => '2gb'}}) }
   let(:stemcell_model) { Bosh::Director::Models::Stemcell.make(:cid => 'stemcell-id', name: 'fake-stemcell', version: '123') }
@@ -50,7 +48,6 @@ describe Bosh::Director::VmCreator do
       logger
     )
     instance.bind_existing_instance_model(instance_model)
-    allow(instance).to receive(:apply_spec).and_return({})
     instance
   end
   let(:reservation) do
@@ -74,7 +71,6 @@ describe Bosh::Director::VmCreator do
     job.vm_type = vm_type
     job.stemcell = stemcell
     job.env = env
-    job.templates << template
     job.default_network = {"gateway" => "name"}
     job.update = BD::DeploymentPlan::UpdateConfig.new({'canaries' => 1, 'max_in_flight' => 1, 'canary_watch_time' => '1000-2000', 'update_watch_time' => '1000-2000'})
     job
@@ -83,11 +79,6 @@ describe Bosh::Director::VmCreator do
   let(:extra_ip) do {
     "a"=>{
       "ip"=>"192.168.1.3",
-      "netmask"=>"255.255.255.0",
-      "cloud_properties"=>{},
-      "default"=>["dns", "gateway"],
-      "dns"=>["192.168.1.1", "192.168.1.2"],
-      "gateway"=>"192.168.1.1"
     }}
   end
 
@@ -102,7 +93,6 @@ describe Bosh::Director::VmCreator do
     Bosh::Director::Config.max_vm_create_tries = 2
     Bosh::Director::Config.flush_arp = true
     allow(Bosh::Director::AgentClient).to receive(:with_vm_credentials_and_agent_id).and_return(agent_client)
-    allow(job).to receive(:instance_plans).and_return([instance_plan])
     allow(job_renderer).to receive(:render_job_instance).with(instance_plan)
     allow(arp_flusher).to receive(:delete_arp_entries)
     allow(Bosh::Director::Config).to receive(:current_job).and_return(update_job)
@@ -187,7 +177,6 @@ describe Bosh::Director::VmCreator do
       network_settings.merge(extra_ip)
     )
 
-    subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'])
     expect(arp_flusher).not_to have_received(:delete_arp_entries).with(instance_model.vm_cid, ["192.168.1.3"])
 
   end
@@ -292,11 +281,9 @@ describe Bosh::Director::VmCreator do
   end
 
   it 'should have deep copy of environment' do
-    Bosh::Director::Config.encryption = true
     env_id = nil
 
     expect(cloud).to receive(:create_vm) do |*args|
-      env_id = args[5].object_id
     end
 
     subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'])
@@ -309,7 +296,6 @@ describe Bosh::Director::VmCreator do
   end
 
   it 'should destroy the VM if the Config.keep_unreachable_vms flag is false' do
-    Bosh::Director::Config.keep_unreachable_vms = false
     expect(cloud).to receive(:create_vm).and_return('new-vm-cid')
     expect(cloud).to receive(:delete_vm)
 
@@ -349,7 +335,6 @@ describe Bosh::Director::VmCreator do
 
   context 'Config.generate_vm_passwords flag is false' do
     before {
-      Bosh::Director::Config.generate_vm_passwords = false
     }
 
     context 'no password is specified' do

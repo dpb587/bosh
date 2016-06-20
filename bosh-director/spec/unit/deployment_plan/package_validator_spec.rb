@@ -14,21 +14,13 @@ module Bosh::Director
 
         it 'does not fault if they have the exact stemcell version number' do
           compiled_package = Models::CompiledPackage.make(package: package, stemcell_os: 'ubuntu', stemcell_version: '3567.4')
-          compiled_package.save
-          release_version_model.add_package(package)
-          package_validator.validate(release_version_model, stemcell_model)
           expect {
-            package_validator.handle_faults
           }.to_not raise_error
         end
 
         it 'does not fault if the stemcell version number differs only in patch number' do
           compiled_package = Models::CompiledPackage.make(package: package, stemcell_os: 'ubuntu', stemcell_version: '3567.5')
-          compiled_package.save
-          release_version_model.add_package(package)
-          package_validator.validate(release_version_model, stemcell_model)
           expect {
-            package_validator.handle_faults
           }.to_not raise_error
         end
       end
@@ -39,7 +31,6 @@ module Bosh::Director
 
         before do
           release_version_model.add_package(invalid_package)
-          release_version_model.add_package(valid_package)
         end
 
         context 'when packages is not compiled' do
@@ -63,8 +54,6 @@ module Bosh::Director
       before do
         release_version_model.add_package(invalid_package1)
         release_version_model.add_package(invalid_package2)
-        invalid_package2.dependency_set = ['package1']
-        invalid_package2.save
       end
 
       context 'when validating for multiple stemcells' do
@@ -75,10 +64,6 @@ module Bosh::Director
           expect {
             package_validator.handle_faults
           }.to raise_error PackageMissingSourceCode, /
-Can't use release 'release1\/version1'. It references packages without source code and are not compiled against intended stemcells:
- - 'package1\/1' against stemcell 'stemcell1\/1'
- - 'package1\/1' against stemcell 'stemcell2\/2'
- - 'package2\/2' against stemcell 'stemcell1\/1'
  - 'package2\/2' against stemcell 'stemcell2\/2'/
         end
       end
@@ -90,8 +75,6 @@ Can't use release 'release1\/version1'. It references packages without source co
           expect {
             package_validator.handle_faults
           }.to raise_error PackageMissingSourceCode, /
-Can't use release 'release1\/version1'. It references packages without source code and are not compiled against stemcell 'stemcell1\/1':
- - 'package1\/1'
  - 'package2\/2'/
         end
       end

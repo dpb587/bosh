@@ -1,7 +1,5 @@
 require 'spec_helper'
 require 'bosh/deployer/instance_manager/vsphere'
-require 'bosh/deployer/ui_messager'
-require 'logger'
 
 module Bosh
   module Deployer
@@ -12,7 +10,6 @@ module Bosh
       let(:config) do
         config = Psych.load_file(spec_asset('test-bootstrap-config.yml'))
         config['dir'] = dir
-        config['name'] = 'spec-my-awesome-spec'
         config['logging'] = { 'file' => "#{dir}/bmim.log" }
         Config.configure(config)
       end
@@ -28,8 +25,6 @@ module Bosh
         allow(Open3).to receive(:capture2e)
                         .and_return(['output', double('Process::Status', exitstatus: 0)])
         allow(config).to receive(:cloud).and_return(cloud)
-        allow(config).to receive(:agent_properties).and_return({})
-        allow(SecureRandom).to receive(:uuid).and_return('deadbeef')
 
         allow(MicroboshJobInstance).to receive(:new).and_return(FakeMicroboshJobInstance.new)
         allow(Bosh::Agent::HTTPClient).to receive(:new).and_return agent
@@ -43,7 +38,6 @@ module Bosh
 
       after do
         deployer.state.destroy
-        FileUtils.remove_entry_secure dir
       end
 
       def load_deployment
@@ -57,7 +51,6 @@ module Bosh
           deployer.update(stemcell_id, stemcell_archive)
         end
 
-        before { deployer.state.stemcell_cid = 'SC-CID-UPDATE' } # deployed vm
 
         before do # attached disk
           deployer.state.disk_cid = 'fake-disk-cid'
@@ -80,13 +73,11 @@ module Bosh
           will_create_stemcell = options[:will_create_stemcell]
 
           context 'when bosh-deployment.yml vm_cid is nil' do
-            before { deployer.state.vm_cid = nil }
 
             it 'does not unmount the disk or detach the disk or delete the vm' do
               expect(agent).not_to receive(:run_task).with(:unmount_disk, anything)
               expect(cloud).not_to receive(:detach_disk)
               expect(cloud).not_to receive(:delete_vm)
-              perform
             end
 
             it 'removes old vm cid from deployed state' do
@@ -100,7 +91,6 @@ module Bosh
             it 'stops tasks via the agent, unmount the disk, detach the disk, delete the vm' do
               expect(agent).to receive(:run_task).with(:stop)
               expect(agent).to receive(:run_task)
-                                   .with(:unmount_disk, 'fake-disk-cid').and_return({})
               expect(cloud).to receive(:detach_disk).with('fake-old-vm-cid', 'fake-disk-cid')
               expect(cloud).to receive(:delete_vm).with('fake-old-vm-cid')
               perform
@@ -114,11 +104,9 @@ module Bosh
           end
 
           context 'when stemcell_cid is nil' do
-            before { deployer.state.stemcell_cid = nil }
 
             it 'does not delete old stemcell' do
               expect(cloud).not_to receive(:delete_stemcell)
-              perform
             end
 
             it 'removes stemcell cid from deployed state' do
@@ -166,19 +154,11 @@ module Bosh
         def self.it_does_not_update_deployed_instance
           it 'does not communicate with an agent of deployed instance' do
             expect(agent).not_to receive(:run_task)
-            perform
           end
 
           it 'does not use cpi actions to update deployed instance' do
             %w(
-              detach_disk
-              delete_vm
-              delete_stemcell
-              create_stemcell
-              create_vm
-              attach_disk
             ).each { |a| expect(cloud).not_to receive(a) }
-            perform
           end
         end
         # rubocop:enable MethodLength
@@ -253,7 +233,6 @@ module Bosh
           end
 
           context 'with no vm_cid but existing disk_id and same config' do
-            before { deployer.state.vm_cid = nil }
             before { deployer.state.config_sha1 = 'fake-config-sha1' }
             it_updates_deployed_instance 'fake-stemcell-cid', will_create_stemcell: true
             it_updates_stemcell_sha1 'fake-stemcell-sha1'
@@ -261,7 +240,6 @@ module Bosh
           end
 
           context 'with a different stemcell (determined via sha1 difference) and same config' do
-            before { deployer.state.stemcell_sha1 = 'fake-different-stemcell-sha1' }
             before { deployer.state.config_sha1 = 'fake-config-sha1' }
             it_updates_deployed_instance 'fake-stemcell-cid', will_create_stemcell: true
             it_updates_stemcell_sha1 'fake-stemcell-sha1'
@@ -270,15 +248,12 @@ module Bosh
 
           context 'with a same stemcell and different config' do
             before { deployer.state.stemcell_sha1 = 'fake-stemcell-sha1' }
-            before { deployer.state.config_sha1 = 'fake-different-config-sha1' }
             it_updates_deployed_instance 'fake-stemcell-cid', will_create_stemcell: true
             it_keeps_stemcell_sha1 'fake-stemcell-sha1'
             it_updates_config_sha1 'fake-config-sha1'
           end
 
           context 'with a different stemcell and different config' do
-            before { deployer.state.stemcell_sha1 = 'fake-different-stemcell-sha1' }
-            before { deployer.state.config_sha1 = 'fake-different-config-sha1' }
             it_updates_deployed_instance 'fake-stemcell-cid', will_create_stemcell: true
             it_updates_stemcell_sha1 'fake-stemcell-sha1'
             it_updates_config_sha1 'fake-config-sha1'
@@ -286,8 +261,6 @@ module Bosh
 
           context "when previously used stemcell's sha1 and config's sha were not recorded " +
                   '(before quick update feature was introduced)' do
-            before { deployer.state.stemcell_sha1 = nil }
-            before { deployer.state.config_sha1 = nil }
             it_updates_deployed_instance 'fake-stemcell-cid', will_create_stemcell: true
             it_updates_stemcell_sha1 'fake-stemcell-sha1'
             it_updates_config_sha1 'fake-config-sha1'
@@ -309,7 +282,6 @@ module Bosh
           end
 
           context 'with a different stemcell (i.e. different stemcell id) and same config' do
-            before { deployer.state.stemcell_sha1 = 'fake-different-ami-id' }
             before { deployer.state.config_sha1 = 'fake-config-sha1' }
             it_updates_deployed_instance 'fake-ami-id', will_create_stemcell: false
             it_updates_stemcell_sha1 'fake-ami-id'
@@ -318,15 +290,12 @@ module Bosh
 
           context 'with a same stemcell and different config' do
             before { deployer.state.stemcell_sha1 = 'fake-ami-id' }
-            before { deployer.state.config_sha1 = 'fake-different-config-sha1' }
             it_updates_deployed_instance 'fake-ami-id', will_create_stemcell: false
             it_keeps_stemcell_sha1 'fake-ami-id'
             it_updates_config_sha1 'fake-config-sha1'
           end
 
           context 'with a different stemcell and different config' do
-            before { deployer.state.stemcell_sha1 = 'fake-different-ami-id' }
-            before { deployer.state.config_sha1 = 'fake-different-config-sha1' }
             it_updates_deployed_instance 'fake-ami-id', will_create_stemcell: false
             it_updates_stemcell_sha1 'fake-ami-id'
             it_updates_config_sha1 'fake-config-sha1'
@@ -334,8 +303,6 @@ module Bosh
 
           context "when previously used stemcell and config's sha were not recorded " +
                   '(before quick update feature was introduced)' do
-            before { deployer.state.stemcell_sha1 = nil }
-            before { deployer.state.config_sha1 = nil }
             it_updates_deployed_instance 'fake-ami-id', will_create_stemcell: false
             it_updates_stemcell_sha1 'fake-ami-id'
             it_updates_config_sha1 'fake-config-sha1'
@@ -445,7 +412,6 @@ module Bosh
         before do
           deployer.state.stemcell_cid = 'STEMCELL-CID'
           deployer.state.vm_cid = 'VM-CID'
-          deployer.state.stemcell_name = File.basename(stemcell_tgz, '.tgz')
         end
 
         context 'when disk is assigned' do
@@ -535,9 +501,6 @@ module Bosh
 
       describe '#exists?' do
         before do
-          deployer.state.vm_cid = nil
-          deployer.state.stemcell_cid = nil
-          deployer.state.disk_cid = nil
         end
 
         context 'all deployer resources are nil' do

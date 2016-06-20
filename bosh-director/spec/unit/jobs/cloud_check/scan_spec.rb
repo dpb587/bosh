@@ -17,7 +17,6 @@ module Bosh::Director
 
       let(:job) { described_class.new('deployment') }
       let(:scanner) { instance_double('Bosh::Director::ProblemScanner::Scanner') }
-      let(:deployment) { Models::Deployment[1] }
 
       it 'should obtain a deployment lock' do
         expect(job).to receive(:with_deployment_lock).and_yield
@@ -28,7 +27,6 @@ module Bosh::Director
       end
 
       it 'should run the scan' do
-        allow(job).to receive(:with_deployment_lock).and_yield
 
         expect(scanner).to receive(:reset).ordered
         expect(scanner).to receive(:scan_vms).ordered

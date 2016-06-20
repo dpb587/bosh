@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'json'
 
 module Bosh::Blobstore
   describe S3cliBlobstoreClient do
@@ -13,9 +12,6 @@ module Bosh::Blobstore
 
     let(:options) do
       {
-          bucket_name:       'test',
-          access_key_id:     'KEY',
-          secret_access_key: 'SECRET',
           s3cli_path:        '/var/vcap/packages/s3cli/bin/s3cli'
       }
     end
@@ -24,10 +20,8 @@ module Bosh::Blobstore
     let(:success_exit_status) { instance_double('Process::Status', exitstatus: 0, success?: true) }
     let(:not_existed_exit_status) { instance_double('Process::Status', exitstatus: 3, success?: true) }
     let(:failure_exit_status) { instance_double('Process::Status', exitstatus: 1, success?: false) }
-    let(:object_id) { 'fo1' }
     let(:file_path) { File.join(base_dir, "temp-path-FAKE_UUID") }
 
-    after { FileUtils.rm_rf(base_dir) }
 
     describe 'interface' do
       it_implements_base_client_interface
@@ -71,7 +65,6 @@ module Bosh::Blobstore
         let (:config_file_options) do
           options.merge (
               {
-                  s3cli_config_path: s3cli_config_path
               })
         end
 

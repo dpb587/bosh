@@ -1,7 +1,5 @@
-require 'spec_helper'
 
 require 'bosh/deployer/remote_tunnel'
-require 'net/ssh'
 
 module Bosh::Deployer
   describe RemoteTunnel do
@@ -34,7 +32,6 @@ module Bosh::Deployer
 
       context 'when a session already exists for a given port' do
         it 'does nothing' do
-          subject.create('fake-ip', 8080)
           subject.create('fake-ip', 8080)
           expect(ssh_server).to have_received(:readable?).once
           expect(ssh_server).to have_received(:start_session).once

@@ -4,7 +4,6 @@ module Bosh::Director
   describe InstanceDeleter do
     before { allow(App).to receive_message_chain(:instance, :blobstores, :blobstore).and_return(blobstore) }
     let(:blobstore) { instance_double('Bosh::Blobstore::Client') }
-    let(:domain) { Models::Dns::Domain.make(name: 'bosh') }
     let(:cloud) { instance_double('Bosh::Cloud') }
     let(:delete_job) {Jobs::DeleteDeployment.new('test_deployment', {})}
     let(:task) {Bosh::Director::Models::Task.make(:id => 42, :username => 'user')}
@@ -33,7 +32,6 @@ module Bosh::Director
           instance: nil,
           network_plans: [network_plan],
           desired_instance: nil,
-          skip_drain: true
         )
       end
 
@@ -44,9 +42,6 @@ module Bosh::Director
       end
 
       let(:instances_to_delete) do
-        instances = []
-        5.times { instances << instance_plan.instance }
-        instances
       end
 
       let(:event_log_stage) { instance_double('Bosh::Director::EventLog::Stage') }
@@ -88,7 +83,6 @@ module Bosh::Director
 
         let(:persistent_disks) do
           disk = Models::PersistentDisk.make(disk_cid: 'fake-disk-cid-1')
-          Models::Snapshot.make(persistent_disk: disk)
           [Models::PersistentDisk.make(disk_cid: 'instance-disk-cid'), disk]
         end
 
@@ -177,8 +171,6 @@ module Bosh::Director
 
           expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/5 (my-uuid-1)')
 
-          job_templates_cleaner = instance_double('Bosh::Director::RenderedJobTemplatesCleaner')
-          allow(RenderedJobTemplatesCleaner).to receive(:new).with(existing_instance, blobstore, logger).and_return(job_templates_cleaner)
           expect(job_templates_cleaner).to receive(:clean_all).with(no_args)
           expect(disk_manager).to receive(:delete_persistent_disks).with(existing_instance)
 
@@ -216,7 +208,6 @@ module Bosh::Director
           context 'when deleting vm fails' do
             before do
               allow(cloud).to receive(:delete_vm).and_raise(
-                  Bosh::Clouds::CloudError.new('Failed to create VM')
                 )
             end
 
@@ -240,9 +231,6 @@ module Bosh::Director
 
           context 'when deleting dns fails' do
             before do
-              allow(dns_manager).to receive(:delete_dns_for_instance).and_raise('failed')
-              allow(dns_manager).to receive(:cleanup_dns_records)
-              allow(dns_manager).to receive(:publish_dns_records)
             end
 
             it 'drains, deletes vm, snapshots, disks, releases old reservations' do
@@ -263,7 +251,6 @@ module Bosh::Director
 
           context 'when cleaning templates fails' do
             before do
-              allow(job_templates_cleaner).to receive(:clean_all).and_raise('failed')
             end
 
             it 'drains, deletes vm, snapshots, disks, releases old reservations' do

@@ -7,10 +7,8 @@ describe Bosh::Cli::Command::Base do
 
   before :each do
     @config = config_file
-    @director = double(Bosh::Cli::Client::Director)
     allow(Bosh::Cli::Client::Director).to receive(:new).and_return(@director)
     allow(@director).to receive(:get_status).and_return('name' => 'ZB')
-    allow(misc_cmd).to receive(:show_current_state)
   end
 
   def misc_cmd
@@ -64,24 +62,20 @@ describe Bosh::Cli::Command::Base do
         misc_cmd.set_target('test', 'mytarget')
         expect(misc_cmd.target).to eq('https://test:25555')
 
-        misc_cmd.set_target('mytarget')
         expect(misc_cmd.target).to eq('https://test:25555')
 
         misc_cmd.set_target('foo', 'myfoo')
         expect(misc_cmd.target).to eq('https://foo:25555')
 
-        misc_cmd.set_target('myfoo')
         expect(misc_cmd.target).to eq('https://foo:25555')
       end
     end
 
     context 'in interactive mode' do
       before :each do
-        misc_cmd.add_option(:non_interactive, false)
       end
 
       it 'uses InteractiveProgressRenderer' do
-        misc_cmd.add_option(:non_interactive, false)
         expect(misc_cmd.progress_renderer).to be_a(Bosh::Cli::InteractiveProgressRenderer)
       end
     end
@@ -135,7 +129,6 @@ describe Bosh::Cli::Command::Base do
 
   describe Bosh::Cli::Command::Stemcell do
     before :each do
-      @director = double(Bosh::Cli::Client::Director)
       allow(@director).to receive(:list_stemcells).
           and_return([{'name' => 'foo', 'version' => '123'}])
       expect(@director).to receive(:list_stemcells)
@@ -143,10 +136,6 @@ describe Bosh::Cli::Command::Base do
       @cmd = Bosh::Cli::Command::Stemcell.new
       @cmd.add_option(:non_interactive, true)
 
-      allow(@cmd).to receive(:target).and_return('test')
-      allow(@cmd).to receive(:username).and_return('user')
-      allow(@cmd).to receive(:password).and_return('pass')
-      allow(@cmd).to receive(:director).and_return(@director)
     end
 
     it 'allows deleting the stemcell' do
@@ -171,7 +160,6 @@ describe Bosh::Cli::Command::Base do
     it 'raises error when deleting if stemcell does not exist' do
       expect(@director).not_to receive(:delete_stemcell)
 
-      @cmd.add_option(:non_interactive, true)
       expect {
         @cmd.delete('foo', '111')
       }.to raise_error(Bosh::Cli::CliError,
@@ -181,15 +169,10 @@ describe Bosh::Cli::Command::Base do
 
   describe Bosh::Cli::Command::Release::DeleteRelease do
     before do
-      @director = instance_double('Bosh::Cli::Client::Director')
 
       @cmd = Bosh::Cli::Command::Release::DeleteRelease.new
       @cmd.add_option(:non_interactive, true)
 
-      allow(@cmd).to receive(:target).and_return('test')
-      allow(@cmd).to receive(:username).and_return('user')
-      allow(@cmd).to receive(:password).and_return('pass')
-      allow(@cmd).to receive(:director).and_return(@director)
     end
 
     it 'allows deleting the release (non-force)' do
@@ -227,27 +210,19 @@ describe Bosh::Cli::Command::Base do
       @cmd.remove_option(:non_interactive)
 
       allow(@cmd).to receive(:ask).and_return('')
-      @cmd.delete('foo')
     end
   end
 
   describe Bosh::Cli::Command::Release::ListReleases do
     before do
-      @director = instance_double('Bosh::Cli::Client::Director')
 
       @cmd = Bosh::Cli::Command::Release::ListReleases.new
-      @cmd.add_option(:non_interactive, true)
 
-      allow(@cmd).to receive(:target).and_return('test')
-      allow(@cmd).to receive(:username).and_return('user')
-      allow(@cmd).to receive(:password).and_return('pass')
-      allow(@cmd).to receive(:director).and_return(@director)
     end
 
     describe 'listing releases' do
       before do
         allow(@cmd).to receive :nl
-        allow(@cmd).to receive(:show_current_state)
       end
 
       context "when the director doesn't include commit hash information (version < 1.5)" do
@@ -264,11 +239,6 @@ describe Bosh::Cli::Command::Base do
 
           expect(@cmd).to receive(:say) do |table|
             expect(table.to_s).to match_output %(
-              +-----------+--------------------+
-              | Name      | Versions           |
-              +-----------+--------------------+
-              | release-1 | 1, 2, 2.1-dev*, 15 |
-              +-----------+--------------------+
             )
           end
           expect(@cmd).to receive(:say).with('(*) Currently deployed')
@@ -296,14 +266,6 @@ describe Bosh::Cli::Command::Base do
 
           expect(@cmd).to receive(:say) do |table|
             expect(table.to_s).to match_output %(
-              +-----------+----------+-------------+
-              | Name      | Versions | Commit Hash |
-              +-----------+----------+-------------+
-              | release-1 | 1        | unknown     |
-              |           | 2        | 00000000+   |
-              |           | 2.1-dev* | unknown     |
-              |           | 15       | 1a2b3c4d+   |
-              +-----------+----------+-------------+
             )
           end
           expect(@cmd).to receive(:say).with('(*) Currently deployed')
@@ -318,21 +280,12 @@ describe Bosh::Cli::Command::Base do
 
           expect(@cmd).to receive(:say) do |table|
             expect(table.to_s).to match_output %(
-              +-----------+----------+-------------+-------+
-              | Name      | Versions | Commit Hash | Jobs  |
-              +-----------+----------+-------------+-------+
-              | release-1 | 1        | unknown     | n/a   |
-              |           | 2        | 00000000+   | job-1 |
-              |           | 2.1-dev* | unknown     | job-1 |
-              |           | 15       | 1a2b3c4d+   | job-1 |
-              +-----------+----------+-------------+-------+
             )
           end
           expect(@cmd).to receive(:say).with('(*) Currently deployed')
           expect(@cmd).to receive(:say).with('(+) Uncommitted changes')
           expect(@cmd).to receive(:say).with('Releases total: 1')
 
-          @cmd.add_option(:jobs, true)
           @cmd.list
         end
       end
@@ -344,7 +297,6 @@ describe Bosh::Cli::Command::Base do
       @cmd = Bosh::Cli::Command::BlobManagement.new
       @cmd.add_option(:non_interactive, true)
 
-      @blob_manager = double('blob manager')
       @release = double('release')
 
       expect(@cmd).to receive(:check_if_release_dir)

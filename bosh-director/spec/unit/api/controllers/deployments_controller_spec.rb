@@ -17,7 +17,6 @@ module Bosh::Director
 
       def manifest_with_errand(deployment_name='errand')
         manifest_hash = Bosh::Spec::Deployments.manifest_with_errand
-        manifest_hash['name'] = deployment_name
         manifest_hash['jobs'] << {
           'name' => 'another-errand',
           'template' => 'errand1',
@@ -37,7 +36,6 @@ module Bosh::Director
 
       describe 'the date header' do
         it 'is present' do
-          basic_authorize 'reader', 'reader'
           get '/'
           expect(last_response.headers['Date']).to be
         end
@@ -81,7 +79,6 @@ module Bosh::Director
             it 'does not skip draining' do
               allow_any_instance_of(DeploymentManager)
                 .to receive(:create_deployment)
-                .with(anything(), anything(), anything(), anything(), anything(), hash_excluding('skip_drain'))
                 .and_return(OpenStruct.new(:id => 1))
               post '/', spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
               expect(last_response).to be_redirect
@@ -92,7 +89,6 @@ module Bosh::Director
             it 'skips draining' do
               allow_any_instance_of(DeploymentManager)
                 .to receive(:create_deployment)
-                .with(anything(), anything(), anything(), anything(), anything(), hash_including('skip_drain' => '*'))
                 .and_return(OpenStruct.new(:id => 1))
               post '/?skip_drain=*', spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
               expect(last_response).to be_redirect
@@ -103,7 +99,6 @@ module Bosh::Director
             it 'skips draining' do
               allow_any_instance_of(DeploymentManager)
                 .to receive(:create_deployment)
-                .with(anything(), anything(), anything(), anything(), anything(), hash_including('skip_drain' => 'job_one,job_two'))
                 .and_return(OpenStruct.new(:id => 1))
               post '/?skip_drain=job_one,job_two', spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
               expect(last_response).to be_redirect
@@ -114,7 +109,6 @@ module Bosh::Director
             it 'calls create deployment with deployment name' do
               expect_any_instance_of(DeploymentManager)
                   .to receive(:create_deployment)
-                          .with(anything(), anything(), anything(), anything(), deployment, hash_excluding('skip_drain'))
                           .and_return(OpenStruct.new(:id => 1))
               post '/', spec_asset('test_manifest.yml'), { 'CONTENT_TYPE' => 'text/yaml' }
               expect(last_response).to be_redirect
@@ -125,7 +119,6 @@ module Bosh::Director
             it 'to false' do
               expect_any_instance_of(DeploymentManager)
                   .to receive(:create_deployment)
-                          .with(anything(), anything(), anything(), anything(), deployment, hash_including('new' => false))
                           .and_return(OpenStruct.new(:id => 1))
               post '/', spec_asset('test_manifest.yml'), { 'CONTENT_TYPE' => 'text/yaml' }
             end
@@ -133,9 +126,7 @@ module Bosh::Director
             it 'to true' do
               expect_any_instance_of(DeploymentManager)
                   .to receive(:create_deployment)
-                          .with(anything(), anything(), anything(), anything(), anything(), hash_including('new' => true))
                           .and_return(OpenStruct.new(:id => 1))
-               Models::Deployment.first.delete
               post '/', spec_asset('test_manifest.yml'), { 'CONTENT_TYPE' => 'text/yaml' }
             end
           end
@@ -154,9 +145,7 @@ module Bosh::Director
         describe 'job management' do
           shared_examples 'change state' do
             it 'allows to change state' do
-              deployment = Models::Deployment.create(name: 'foo', manifest: Psych.dump({'foo' => 'bar'}))
               instance = Models::Instance.create(deployment: deployment, job: 'dea', index: '2', uuid: '0B949287-CDED-4761-9002-FC4035E11B21', state: 'started')
-              Models::PersistentDisk.create(instance: instance, disk_cid: 'disk_cid')
               put "#{path}", spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
               expect_redirect_to_queued_task(last_response)
             end
@@ -168,11 +157,8 @@ module Bosh::Director
               manifest = spec_asset('test_conf.yaml')
               manifest_path = asset('test_conf.yaml')
               allow_any_instance_of(DeploymentManager).to receive(:create_deployment).
-                  with(anything(), not_to_have_body(manifest_path), anything(), anything(), anything(), anything()).
                   and_return(OpenStruct.new(:id => 'no_content_length'))
-              deployment = Models::Deployment.create(name: 'foo', manifest: Psych.dump({'foo' => 'bar'}))
               instance = Models::Instance.create(deployment: deployment, job: 'dea', index: '2', uuid: '0B949287-CDED-4761-9002-FC4035E11B21', state: 'started')
-              Models::PersistentDisk.create(instance: instance, disk_cid: 'disk_cid')
               put "#{path}", manifest, {'CONTENT_TYPE' => 'text/yaml', 'CONTENT_LENGTH' => 0}
               match = last_response.location.match(%r{/tasks/no_content_length})
               expect(match).to_not be_nil
@@ -285,7 +271,6 @@ module Bosh::Director
               deployment
               expect_any_instance_of(DeploymentManager)
                 .to receive(:create_deployment)
-                  .with(anything(), anything(), anything(), anything(), anything(), hash_including('canaries'=>'42') )
                   .and_return(OpenStruct.new(:id => 1))
 
               put '/foo/jobs/dea?canaries=42', Yajl::Encoder.encode('value' => 'baz'), { 'CONTENT_TYPE' => 'text/yaml' }
@@ -298,7 +283,6 @@ module Bosh::Director
               deployment
               expect_any_instance_of(DeploymentManager)
                 .to receive(:create_deployment)
-                      .with(anything(), anything(), anything(), anything(), anything(), hash_including('max_in_flight'=>'42') )
                       .and_return(OpenStruct.new(:id => 1))
 
               put '/foo/jobs/dea?max_in_flight=42', Yajl::Encoder.encode('value' => 'baz'), { 'CONTENT_TYPE' => 'text/yaml' }
@@ -315,24 +299,19 @@ module Bosh::Director
 
             shared_examples 'skip_drain' do
               it 'drains' do
-                allow_any_instance_of(DeploymentManager).to receive(:find_by_name).and_return(deployment)
                 allow_any_instance_of(DeploymentManager)
                     .to receive(:create_deployment)
-                            .with(anything(), anything(), anything(), anything(), anything(), hash_excluding('skip_drain'))
                             .and_return(OpenStruct.new(:id => 1))
 
                 put "#{path}", spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
                 expect(last_response).to be_redirect
 
-                put '/test_deployment/jobs/job_name/0B949287-CDED-4761-9002-FC4035E11B21', spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
                 expect(last_response).to be_redirect
               end
 
               it 'skips draining' do
-                allow_any_instance_of(DeploymentManager).to receive(:find_by_name).and_return(deployment)
                 allow_any_instance_of(DeploymentManager)
                     .to receive(:create_deployment)
-                            .with(anything(), anything(), anything(), anything(), anything(), hash_including('skip_drain' => "#{drain_target}"))
                             .and_return(OpenStruct.new(:id => 1))
 
                 put "#{path + drain_option}", spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
@@ -343,21 +322,18 @@ module Bosh::Director
             context 'when there is a job instance' do
               let(:path) { "/test_deployment/jobs/job_name/0" }
               let(:drain_option) { "?skip_drain=true" }
-              let(:drain_target) { "job_name" }
               it_behaves_like 'skip_drain'
             end
 
             context 'when there is a  job' do
               let(:path) { "/test_deployment/jobs/job_name?state=stop" }
               let(:drain_option) { "&skip_drain=true" }
-              let(:drain_target) { "job_name" }
               it_behaves_like 'skip_drain'
             end
 
             context 'when  deployment' do
               let(:path) { "/test_deployment/jobs/*?state=stop" }
               let(:drain_option) { "&skip_drain=true" }
-              let(:drain_target) { "*" }
               it_behaves_like 'skip_drain'
             end
           end
@@ -390,7 +366,6 @@ module Bosh::Director
         end
 
         describe 'listing deployments' do
-          before { basic_authorize 'reader', 'reader' }
 
           it 'lists deployment info in deployment name order' do
             release_1 = Models::Release.create(:name => 'release-1')
@@ -470,7 +445,6 @@ module Bosh::Director
         end
 
         describe 'getting deployment info' do
-          before { basic_authorize 'reader', 'reader' }
 
           it 'returns manifest' do
             deployment = Models::Deployment.
@@ -485,7 +459,6 @@ module Bosh::Director
         end
 
         describe 'getting deployment vms info' do
-          before { basic_authorize 'reader', 'reader' }
 
           it 'returns a list of instances with vms (vm_cid != nil)' do
             deployment = Models::Deployment.
@@ -525,7 +498,6 @@ module Bosh::Director
         end
 
         describe 'getting deployment instances' do
-          before { basic_authorize 'reader', 'reader' }
 
           it 'returns a list of all instances' do
             deployment = Models::Deployment.
@@ -574,7 +546,6 @@ module Bosh::Director
             get '/mycloud/properties/foo'
             expect(last_response.status).to eq(404)
 
-            get '/othercloud/properties/foo'
             expect(last_response.status).to eq(404)
 
             post '/mycloud/properties', Yajl::Encoder.encode('name' => 'foo', 'value' => 'bar'), { 'CONTENT_TYPE' => 'application/json' }
@@ -606,12 +577,10 @@ module Bosh::Director
           let(:job_class) do
             Class.new(Jobs::CloudCheck::ScanAndFix) do
               define_method :perform do
-                'foo'
               end
               @queue = :normal
             end
           end
-          let (:db_job) { Jobs::DBJob.new(job_class, task.id, args)}
 
           it 'exposes problem managent REST API' do
             get '/mycloud/problems'
@@ -621,14 +590,12 @@ module Bosh::Director
             post '/mycloud/scans'
             expect_redirect_to_queued_task(last_response)
 
-            put '/mycloud/problems', Yajl::Encoder.encode('solutions' => { 42 => 'do_this', 43 => 'do_that', 44 => nil }), { 'CONTENT_TYPE' => 'application/json' }
             expect_redirect_to_queued_task(last_response)
 
             problem = Models::DeploymentProblem.
                 create(:deployment_id => deployment.id, :resource_id => 2,
                        :type => 'test', :state => 'open', :data => {})
 
-            put '/mycloud/problems', Yajl::Encoder.encode('solution' => 'default'), { 'CONTENT_TYPE' => 'application/json' }
             expect_redirect_to_queued_task(last_response)
           end
 
@@ -652,15 +619,11 @@ module Bosh::Director
 
           context 'when resurrection is off' do
             it 'does not run scan_and_fix task' do
-              instance = Models::Instance.make(deployment: deployment, job: 'job', index: 0, resurrection_paused: true)
-              instance1 = Models::Instance.make(deployment: deployment, job: 'job', index: 1, resurrection_paused: true)
 
               db_job = Bosh::Director::Jobs::DBJob.new(job_class, 0, ['mycloud',
                                                                       [['job', 0], ['job', 1]], false])
 
               expect(Bosh::Director::Jobs::DBJob).not_to receive(:new).with(
-                                                         Jobs::CloudCheck::ScanAndFix,
-                                                         kind_of(Numeric),
                                                          ['mycloud',
                                                           [['job', 0], ['job', 1]], false])
               expect(Delayed::Job).not_to receive(:enqueue)
@@ -672,7 +635,6 @@ module Bosh::Director
           context 'when there are only ignored vms' do
 
             it 'does not call the resurrector' do
-              Models::Instance.make(deployment: deployment, job: 'job', index: 0, resurrection_paused: false, ignore: true)
 
               put '/mycloud/scan_and_fix', Yajl::Encoder.encode('jobs' => {'job' => [0]}), {'CONTENT_TYPE' => 'application/json'}
               expect(last_response).not_to be_redirect
@@ -686,12 +648,9 @@ module Bosh::Director
 
             instance = Models::Instance.make(deployment: deployment, job: 'job', index: 0, uuid: 'abc123')
             disk = Models::PersistentDisk.make(disk_cid: 'disk0', instance: instance, active: true)
-            Models::Snapshot.make(persistent_disk: disk, snapshot_cid: 'snap0a')
 
             instance = Models::Instance.make(deployment: deployment, job: 'job', index: 1)
-            disk = Models::PersistentDisk.make(disk_cid: 'disk1', instance: instance, active: true)
             Models::Snapshot.make(persistent_disk: disk, snapshot_cid: 'snap1a')
-            Models::Snapshot.make(persistent_disk: disk, snapshot_cid: 'snap1b')
           end
 
           describe 'creating' do
@@ -745,13 +704,10 @@ module Bosh::Director
         describe 'errands' do
 
           describe 'GET', '/:deployment_name/errands' do
-            before { Config.base_dir = Dir.mktmpdir }
-            after { FileUtils.rm_rf(Config.base_dir) }
 
             def perform
               get(
                 '/fake-dep-name/errands',
-                { 'CONTENT_TYPE' => 'application/json' },
               )
             end
 
@@ -765,7 +721,6 @@ module Bosh::Director
 
             context 'authenticated access' do
               before do
-                authorize 'admin', 'admin'
                 release = Models::Release.make(name: 'bosh-release')
                 template1 = Models::Template.make(name: 'foobar', release: release)
                 template2 = Models::Template.make(name: 'errand1', release: release)
@@ -792,8 +747,6 @@ module Bosh::Director
           end
 
           describe 'POST', '/:deployment_name/errands/:name/runs' do
-            before { Config.base_dir = Dir.mktmpdir }
-            after { FileUtils.rm_rf(Config.base_dir) }
 
             let!(:deployment) { Models::Deployment.make(name: 'fake-dep-name')}
 
@@ -801,12 +754,10 @@ module Bosh::Director
               post(
                 '/fake-dep-name/errands/fake-errand-name/runs',
                 JSON.dump(post_body),
-                { 'CONTENT_TYPE' => 'application/json' },
               )
             end
 
             context 'authenticated access' do
-              before { authorize 'admin', 'admin' }
 
               it 'returns a task' do
                 perform({})
@@ -863,7 +814,6 @@ module Bosh::Director
               { 'CONTENT_TYPE' => 'text/yaml' },
             )
           end
-          let(:cloud_config) { Models::CloudConfig.make(manifest: {'azs' => []}) }
           let(:runtime_config) { Models::RuntimeConfig.make(manifest: {'addons' => []}) }
 
           before do
@@ -876,7 +826,6 @@ module Bosh::Director
           end
 
           context 'authenticated access' do
-            before { authorize 'admin', 'admin' }
 
             it 'returns diff with resolved aliases' do
               perform
@@ -919,11 +868,8 @@ module Bosh::Director
                 Models::Deployment.create(
                   :name => 'fake-dep-name-no-cloud-conf',
                   :manifest => Psych.dump(manifest_hash),
-                  cloud_config: nil,
-                  runtime_config: runtime_config
                 )
 
-                Models::CloudConfig.make(manifest: {'networks'=>[{'name'=>'very-cloudy-network'}]})
 
                 manifest_hash['networks'] = [{'name'=> 'network2'}]
                 diff = post '/fake-dep-name-no-cloud-conf/diff', Psych.dump(manifest_hash), {'CONTENT_TYPE' => 'text/yaml'}
@@ -964,7 +910,6 @@ module Bosh::Director
 
           before {
             Models::Instance.create(:deployment => owned_deployment, :job => 'dea', :index => 0, :state => :started, :uuid => 'F0753566-CA8E-4B28-AD63-7DB3903CD98C')
-            Models::Instance.create(:deployment => other_deployment, :job => 'dea', :index => 0, :state => :started, :uuid => '72652FAA-1A9C-4803-8423-BBC3630E49C6')
           }
 
           # dev-team-member has scopes ['bosh.teams.dev.admin']
@@ -1285,7 +1230,6 @@ module Bosh::Director
 
         describe 'when the user has bosh.read scope' do
           describe 'read endpoints' do
-            before { basic_authorize 'reader', 'reader' }
 
             it 'allows access' do
               expect(get('/',).status).to eq(200)

@@ -8,11 +8,8 @@ module Bosh::Cli
     let(:target) { 'http://example.org' }
     let(:deployment_manifest) do
       {
-          'name' => deployment,
           'jobs' => [
               {
-                  'name' => 'dea',
-                  'instances' => 50
               }
           ]
       }
@@ -20,10 +17,7 @@ module Bosh::Cli
 
     before do
       allow(command).to receive(:director).and_return(director)
-      allow(command).to receive(:nl)
-      command.options[:target] = target
       allow(command).to receive(:prepare_deployment_manifest).and_return(double(:manifest, hash: deployment_manifest, name: 'dep1'))
-      allow(command).to receive(:show_current_state)
     end
 
     describe 'usage' do
@@ -56,7 +50,6 @@ module Bosh::Cli
       before { allow(command).to receive(:logged_in?) { true } }
 
       context 'when user did not choose deployment' do
-        before { allow(command).to receive(:deployment).and_return(nil) }
 
         it 'raises an error with choose deployment message when ignore is called without deployment' do
           expect {

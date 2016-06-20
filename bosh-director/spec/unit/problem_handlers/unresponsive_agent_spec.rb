@@ -8,13 +8,10 @@ module Bosh::Director
       handler = ProblemHandlers::UnresponsiveAgent.new(instance.id, data)
       allow(handler).to receive(:cloud).and_return(cloud)
       allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instance.credentials, @instance.agent_id, anything).and_return(@agent)
-      allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instance.credentials, @instance.agent_id).and_return(@agent)
       handler
     end
 
     before(:each) do
-      @cloud = instance_double('Bosh::Cloud')
-      @agent = double(Bosh::Director::AgentClient)
       allow(Config).to receive(:cloud).and_return(@cloud)
 
       deployment_model = Models::Deployment.make(manifest: YAML.dump(Bosh::Spec::Deployments.legacy_manifest))
@@ -24,8 +21,6 @@ module Bosh::Director
         index: 0,
         uuid: 'uuid-1',
         vm_cid: 'vm-cid',
-        deployment: deployment_model,
-        cloud_properties_hash: { 'foo' => 'bar' },
         spec: {'networks' => networks},
         agent_id: 'agent-007'
       )
@@ -42,7 +37,6 @@ module Bosh::Director
     end
 
     it 'registers under unresponsive_agent type' do
-      handler = ProblemHandlers::Base.create_by_type(:unresponsive_agent, @instance.id, {})
       expect(handler).to be_kind_of(ProblemHandlers::UnresponsiveAgent)
     end
 
@@ -144,7 +138,6 @@ module Bosh::Director
           allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(@instance.credentials, 'agent-222').and_return(fake_new_agent)
           allow(SecureRandom).to receive_messages(uuid: 'agent-222')
           fake_app
-          allow(App.instance.blobstores.blobstore).to receive(:create).and_return('fake-blobstore-id')
         end
 
         def expect_vm_to_be_created

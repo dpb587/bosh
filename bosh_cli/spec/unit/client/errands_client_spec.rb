@@ -14,7 +14,6 @@ describe Bosh::Cli::Client::ErrandsClient do
           '/deployments/fake-deployment-name/errands/fake-errand-name/runs',
           { content_type: 'application/json', payload: "{\"keep-alive\":false}" },
         )
-        .and_return([:done, 'fake-task-id'])
 
       client.run_errand('fake-deployment-name', 'fake-errand-name', FALSE)
     end
@@ -28,7 +27,6 @@ describe Bosh::Cli::Client::ErrandsClient do
         '/deployments/fake-deployment-name/errands/fake-errand-name/runs',
         { content_type: 'application/json', payload: "{\"keep-alive\":true}" },
       )
-      .and_return([:done, 'fake-task-id'])
 
       client.run_errand('fake-deployment-name', 'fake-errand-name', TRUE)
     end
@@ -46,7 +44,6 @@ describe Bosh::Cli::Client::ErrandsClient do
           )
 
           expect(director).to receive(:get_task_result_log).
-            with('fake-task-id').
             and_return("#{raw_task_output}\n")
 
           actual_status, task_id, actual_result = client.run_errand('fake-deployment-name', 'fake-errand-name', FALSE)
@@ -65,7 +62,6 @@ describe Bosh::Cli::Client::ErrandsClient do
           )
 
           expect(director).to receive(:get_task_result_log).
-            with('fake-task-id').
             and_return("#{raw_task_output}\n")
 
           actual_status, task_id, actual_result = client.run_errand('fake-deployment-name', 'fake-errand-name', FALSE)

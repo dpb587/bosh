@@ -14,8 +14,6 @@ module Bosh::Director
     subject { described_class.new(deployment_name) }
 
     before do
-      allow(Api::DeploymentManager).to receive(:new).and_return(deployment_manager)
-      allow(deployment_manager).to receive(:find_by_name).and_return(deployment)
     end
 
     describe 'DJ job class expectations' do

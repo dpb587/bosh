@@ -1,6 +1,4 @@
 require 'spec_helper'
-require 'logger'
-require 'bosh/director/models/director_attribute'
 
 module Bosh::Director::Models
   describe DirectorAttribute do
@@ -14,7 +12,6 @@ module Bosh::Director::Models
       end
 
       context 'when uuid cannot be found' do
-        before { described_class.dataset.delete }
 
         context 'when creation of uuid fails with database constraint' do
           before { allow(described_class).to receive(:create).and_raise(Sequel::DatabaseError, 'error') }
@@ -23,7 +20,6 @@ module Bosh::Director::Models
             initial_uuid = nil
             later_uuid = described_class.new(value: 'fake-uuid')
             expect(described_class).to receive(:first)
-              .with(name: 'uuid')
               .and_return(initial_uuid, later_uuid)
             expect(described_class.find_or_create_uuid(logger)).to eq('fake-uuid')
           end
@@ -44,7 +40,6 @@ module Bosh::Director::Models
     describe '.update_or_create_uuid' do
       context 'when uuid is found' do
         context 'when old uuid is same as new' do
-          before { described_class.create(name: 'uuid', value: 'fake-uuid') }
 
           it 'keeps uuid value the same' do
             described_class.update_or_create_uuid('fake-uuid', logger)
@@ -58,7 +53,6 @@ module Bosh::Director::Models
         end
 
         context 'when old uuid is different from old uuid' do
-          before { described_class.create(name: 'uuid', value: 'fake-old-uuid') }
 
           it 'updates uuid value' do
             described_class.update_or_create_uuid('fake-uuid', logger)
@@ -73,7 +67,6 @@ module Bosh::Director::Models
       end
 
       context 'when uuid cannot be found' do
-        before { described_class.dataset.delete }
 
         it 'creates uuid with given value' do
           described_class.update_or_create_uuid('fake-uuid', logger)

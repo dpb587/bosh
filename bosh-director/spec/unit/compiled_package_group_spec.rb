@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/compiled_package_group'
 
 module Bosh::Director
   describe CompiledPackageGroup do
@@ -26,7 +25,6 @@ module Bosh::Director
 
       it 'only queries database once' do
         allow(Models::CompiledPackage).to receive(:[]).and_call_original
-        package_group.compiled_packages
         package_group.compiled_packages
         expect(Models::CompiledPackage).to have_received(:[]).twice
       end

@@ -12,7 +12,6 @@ describe Bosh::Cli::DirectorTask do
     @task = Bosh::Cli::DirectorTask.new(@director, 10)
 
     allow(@director).to receive(:get).
-      with("/tasks/10/output", nil, nil, "Range" => "bytes=0-").
       and_return([206, "test\nout", { :content_range => "bytes 0-7/100" }])
 
     allow(@director).to receive(:get).
@@ -41,7 +40,6 @@ describe Bosh::Cli::DirectorTask do
     @task = Bosh::Cli::DirectorTask.new(@director, 10)
 
     allow(@director).to receive(:get).
-      with("/tasks/10/output", nil, nil, "Range" => "bytes=0-").
       and_return([206, "test\nout", { :content_range => "bytes 0-7/100" }])
 
     expect(@task.output).to eq("test\n")

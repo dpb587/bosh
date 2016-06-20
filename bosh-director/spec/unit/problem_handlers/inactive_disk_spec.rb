@@ -7,8 +7,6 @@ describe Bosh::Director::ProblemHandlers::InactiveDisk do
   end
 
   before(:each) do
-    @cloud = instance_double('Bosh::Cloud')
-    @agent = double('agent')
 
     @instance = Bosh::Director::Models::Instance.
       make(:job => 'mysql_node', :index => 3, :uuid => '52C6C66A-6DF3-4D4E-9EB1-FFE63AD755D7', credentials: {'credentials' => 'json'})
@@ -79,7 +77,6 @@ describe Bosh::Director::ProblemHandlers::InactiveDisk do
     let(:event_manager) {Bosh::Director::Api::EventManager.new(true)}
     let(:update_job) {instance_double(Bosh::Director::Jobs::UpdateDeployment, username: 'user', task_id: 42, event_manager: event_manager)}
     before do
-      @disk.add_snapshot(Bosh::Director::Models::Snapshot.make)
       allow(Bosh::Director::Config).to receive(:current_job).and_return(update_job)
     end
 

@@ -9,8 +9,6 @@ module Bosh::AwsCliPlugin
     before { allow(rds_destroyer).to receive(:sleep) }
 
     describe '#delete_all' do
-      before { allow(Bosh::AwsCliPlugin::EC2).to receive(:new).with(fake: 'aws config').and_return(ec2) }
-      let(:ec2) { instance_double('Bosh::AwsCliPlugin::EC2') }
 
       before { allow(Bosh::AwsCliPlugin::RDS).to receive(:new).and_return(rds) }
       let(:rds) { instance_double('Bosh::AwsCliPlugin::RDS') }
@@ -24,8 +22,6 @@ module Bosh::AwsCliPlugin
 
           expect(ui)
             .to receive(:confirmed?)
-            .with('Are you sure you want to delete all databases?')
-            .and_return(false)
 
           rds_destroyer.delete_all
         end
@@ -73,7 +69,6 @@ module Bosh::AwsCliPlugin
             expect(rds).not_to receive(:delete_subnet_groups)
             expect(rds).not_to receive(:delete_security_groups)
             expect(rds).not_to receive(:delete_db_parameter_group)
-            rds_destroyer.delete_all
           end
         end
       end
@@ -88,7 +83,6 @@ module Bosh::AwsCliPlugin
 
           it 'does not try to delete databases' do
             expect(rds).not_to receive(:delete_databases)
-            rds_destroyer.delete_all
           end
 
           it 'deletes db subnets, sec groups, and paramater groups' do
@@ -104,14 +98,12 @@ module Bosh::AwsCliPlugin
 
           it 'does not try to delete databases' do
             expect(rds).not_to receive(:delete_databases)
-            rds_destroyer.delete_all
           end
 
           it 'does not delete db subnets, sec groups, and paramater groups' do
             expect(rds).not_to receive(:delete_subnet_groups)
             expect(rds).not_to receive(:delete_security_groups)
             expect(rds).not_to receive(:delete_db_parameter_group)
-            rds_destroyer.delete_all
           end
         end
       end

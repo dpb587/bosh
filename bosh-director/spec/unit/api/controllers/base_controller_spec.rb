@@ -12,7 +12,6 @@ module Bosh
           let(:config) { Config.load_hash(SpecHelper.spec_get_director_config) }
 
           let(:requires_authentication) { nil }
-          let(:authenticates_successfully) { false }
           let(:identity_provider) { Support::TestIdentityProvider.new(config.get_uuid_provider) }
 
           before { allow(config).to receive(:identity_provider).and_return(identity_provider) }
@@ -29,7 +28,6 @@ module Bosh
           end
 
           context 'when authorization is provided' do
-            let(:authenticates_successfully) { true }
             before { basic_authorize 'admin', 'admin' }
 
             it 'passes the request env to the identity provider' do
@@ -49,7 +47,6 @@ module Bosh
           end
 
           context 'when failing to authenticate successfully' do
-            let(:authenticates_successfully) { false }
 
             it 'rejects the request' do
               get '/test_route'
@@ -62,7 +59,6 @@ module Bosh
 
             context 'when user provided credentials' do
               context 'when credentials are invalid' do
-                before { basic_authorize 'invalid', 'invalid' }
 
                 it 'returns controller response' do
                   get '/test_route'

@@ -3,22 +3,13 @@ require 'spec_helper'
 describe Bhm::Plugins::Email do
 
   before do
-    Bhm.logger = logger
 
     @smtp_options = {
-      'from' => 'hm@example.com',
-      'host' => 'smtp.example.com',
-      'port' => 587,
-      'user' => 'usr',
-      'password' => 'pwd',
-      'auth' => 'plain',
-      'domain' => 'example.com'
     }
 
     @options = {
       'recipients' => [ 'dude@vmware.com', 'dude2@vmware.com'],
       'smtp' => @smtp_options,
-      'interval' => 0.1
     }
 
     @plugin = Bhm::Plugins::Email.new(@options)
@@ -31,16 +22,10 @@ describe Bhm::Plugins::Email do
         'from'     => 'hm@example.com',
         'host'     => 'smtp.example.com',
         'port'     => 587,
-        'user'     => 'usr',
-        'password' => 'pwd',
-        'auth'     => 'plain',
-        'domain'   => 'example.com'
       }
     }
 
     invalid_options = {
-      'a' => 'b',
-      'c' => 'd'
     }
 
     expect(Bhm::Plugins::Email.new(valid_options).validate_options).to eq(true)
@@ -89,7 +74,6 @@ describe Bhm::Plugins::Email do
   end
 
   it 'processes queue asynchronously when running' do
-    allow(@plugin).to receive(:send_email_async)
 
     20.times do |i|
       @plugin.process(Bhm::Events::Base.create!(:heartbeat, heartbeat_payload))
@@ -103,8 +87,6 @@ describe Bhm::Plugins::Email do
       @plugin.run
       EM.add_timer(30) do
         # By this time the test is failing
-        puts("Timeout canceling the event machine")
-        EM.stop
       end
 
       EM.add_periodic_timer(0.5) do

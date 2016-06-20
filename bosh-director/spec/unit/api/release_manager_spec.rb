@@ -6,8 +6,6 @@ module Bosh::Director
     let(:username) { 'username-1' }
     let(:options) { { foo: 'bar' } }
 
-    before { allow(Dir).to receive(:mktmpdir).with('release').and_return(tmp_release_dir) }
-    let(:tmp_release_dir) { 'fake-tmp-release-dir' }
 
     before { allow(JobQueue).to receive(:new).and_return(job_queue) }
     let(:job_queue) { instance_double('Bosh::Director::JobQueue') }
@@ -158,7 +156,6 @@ module Bosh::Director
       end
 
       context 'when release file does not exist' do
-        before { allow(File).to receive(:exists?).with(release_path).and_return(false) }
 
         it 'raises an error' do
           rebase = double('bool')

@@ -52,7 +52,6 @@ module Bosh::Director
       end
 
       context 'accessing with invalid credentials' do
-        before { authorize 'invalid-user', 'invalid-password' }
 
         it 'returns 401' do
           post '/', '', { 'CONTENT_TYPE' => 'application/json' }
@@ -68,7 +67,6 @@ module Bosh::Director
       end
 
       context 'team admin access' do
-        before { authorize 'dev-team-member', 'dev-team-member' }
 
         it 'returns 401' do
           post '/', '', { 'CONTENT_TYPE' => 'application/json' }
@@ -145,7 +143,6 @@ module Bosh::Director
         end
 
         context 'when there are no stemcells' do
-          let(:stemcells) { [] }
 
           it 'returns empty collection if there are no stemcells' do
             perform
@@ -156,7 +153,6 @@ module Bosh::Director
       end
 
       context 'accessing with invalid credentials' do
-        before { authorize 'invalid-user', 'invalid-password' }
 
         it 'returns 401' do
           perform
@@ -173,7 +169,6 @@ module Bosh::Director
 
       context 'team admin access' do
         before { authorize 'dev-team-member', 'dev-team-member' }
-        let(:stemcells) { [] }
 
         it 'returns stemcells if any' do
           perform

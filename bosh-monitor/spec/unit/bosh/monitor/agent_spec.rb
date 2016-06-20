@@ -15,7 +15,6 @@ describe Bhm::Agent do
     agent = make_agent("007")
     expect(agent.timed_out?).to be(false)
 
-    allow(Time).to receive(:now).and_return(now + 344)
     expect(agent.timed_out?).to be(false)
 
     allow(Time).to receive(:now).and_return(now + 345)
@@ -27,7 +26,6 @@ describe Bhm::Agent do
     agent = make_agent("007")
     expect(agent.rogue?).to be(false)
 
-    allow(Time).to receive(:now).and_return(now + 124)
     expect(agent.rogue?).to be(false)
 
     allow(Time).to receive(:now).and_return(now + 125)

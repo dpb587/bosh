@@ -19,8 +19,6 @@ describe Bosh::Deployer::Specification do
   end
 
   describe '.load_from_stemcell' do
-    let(:spec) { Bosh::Deployer::Specification.load_from_stemcell(spec_dir, config) }
-    let(:spec_dir) { File.dirname(spec_asset('apply_spec.yml')) }
 
     it 'loads from file' do
       expect(spec.director_port).to eq 25555
@@ -33,7 +31,6 @@ describe Bosh::Deployer::Specification do
     before do
       spec_hash['properties']['agent'] ||= {}
       services.each do |service|
-        spec_hash['properties']['agent'][service] ||= {}
       end
     end
 
@@ -51,7 +48,6 @@ describe Bosh::Deployer::Specification do
     before do
       spec_hash['properties']['agent'] ||= {}
       services.each do |service|
-        spec_hash['properties']['agent'].delete(service)
       end
     end
 
@@ -95,7 +91,6 @@ describe Bosh::Deployer::Specification do
     end
 
     it 'does not update service addresses for services not included in apply_spec.yml' do
-      spec.update('1.1.1.1', '2.2.2.2')
 
       services.each do |service|
         expect(spec.properties).to_not have_key(service)
@@ -122,9 +117,6 @@ describe Bosh::Deployer::Specification do
     let(:spec_properties) do
       {
         'compiled_package_cache' => {
-          'bucket' => 'foo',
-          'access_key_id' => 'bar',
-          'secret_access_key' => 'baz'
         }
       }
     end
@@ -141,8 +133,6 @@ describe Bosh::Deployer::Specification do
       {
         'director' => {
           'ssl' => {
-            'cert' => 'foo-cert',
-            'key' => 'baz-key'
           }
         }
       }

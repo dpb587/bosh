@@ -5,7 +5,6 @@ describe Bosh::Cli::Command::Events do
 
   before do
     allow(command).to receive_messages(director: director, logged_in?: true, nl: nil, say: nil)
-    command.options[:target] = target
   end
 
   let(:director) { double(Bosh::Cli::Client::Director) }
@@ -58,14 +57,6 @@ describe Bosh::Cli::Command::Events do
       it 'lists all events' do
         expect(command).to receive(:say) do |display_output|
           expect(display_output.to_s).to match_output '
-+--------+------------------------------+-------+--------+-------------+-----------+------+-----+------+-----------------------------+
-| ID     | Time                         | User  | Action | Object type | Object ID | Task | Dep | Inst | Context                     |
-+--------+------------------------------+-------+--------+-------------+-----------+------+-----+------+-----------------------------+
-| 3      | Tue Feb 16 15:15:08 UTC 2016 | admin | rename | deployment  | depl1     | 6    | -   | -    | error: Someting went wrong, |
-|        |                              |       |        |             |           |      |     |      | new name: depl2             |
-| 2 <- 1 | Tue Feb 16 15:15:08 UTC 2016 | admin | create | deployment  | depl1     | 5    | -   | -    | information: blah blah      |
-| 1      | Tue Feb 16 15:15:08 UTC 2016 | admin | create | deployment  | depl1     | 1    | -   | -    | -                           |
-+--------+------------------------------+-------+--------+-------------+-----------+------+-----+------+-----------------------------+
 '
         end
         command.list
@@ -132,11 +123,6 @@ describe Bosh::Cli::Command::Events do
       expect(director).to receive(:list_events).with({before_id: 2, target: target}).and_return([event_1])
       expect(command).to receive(:say) do |display_output|
         expect(display_output.to_s).to match_output '
-+----+------------------------------+-------+--------+-------------+-----------+------+-----+------+---------+
-| ID | Time                         | User  | Action | Object type | Object ID | Task | Dep | Inst | Context |
-+----+------------------------------+-------+--------+-------------+-----------+------+-----+------+---------+
-| 1  | Tue Feb 16 15:15:08 UTC 2016 | admin | create | deployment  | depl1     | 1    | -   | -    | -       |
-+----+------------------------------+-------+--------+-------------+-----------+------+-----+------+---------+
         '
       end
       command.options = {before_id: 2, target: target}

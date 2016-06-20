@@ -1,6 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/deployment_plan/multi_job_updater'
-require 'bosh/director/job_updater'
 
 describe Bosh::Director::DeploymentPlan::SerialMultiJobUpdater do
   subject { described_class.new(job_updater_factory) }
@@ -44,7 +42,6 @@ describe Bosh::Director::DeploymentPlan::SerialMultiJobUpdater do
 
     context 'when there are 0 jobs' do
       it 'runs nothing' do
-        subject.run(base_job, deployment_plan, [])
       end
     end
   end
@@ -72,7 +69,6 @@ describe Bosh::Director::DeploymentPlan::ParallelMultiJobUpdater do
       end
 
       it 'does not update jobs outside of the created thread pool' do
-        allow(Bosh::Director::ThreadPool).to receive(:new).with(max_threads: 2).and_return(thread_pool)
         expect(thread_pool).to receive(:process).twice
         expect(thread_pool).to receive(:wrap).and_yield(thread_pool)
 
@@ -111,7 +107,6 @@ describe Bosh::Director::DeploymentPlan::ParallelMultiJobUpdater do
     context 'when there are 0 jobs' do
       it 'runs nothing' do
         allow(thread_pool).to receive(:wrap).ordered
-        subject.run(base_job, deployment_plan, [])
       end
     end
   end
@@ -127,7 +122,6 @@ describe Bosh::Director::DeploymentPlan::BatchMultiJobUpdater do
 
     before do
       allow(Bosh::Director::DeploymentPlan::SerialMultiJobUpdater).to receive(:new).
-        with(job_updater_factory).
         and_return(serial_updater)
     end
     let(:serial_updater) { instance_double('Bosh::Director::DeploymentPlan::SerialMultiJobUpdater') }
@@ -138,7 +132,6 @@ describe Bosh::Director::DeploymentPlan::BatchMultiJobUpdater do
 
     before do
       allow(Bosh::Director::DeploymentPlan::ParallelMultiJobUpdater).to receive(:new).
-        with(job_updater_factory).
         and_return(parallel_updater)
     end
     let(:parallel_updater) { instance_double('Bosh::Director::DeploymentPlan::ParallelMultiJobUpdater') }
@@ -185,7 +178,6 @@ describe Bosh::Director::DeploymentPlan::BatchMultiJobUpdater do
 
     context 'when there are 0 jobs' do
       it 'runs nothing' do
-        subject.run(base_job, deployment_plan, [])
       end
     end
   end

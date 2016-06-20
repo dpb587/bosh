@@ -13,7 +13,6 @@ module Bosh::Director
       release_version = Models::ReleaseVersion.new
       release_version.release = release
       release_version.version = '1'
-      release_version.packages << package1
       release_version.packages << package2
       release_version.packages << package3
       release_version

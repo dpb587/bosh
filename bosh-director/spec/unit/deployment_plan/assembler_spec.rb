@@ -4,20 +4,17 @@ module Bosh::Director
   describe DeploymentPlan::Assembler do
     subject(:assembler) { DeploymentPlan::Assembler.new(deployment_plan, stemcell_manager, dns_manager, cloud, logger) }
     let(:deployment_plan) { instance_double('Bosh::Director::DeploymentPlan::Planner',
-      name: 'simple',
       skip_drain: BD::DeploymentPlan::AlwaysSkipDrain.new,
       recreate: false,
       model: BD::Models::Deployment.make
     ) }
     let(:stemcell_manager) { nil }
     let(:dns_manager) { DnsManagerProvider.create }
-    let(:event_log) { Config.event_log }
 
     let(:cloud) { instance_double('Bosh::Cloud') }
 
     describe '#bind_models' do
       let(:instance_model) { Models::Instance.make(job: 'old-name') }
-      let(:job) { instance_double(DeploymentPlan::InstanceGroup) }
 
       before do
         allow(deployment_plan).to receive(:instance_models).and_return([instance_model])
@@ -73,8 +70,6 @@ module Bosh::Director
           allow(release_version).to receive(:get_template_model_by_name).and_return(template_model)
           template = DeploymentPlan::Template.new(release_version, template_name)
           template.bind_models
-          job.templates = [template]
-          allow(job).to receive(:validate_package_names_do_not_collide!)
           job
         end
 

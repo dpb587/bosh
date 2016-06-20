@@ -17,25 +17,14 @@ describe Bosh::Cli::DeploymentManifestCompiler do
       properties:
         dea:
           max_memory: <%= property("dea.max_memory") %>
-    MANIFEST
 
-    compiler = make_compiler(raw_manifest, { "dea.max_memory" => 8192 })
 
     expect(compiler.result).to eq <<-MANIFEST.gsub(/^\s*/, "")
-      ---
-      name: mycloud
-      properties:
-        dea:
-          max_memory: 8192
     MANIFEST
   end
 
   it "whines on missing deployment properties" do
     raw_manifest = <<-MANIFEST.gsub(/^\s*/, "")
-      ---
-      name: mycloud
-      properties:
-        dea:
           max_memory: <%= property("missing.property") %>
     MANIFEST
 
@@ -50,7 +39,6 @@ describe Bosh::Cli::DeploymentManifestCompiler do
   it "whines if manifest has syntax error (from ERB's point of view)" do
     raw_manifest = <<-MANIFEST.gsub(/^\s*/, "")
       properties: <%=
-        dea:
           max_memory: <%= property("missing.property") %>
     MANIFEST
 

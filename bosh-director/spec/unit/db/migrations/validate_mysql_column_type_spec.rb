@@ -9,7 +9,6 @@ module Bosh::Director
     end
 
     it 'should only have longtext types' do
-      excluded_tables = [:schema_migrations, :vms]
       (db.tables - excluded_tables).each do |table|
         db.schema(table).each do |column|
           expect(column.last[:db_type]).not_to eq('text'), "#{table}.#{column.first} is of type text.

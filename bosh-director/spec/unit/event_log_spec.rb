@@ -26,7 +26,6 @@ describe Bosh::Director::EventLog::Log do
 
     5.times do |i|
       threads << Thread.new do
-        sleep(rand()/5)
         stage.advance_and_track(i) { sleep(rand()/5) }
       end
     end

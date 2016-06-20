@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/api/instance_lookup'
 
 module Bosh::Director
   module Api
@@ -73,7 +72,6 @@ module Bosh::Director
 
           before do
             other_deployment = Models::Deployment.make(name: 'other_deployment')
-            Models::Instance.make(deployment: other_deployment)
             @deployment = Models::Deployment.make(name: 'given_deployment')
             @instance = Models::Instance.make(deployment: @deployment)
           end

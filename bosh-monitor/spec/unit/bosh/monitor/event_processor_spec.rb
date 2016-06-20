@@ -8,9 +8,7 @@ describe Bhm::EventProcessor do
         "from"    => "hm@example.com",
         "host"    => "smtp.example.com",
         "port"    => 587,
-        "domain"  => "example.com"
       },
-      "interval" => 0.1
     }
 
     Bhm.logger = logger
@@ -19,13 +17,10 @@ describe Bhm::EventProcessor do
     @logger_plugin = Bhm::Plugins::Logger.new
     @email_plugin = Bhm::Plugins::Email.new(email_options)
 
-    allow(@logger_plugin).to receive(:deliver)
-    allow(@email_plugin).to receive(:deliver)
   end
 
   it "registers plugin handlers for different event kinds" do
     @processor.add_plugin(@logger_plugin, ["alert", "heartbeat"])
-    @processor.add_plugin(@email_plugin, ["heartbeat", "foobar"])
 
     expect(@logger_plugin).to receive(:process) { |alert|
       expect(alert).to be_instance_of Bhm::Events::Alert
@@ -61,10 +56,8 @@ describe Bhm::EventProcessor do
 
     @processor.process(:alert, alert_payload(:id => 1))
     @processor.process(:alert, alert_payload(:id => 2))
-    @processor.process(:alert, alert_payload(:id => 2))
 
     @processor.process(:heartbeat, heartbeat_payload(:id => 1))
-    @processor.process(:heartbeat, heartbeat_payload(:id => 2))
     @processor.process(:heartbeat, heartbeat_payload(:id => 2))
 
     expect(@processor.events_count).to eq(4)
@@ -89,13 +82,10 @@ describe Bhm::EventProcessor do
   end
 
   it "can prune old events" do
-    @processor.add_plugin(@logger_plugin, ["alert"])
-    @processor.add_plugin(@email_plugin, ["heartbeat"])
 
     ts = Time.now
 
     @processor.process(:alert, alert_payload(:id => 1))
-    @processor.process(:alert, alert_payload(:id => 2))
     @processor.process(:alert, alert_payload(:id => 2))
     expect(@processor.events_count).to eq(2)
 

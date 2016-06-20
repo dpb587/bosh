@@ -6,9 +6,6 @@ module Bosh::Director
       let(:default_stemcells) do
         {
           'stemcell-alias' => {
-            'alias' => 'stemcell-alias',
-            'os' => 'stemcell-os',
-            'version' => 'stemcell-version'
           }
         }
       end
@@ -16,10 +13,8 @@ module Bosh::Director
         {'name' => 'vm-type1'}
       end
 
-      let(:deployment) { instance_double(DeploymentPlan::Planner, {manifest_hash: manifest_hash, }) }
       let(:deployment_validator) { DeploymentPlan::DeploymentValidator.new }
 
-      let(:cloud_config) { Models::CloudConfig.make }
 
       context 'when using stemcells and vm_types' do
         let(:deployment) do
@@ -51,8 +46,6 @@ module Bosh::Director
 
           it 'raises an error ' do
             expect { deployment_validator.validate(deployment) }.to raise_error(
-                DeploymentInvalidResourceSpecification,
-                "'resource_pools' cannot be specified along with 'stemcells' and/or 'vm_types'"
               )
           end
         end
@@ -64,8 +57,6 @@ module Bosh::Director
 
           it 'raises an error ' do
             expect { deployment_validator.validate(deployment) }.to raise_error(
-                DeploymentInvalidResourceSpecification,
-                "Both 'stemcells' and 'vm_types' need to be specified: 'stemcells' is missing"
               )
           end
         end
@@ -76,8 +67,6 @@ module Bosh::Director
 
           it 'raises an error ' do
             expect { deployment_validator.validate(deployment) }.to raise_error(
-                DeploymentInvalidResourceSpecification,
-                "Both 'stemcells' and 'vm_types' need to be specified: 'vm_types' is missing"
               )
           end
         end

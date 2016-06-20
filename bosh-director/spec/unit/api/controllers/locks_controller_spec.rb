@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'rack/test'
-require 'bosh/director/api/controllers/locks_controller'
 
 module Bosh::Director
   describe Api::Controllers::LocksController do
@@ -13,13 +12,11 @@ module Bosh::Director
       allow(config).to receive(:identity_provider).and_return(identity_provider)
       config
     end
-    before { allow(Api::ResourceManager).to receive(:new) }
 
     context 'authenticated access' do
       before { authorize 'admin', 'admin' }
 
       context 'when there are not any locks' do
-        let(:locks) { [] }
 
         it 'should list the current locks' do
           get '/'
@@ -33,7 +30,6 @@ module Bosh::Director
       context 'when there are current locks' do
         let(:lock_timeout) { Time.now.change(:usec => 0) + 1.second }
 
-        let(:lock_uid) { SecureRandom.uuid }
 
         before do
           Models::Lock.make(name: 'lock:deployment:test-deployment', expired_at: lock_timeout)
@@ -58,7 +54,6 @@ module Bosh::Director
       end
 
       context 'when there are expired locks' do
-        let(:lock_uid) { SecureRandom.uuid }
 
         before do
           Models::Lock.make(name: 'lock:deployment:test-deployment', expired_at: Time.now - 1.day)
@@ -90,7 +85,6 @@ module Bosh::Director
       before { authorize 'reader', 'reader' }
 
       context 'when there are not any locks' do
-        let(:locks) { [] }
 
         it 'should list the current locks' do
           get '/'
@@ -103,7 +97,6 @@ module Bosh::Director
     end
 
     context 'accessing with invalid credentials' do
-      before { authorize 'invalid-user', 'invalid-password' }
 
       it 'returns 401' do
         get '/'

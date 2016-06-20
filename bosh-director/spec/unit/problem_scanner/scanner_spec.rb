@@ -7,7 +7,6 @@ module Bosh::Director
 
     let(:event_logger) do
       event_logger = double(:event_logger, begin_stage: nil)
-      allow(event_logger).to receive(:track).and_yield(double(:ticker))
       ProblemScanner::EventLogger.new(
         event_logger,
         double(:logger, info: nil)
@@ -25,7 +24,6 @@ module Bosh::Director
     describe 'reset' do
       it 'should mark all open problems as closed' do
         problem = Models::DeploymentProblem.make(counter: 1,
-                                                 type: 'inactive_disk',
                                                  deployment: deployment,
                                                  state: 'open')
 
@@ -41,14 +39,9 @@ module Bosh::Director
           instance2 = Models::Instance.make(deployment: deployment, job: 'job1', index: 1)
 
           problem1 = Models::DeploymentProblem.make(counter: 1,
-                                                    type: 'inactive_disk',
                                                     deployment: deployment,
-                                                    state: 'open',
                                                     resource_id: instance1.id)
           problem2 = Models::DeploymentProblem.make(counter: 1,
-                                                    type: 'inactive_disk',
-                                                    deployment: deployment,
-                                                    state: 'open',
                                                     resource_id: instance2.id)
           scanner.reset([['job1', 0]])
           expect(Models::DeploymentProblem[problem1.id].state).to eq('closed')
@@ -63,8 +56,6 @@ module Bosh::Director
         and_return(problem_register)
     end
 
-    let(:logger) { double(:logger) }
-    before { allow(Config).to receive(:logger).and_return(logger) }
 
     describe 'scan_vms' do
       it 'delegates to VmScanStage' do
@@ -86,7 +77,6 @@ module Bosh::Director
         scanner.scan_vms(vms)
       end
     end
-    
     describe 'scan_disks' do
       it 'delegates to DiskScanStage' do
         agent_disks = double(:agent_disks)

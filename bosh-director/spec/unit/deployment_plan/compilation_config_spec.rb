@@ -42,7 +42,6 @@ describe Bosh::Director::DeploymentPlan::CompilationConfig do
             'cloud_properties' => {'instance_type' => 'super-large'}
           },
           {},
-          []
         )
 
         expect(config.cloud_properties).to eq({'instance_type' => 'super-large'})
@@ -151,7 +150,6 @@ describe Bosh::Director::DeploymentPlan::CompilationConfig do
                 {
                     'workers' => 2,
                     'network' => 'foo',
-                    'cloud_properties' => {'instance_type' => 'super-large'},
                     'vm_extensions' => ['my-foo-compilation-extension']
                 },
                 {},
@@ -181,9 +179,7 @@ describe Bosh::Director::DeploymentPlan::CompilationConfig do
       it 'should require workers to be specified' do
         expect {
           BD::DeploymentPlan::CompilationConfig.new({
-              'network' => 'foo',
               'cloud_properties' => {
-                'foo' => 'bar'
               }
             }, {})
         }.to raise_error(BD::ValidationMissingField)
@@ -193,9 +189,7 @@ describe Bosh::Director::DeploymentPlan::CompilationConfig do
         expect {
           BD::DeploymentPlan::CompilationConfig.new({
               'workers' => 0,
-              'network' => 'foo',
               'cloud_properties' => {
-                'foo' => 'bar'
               }
             }, {})
         }.to raise_error(BD::ValidationViolatedMin)
@@ -204,9 +198,7 @@ describe Bosh::Director::DeploymentPlan::CompilationConfig do
       it 'should require a network to be specified' do
         expect {
           BD::DeploymentPlan::CompilationConfig.new({
-              'workers' => 1,
               'cloud_properties' => {
-                'foo' => 'bar'
               }
             }, {})
         }.to raise_error(BD::ValidationMissingField)
@@ -225,7 +217,6 @@ describe Bosh::Director::DeploymentPlan::CompilationConfig do
             'workers' => 1,
             'network' => 'foo',
             'cloud_properties' => {
-              'foo' => 'bar'
             },
             'env' => {
               'password' => 'password1'
@@ -239,7 +230,6 @@ describe Bosh::Director::DeploymentPlan::CompilationConfig do
             'workers' => 1,
             'network' => 'foo',
             'cloud_properties' => {
-              'foo' => 'bar'
             },
             'reuse_compilation_vms' => true
           }, {})
@@ -252,7 +242,6 @@ describe Bosh::Director::DeploymentPlan::CompilationConfig do
               'workers' => 1,
               'network' => 'foo',
               'cloud_properties' => {
-                'foo' => 'bar'
               },
               # the non-boolean boolean
               'reuse_compilation_vms' => 1

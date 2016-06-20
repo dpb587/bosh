@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'blobstore_client'
 require 'fakefs/spec_helpers'
 
 module Bosh::Director
@@ -10,7 +9,6 @@ module Bosh::Director
     end
 
     describe '#perform' do
-      include FakeFS::SpecHelpers
 
       let(:backup_file) { '/dest_dir/backup.tgz' }
       let(:tmp_output_dir) { File.join('/tmp/random') }
@@ -22,7 +20,6 @@ module Bosh::Director
       end
 
       before do
-        FileUtils.mkdir_p(tmp_output_dir)
         allow(Dir).to receive(:mktmpdir).and_yield(tmp_output_dir)
         allow(tar_gzipper).to receive(:compress)
         allow(db_adapter).to receive(:export)

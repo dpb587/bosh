@@ -56,7 +56,6 @@ module Bosh::Cli
       end
 
       it "excludes license tarball" do
-        archiver.build
         expect(listing).to_not include('./license.tgz')
       end
 
@@ -64,11 +63,9 @@ module Bosh::Cli
         let(:custom_file_mode) { 0400 }
 
         it "preserves those" do
-          archiver.build
 
           dir = Dir.mktmpdir
           Dir.chdir(dir) do
-            extract_tar_files(archiver.filepath)
             listing.reject { |filename| ["./LICENSE", "./NOTICE", "./release.MF"].include?(filename)}.each do |entry|
               expect(file_mode(File.join(dir, entry))).to eq('0400')
             end
@@ -77,7 +74,6 @@ module Bosh::Cli
       end
 
       context "when no license is provided" do
-        let(:license) { nil }
 
         it "succeeds" do
           expect { archiver.build }.to_not raise_error
@@ -87,7 +83,6 @@ module Bosh::Cli
 
     def artifact(name, &block)
       path = release_source.add_tarball("#{name}.tgz", &block).path
-      File.chmod(custom_file_mode, path) if custom_file_mode
 
       BuildArtifact.new(name, "#{name}-fingerprint", path, "#{name}-sha1", [], false, false)
     end

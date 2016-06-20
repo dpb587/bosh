@@ -2,7 +2,6 @@ require 'spec_helper'
 
 module Bosh::Cli
   describe JobState do
-    include FakeFS::SpecHelpers
 
     let(:director) { instance_double(Client::Director) }
     let(:command) { instance_double(Command::Base) }
@@ -18,8 +17,6 @@ module Bosh::Cli
       allow(command).to receive(:err) { |message| raise Bosh::Cli::CliError, message }
       allow(command).to receive(:cancel_deployment) { raise Bosh::Cli::GracefulExit  }
       allow(command).to receive(:director) { director }
-      allow(command).to receive(:say)
-      allow(command).to receive(:nl)
       allow(director).to receive(:change_job_state)
     end
 
@@ -42,7 +39,6 @@ module Bosh::Cli
 
       it 'cancels the deploy if the user doesnt confirm' do
         allow(command).to receive(:inspect_deployment_changes).with(manifest, hash_including(show_empty_changeset: false)) do |manifest, _|
-          false
         end
         allow(command).to receive_messages(confirmed?: false)
 
@@ -55,7 +51,6 @@ module Bosh::Cli
 
       it 'changes the job state when the user confirms (or its non-interactive) and there arent any manifest changes' do
         allow(command).to receive(:inspect_deployment_changes).with(manifest, hash_including(show_empty_changeset: false)) do |manifest, _|
-          false
         end
         allow(command).to receive(:confirmed?) { true }
 
@@ -69,7 +64,6 @@ module Bosh::Cli
         let(:force) { true }
         it 'does not blow up when changes are present' do
           allow(command).to receive(:inspect_deployment_changes).with(manifest, hash_including(show_empty_changeset: false)) do |manifest, _|
-            true
           end
           allow(command).to receive_messages(confirmed?: true)
 

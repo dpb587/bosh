@@ -5,7 +5,6 @@ module Bosh::Director
     subject(:instance_state) { described_class }
 
     describe 'with_instance_update' do
-      let(:instance_model) { Models::Instance.make(uuid: 'fake-uuid') }
 
       context 'when block execution fails' do
         let(:instance_model) { Models::Instance.make(uuid: 'fake-uuid', update_completed: true) }

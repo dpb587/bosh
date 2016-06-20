@@ -7,7 +7,6 @@ module Bosh::Director
       include Rack::Test::Methods
 
       subject(:app) { described_class.new(config) }
-      before { allow(Api::ResourceManager).to receive(:new) }
       let(:config) { Config.load_hash(SpecHelper.spec_get_director_config) }
 
       describe 'POST', '/matches' do
@@ -29,28 +28,17 @@ module Bosh::Director
             before do
               params.merge!('packages' => [
                   { 'fingerprint' => 'fake-pkg1-fingerprint' },
-                  { 'fingerprint' => 'fake-pkg2-fingerprint' },
                   { 'fingerprint' => 'fake-pkg3-fingerprint' },
               ])
 
               release = Models::Release.make(name: 'fake-release-name')
 
               Models::Package.make(
-                  release: release,
-                  name: 'fake-pkg1',
-                  version: 'fake-pkg1-version',
-                  blobstore_id: 'fake-pkg1-blobstoreid',
-                  sha1: 'fake-pkg1-sha',
                   fingerprint: 'fake-pkg1-fingerprint',
               )
 
 
               Models::Package.make(
-                  release: release,
-                  name: 'fake-pkg3',
-                  version: 'fake-pkg3-version',
-                  blobstore_id: 'fake-pkg3-blobstoreid',
-                  sha1: 'fake-pkg3-sha',
                   fingerprint: 'fake-pkg3-fingerprint',
               )
             end
@@ -67,7 +55,6 @@ module Bosh::Director
               before do
                 params.merge!('packages' => [
                   { 'fingerprint' => 'fake-pkg1-fingerprint' },
-                  { 'fingerprint' => 'fake-pkg2-fingerprint' },
                   { 'fingerprint' => 'fake-pkg3-fingerprint' },
                 ])
               end
@@ -77,18 +64,12 @@ module Bosh::Director
                   release = Models::Release.make(name: 'fake-release-name')
 
                   Models::Package.make(
-                    release: release,
-                    name: 'fake-pkg1',
-                    version: 'fake-pkg1-sha',
                     fingerprint: 'fake-pkg1-fingerprint',
                   )
 
                   # No match for pkg2 in db
 
                   Models::Package.make(
-                    release: release,
-                    name: 'fake-pkg3',
-                    version: 'fake-pkg3-sha',
                     fingerprint: 'fake-pkg3-fingerprint',
                   )
                 end
@@ -105,10 +86,6 @@ module Bosh::Director
                   release = Models::Release.make(name: 'fake-release-name')
 
                   Models::Package.make(
-                    release: release,
-                    name: 'fake-pkg5',
-                    version: 'fake-pkg5-sha',
-                    fingerprint: 'fake-pkg5-fingerprint',
                   )
                 end
 
@@ -123,8 +100,6 @@ module Bosh::Director
             context 'when manifest contains nil fingerprints' do
               before do
                 params.merge!('packages' => [
-                  { 'fingerprint' => nil },
-                  { 'fingerprint' => 'fake-pkg2-fingerprint' },
                   { 'fingerprint' => 'fake-pkg3-fingerprint' },
                 ])
               end
@@ -133,23 +108,12 @@ module Bosh::Director
                 release = Models::Release.make(name: 'fake-release-name')
 
                 Models::Package.make(
-                  release: release,
-                  name: 'fake-pkg1',
-                  version: 'fake-pkg1-sha',
-                  fingerprint: 'fake-pkg1-fingerprint',
                 )
 
                 Models::Package.make(
-                  release: release,
-                  name: 'fake-pkg2',
-                  version: 'fake-pkg2-sha',
-                  fingerprint: nil, # set to nil explicitly
                 )
 
                 Models::Package.make(
-                  release: release,
-                  name: 'fake-pkg3',
-                  version: 'fake-pkg3-sha',
                   fingerprint: 'fake-pkg3-fingerprint',
                 )
               end
@@ -190,7 +154,6 @@ module Bosh::Director
         end
 
         context 'accessing with invalid credentials' do
-          before { authorize 'invalid-user', 'invalid-password' }
 
           it 'returns 401' do
             perform
@@ -212,41 +175,23 @@ module Bosh::Director
             release = Models::Release.make(name: 'fake-release-name')
 
             package1 = Models::Package.make(
-                release: release,
                 name: 'fake-pkg1',
-                version: 'fake-pkg1-version',
-                sha1: 'fake-pkg1-sha',
                 fingerprint: 'fake-pkg1-fingerprint',
             )
 
             Models::Package.make(
-                release: release,
-                name: 'fake-pkg2',
-                version: 'fake-pkg2-version',
-                sha1: 'fake-pkg2-sha',
-                fingerprint: 'fake-pkg2-fingerprint',
             )
 
             Models::Package.make(
-                release: release,
-                name: 'fake-pkg3',
-                version: 'fake-pkg3-version',
-                sha1: 'fake-pkg3-sha',
-                fingerprint: 'fake-pkg3-fingerprint',
             )
 
             package4 = Models::Package.make(
-                release: release,
                 name: 'fake-pkg4',
-                version: 'fake-pkg4-version',
-                sha1: 'fake-pkg4-sha',
                 fingerprint: 'fake-pkg4-fingerprint',
             )
 
             Models::CompiledPackage.make(
                 package_id: package1.id,
-                blobstore_id: 'cpkg1_blobstore_id',
-                sha1: 'cpkg1_sha1',
                 stemcell_os: 'ubuntu-trusty',
                 stemcell_version: '3000',
                 dependency_key: '[["fake-pkg2","fake-pkg2-version"],["fake-pkg3","fake-pkg3-version"]]',
@@ -254,8 +199,6 @@ module Bosh::Director
 
             Models::CompiledPackage.make(
                 package_id: package4.id,
-                blobstore_id: 'cpkg4_blobstore_id',
-                sha1: 'cpkg4_sha4',
                 stemcell_os: 'ubuntu-trusty',
                 stemcell_version: '3000',
                 dependency_key: '[["fake-pkg1","fake-pkg1-version",[["fake-pkg2","fake-pkg2-version"],["fake-pkg3","fake-pkg3-version"]]]]',
@@ -273,9 +216,6 @@ module Bosh::Director
             expect(JSON.load(last_response.body)).to eq(%w(fake-pkg1-fingerprint))
 
             params_compiled = {'compiled_packages' => [
-                { 'name' => 'fake-pkg1', 'version' => 'fake-pkg1-version', 'fingerprint' => 'fake-pkg1-fingerprint', 'stemcell' => 'ubuntu-trusty/3000','dependencies' => [] },
-                { 'name' => 'fake-pkg2', 'version' => 'fake-pkg2-version', 'fingerprint' => 'fake-pkg2-fingerprint', 'stemcell' => 'ubuntu-trusty/3000','dependencies' => [] },
-                { 'name' => 'fake-pkg3', 'version' => 'fake-pkg3-version', 'fingerprint' => 'fake-pkg3-fingerprint', 'stemcell' => 'ubuntu-trusty/3000','dependencies' => [] },
             ]}
             perform_matches_compiled(params_compiled)
             expect(last_response.status).to eq(200)

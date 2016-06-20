@@ -9,7 +9,6 @@ module Bosh::Director
         existing_instance: instance_model,
         desired_instance: DeploymentPlan::DesiredInstance.new(job),
         instance: instance,
-        network_plans: [],
       }) }
 
     let(:job_persistent_disk_size) { 1024 }
@@ -44,7 +43,6 @@ module Bosh::Director
       allow(agent_client).to receive(:migrate_disk)
       allow(agent_client).to receive(:unmount_disk)
       allow(cloud).to receive(:detach_disk)
-      allow(Config).to receive(:cloud).and_return(cloud)
       allow(Config).to receive(:current_job).and_return(update_job)
     end
 
@@ -101,7 +99,6 @@ module Bosh::Director
                existing_instance: instance_model,
                desired_instance: DeploymentPlan::DesiredInstance.new(job),
                instance: instance,
-               network_plans: [],
             })
           }
 
@@ -213,7 +210,6 @@ module Bosh::Director
             end
 
             context 'when there is no old disk to migrate' do
-              let(:persistent_disk) { nil }
               it 'does not attempt to migrate the disk' do
                 expect(agent_client).to_not receive(:migrate_disk)
               end
@@ -224,8 +220,6 @@ module Bosh::Director
 
               context 'when mounting and migrating disks succeeds' do
                 before do
-                  allow(cloud).to receive(:detach_disk).with('vm234', 'new-disk-cid')
-                  allow(agent_client).to receive(:list_disk).and_return(['disk123', 'new-disk-cid'])
                 end
 
                 it 'switches active disks' do
@@ -236,9 +230,6 @@ module Bosh::Director
                 context 'when switching active disk succeeds' do
                   let(:snapshot) { Models::Snapshot.make }
                   before do
-                    persistent_disk.add_snapshot(snapshot)
-                    allow(agent_client).to receive(:unmount_disk).with('disk123')
-                    allow(cloud).to receive(:detach_disk).with('vm234', 'disk123')
                   end
 
                   it 'orphans the old mounted disk' do
@@ -268,7 +259,6 @@ module Bosh::Director
 
               context 'when mounting the disk raises' do
                 before do
-                  allow(agent_client).to receive(:list_disk).and_return(['disk123'])
                   expect(agent_client).to receive(:mount_disk).with('new-disk-cid').and_raise(disk_error)
                 end
 
@@ -285,7 +275,6 @@ module Bosh::Director
               context 'when migrating the disk raises' do
                 before do
                   allow(agent_client).to receive(:list_disk).and_return(['disk123', 'new-disk-cid'])
-                  allow(agent_client).to receive(:mount_disk).with('new-disk-cid')
                   expect(agent_client).to receive(:migrate_disk).with('disk123', 'new-disk-cid').and_raise(disk_error)
                 end
 
@@ -311,7 +300,6 @@ module Bosh::Director
 
           it 'does not migrate the disk' do
             expect(cloud).to_not receive(:create_disk)
-            disk_manager.update_persistent_disk(instance_plan)
           end
         end
       end
@@ -337,7 +325,6 @@ module Bosh::Director
         end
 
         context 'when we still need disk' do
-          let(:job_persistent_disk_size) { 100 }
 
           it 'raises' do
             expect {
@@ -368,7 +355,6 @@ module Bosh::Director
         expect(cloud).to_not receive(:delete_snapshot)
         expect(cloud).to_not receive(:delete_disk)
 
-        disk_manager.delete_persistent_disks(instance_model)
       end
 
       it "stores events" do
@@ -419,7 +405,6 @@ module Bosh::Director
         conflicting_orphan_snapshot = Models::OrphanSnapshot.make(
           orphan_disk: conflicting_orphan_disk,
           snapshot_cid: 'existing_cid',
-          snapshot_created_at: Time.now
         )
 
         snapshot = Models::Snapshot.make(
@@ -448,14 +433,12 @@ module Bosh::Director
           instance_name: 'fake-name-1',
           size: 10,
           deployment_name: 'fake-deployment',
-          created_at: orphaned_at,
         )
         Models::OrphanDisk.make(
           disk_cid: 'random-disk-cid-2',
           instance_name: 'fake-name-2',
           availability_zone: 'az2',
           deployment_name: 'fake-deployment',
-          created_at: other_orphaned_at,
           cloud_properties: {'cloud' => 'properties'}
         )
 
@@ -485,9 +468,7 @@ module Bosh::Director
     describe 'Deleting orphans' do
       let(:time) { Time.now.utc }
       let(:ten_seconds_ago) { time - 10 }
-      let(:six_seconds_ago) { time - 6 }
       let(:five_seconds_ago) { time - 5 }
-      let(:four_seconds_ago) { time - 4 }
 
       let(:event_log) { instance_double(EventLog::Log) }
       let(:stage) { instance_double(EventLog::Stage) }
@@ -501,8 +482,6 @@ module Bosh::Director
       before do
         allow(cloud).to receive(:delete_disk)
         allow(cloud).to receive(:delete_snapshot)
-        allow(event_log).to receive(:begin_stage).and_return(stage)
-        allow(stage).to receive(:advance_and_track).and_yield
       end
 
       describe 'deleting an orphan disk by disk cid' do
@@ -601,7 +580,6 @@ module Bosh::Director
 
     describe '#attach_disks_if_needed' do
       context 'when instance desired job has disk' do
-        let(:job_persistent_disk_size) { 100 }
 
         it 'attaches current instance disk' do
           expect(cloud).to receive(:attach_disk).with('vm234', 'disk123')
@@ -614,7 +592,6 @@ module Bosh::Director
 
         it 'does not attach current instance disk' do
           expect(cloud).to_not receive(:attach_disk)
-          disk_manager.attach_disks_if_needed(instance_plan)
         end
       end
     end

@@ -7,8 +7,6 @@ describe Bosh::Director::ProblemHandlers::MountInfoMismatch do
   end
 
   before(:each) do
-    @cloud = instance_double('Bosh::Cloud')
-    @agent = double('agent')
 
     @instance = Bosh::Director::Models::Instance.
       make(:job => 'mysql_node', :index => 3)

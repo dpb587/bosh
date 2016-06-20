@@ -3,15 +3,12 @@ require 'spec_helper'
 module Bosh
   module Director
     describe DeploymentPlan::DeploymentRepo do
-      subject { DeploymentPlan::DeploymentRepo.new }
 
       before do
-        Bosh::Director::Models::DirectorAttribute.make(name: 'uuid', value: 'fake-director-uuid')
       end
 
       describe '.find_or_create_by_name' do
         it 'all happens in a transaction' do
-          skip 'probably a better solution is to put canonical_name in the db and enforce this there'
         end
 
         context 'when a deployment with that name exists' do
@@ -28,8 +25,6 @@ module Bosh
               expect {
                 subject.find_or_create_by_name('Existing')
               }.to raise_error(
-                DeploymentCanonicalNameTaken,
-                "Invalid deployment name 'Existing', canonical name already taken ('existing')"
               )
             end
           end

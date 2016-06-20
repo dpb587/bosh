@@ -46,9 +46,6 @@ module Bosh::Director
       let(:test_config) { SpecHelper.spec_get_director_config }
       let(:config) do
         config = Config.load_hash(test_config)
-        identity_provider = Support::TestIdentityProvider.new(config.get_uuid_provider)
-        allow(config).to receive(:identity_provider).and_return(identity_provider)
-        config
       end
       let(:app) { Support::TestController.new(config) }
 
@@ -62,7 +59,6 @@ module Bosh::Director
 
       context 'given bogus HTTP basic authentication credentials' do
         it 'is rejected' do
-          basic_authorize 'admin', 'bogus'
           get '/test_route'
           expect(last_response.status).to eq(401)
         end

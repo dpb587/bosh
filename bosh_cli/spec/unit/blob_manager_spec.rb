@@ -39,7 +39,6 @@ describe Bosh::Cli::BlobManager do
 
     it "doesn't like bad index file'" do
       File.open(File.join(@config_dir, "blobs.yml"), "w") do |f|
-        Psych.dump("string", f)
       end
 
       expect {
@@ -158,7 +157,6 @@ describe Bosh::Cli::BlobManager do
       blob_sha1 = Digest::SHA1.hexdigest("blob contents")
       index = {
         "foo" => {
-          "size" => "1000",
           "object_id" => "deadbeef",
           "sha" => blob_sha1
         }
@@ -246,8 +244,6 @@ describe Bosh::Cli::BlobManager do
       allow(@blobstore).to receive(:create).and_return("new-object-id")
 
       new_blob = Tempfile.new("new-blob")
-      new_blob.write("test")
-      new_blob.close
 
       @manager.add_blob(new_blob.path, "foo")
       @manager.process_blobs_directory
@@ -259,7 +255,6 @@ describe Bosh::Cli::BlobManager do
 
       @manager.upload_blob("bar")
 
-      new_blob.open
       new_blob.write("stuff")
       new_blob.close
 
@@ -272,14 +267,10 @@ describe Bosh::Cli::BlobManager do
     it "downloads missing blobs" do
       index = {
         "foo" => {
-          "size" => 1000,
           "sha" => Digest::SHA1.hexdigest("foo"),
-          "object_id" => "da-foo"
         },
         "bar" => {
-          "size" => 500,
           "sha" => Digest::SHA1.hexdigest("bar"),
-          "object_id" => "da-bar"
         }
       }
 

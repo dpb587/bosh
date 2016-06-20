@@ -4,7 +4,6 @@ module Bosh::Director
   describe Jobs::CreateSnapshot do
     let(:instance) { Models::Instance.make }
     let(:options) { {} }
-    let(:instance_manager) { instance_double('Bosh::Director::Api::InstanceManager') }
     let(:cids) { %w[snap0 snap1] }
 
     subject { described_class.new(instance.id, options) }

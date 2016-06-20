@@ -11,11 +11,6 @@ module Bosh::Director::DeploymentPlan
           {
             'range' => '192.168.1.0/29',
             'gateway' => '192.168.1.1',
-            'dns' => ['192.168.1.1', '192.168.1.2'],
-            'static' => [],
-            'reserved' => [],
-            'cloud_properties' => {},
-            'az' => 'az-1',
           }
         ]
       }
@@ -68,8 +63,6 @@ module Bosh::Director::DeploymentPlan
       def dynamic_reservation_with_ip(ip)
         reservation = BD::DesiredNetworkReservation.new_dynamic(instance_model, network_without_static_pool)
         reservation.resolve_ip(ip)
-        reservation.mark_reserved
-        ip_repo.add(reservation)
 
         reservation
       end
@@ -202,10 +195,8 @@ module Bosh::Director::DeploymentPlan
 
           static_network_reservation = BD::DesiredNetworkReservation.new_static(instance_model, network, '192.168.1.5')
 
-          ip_repo.add(static_network_reservation)
 
           expect {
-            ip_repo.add(static_network_reservation)
           }.not_to raise_error
         end
       end
@@ -265,8 +256,6 @@ module Bosh::Director::DeploymentPlan
           reservation_1 = BD::DesiredNetworkReservation.new_static(instance_model, network, '192.168.1.2')
           reservation_2 = BD::DesiredNetworkReservation.new_static(instance_model, network, '192.168.1.4')
 
-          ip_repo.add(reservation_1)
-          ip_repo.add(reservation_2)
 
           reservation_3 = BD::DesiredNetworkReservation.new_dynamic(instance_model, network)
           ip_address = ip_repo.allocate_dynamic_ip(reservation_3, subnet)
@@ -305,7 +294,6 @@ module Bosh::Director::DeploymentPlan
           ips.each do |ip|
             ip_address = Bosh::Director::Models::IpAddress.new(
               address: ip,
-              network_name: 'my-manual-network',
               instance: instance_model,
               task_id: Bosh::Director::Config.current_job.task_id
             )
@@ -319,14 +307,12 @@ module Bosh::Director::DeploymentPlan
               original_save.call
               raise fail_error
             end
-            model
           end
         end
 
         shared_examples :retries_on_race_condition do
           context 'when allocating some IPs fails' do
             before do
-              network_spec['subnets'].first['range'] = '192.168.1.0/29'
 
               fail_saving_ips([
                   cidr_ip('192.168.1.2'),
@@ -344,7 +330,6 @@ module Bosh::Director::DeploymentPlan
 
           context 'when allocating any IP fails' do
             before do
-              network_spec['subnets'].first['range'] = '192.168.1.0/29'
               network_spec['subnets'].first['reserved'] = ['192.168.1.5', '192.168.1.6']
 
               fail_saving_ips([

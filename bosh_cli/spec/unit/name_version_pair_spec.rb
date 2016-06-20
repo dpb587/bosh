@@ -8,7 +8,6 @@ describe Bosh::Cli::NameVersionPair do
     context 'when given value contains no slashes' do
       it 'raises argument error' do
         expect { described_class.parse('non-slash') }
-          .to raise_error(ArgumentError, "\"non-slash\" #{invalid_error}")
       end
     end
 
@@ -24,21 +23,18 @@ describe Bosh::Cli::NameVersionPair do
       context 'when name is empty' do
         it 'raises argument error' do
           expect { described_class.parse('/version') }
-            .to raise_error(ArgumentError, "\"/version\" #{invalid_error}")
         end
       end
 
       context 'when version is empty' do
         it 'raises argument error' do
           expect { described_class.parse('name/') }
-            .to raise_error(ArgumentError, "\"name/\" #{invalid_error}")
         end
       end
 
       context 'when name and version are empty' do
         it 'raises argument error' do
           expect { described_class.parse('/') }
-            .to raise_error(ArgumentError, "\"/\" #{invalid_error}")
         end
       end
     end

@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'net/http'
 
 describe Bosh::Director::Jobs::UpdateStemcell do
   describe 'DJ job class expectations' do
@@ -9,8 +8,6 @@ describe Bosh::Director::Jobs::UpdateStemcell do
 
   describe '#perform' do
     let!(:tmp_dir) { Dir.mktmpdir("base_dir") }
-    before { allow(Dir).to receive(:mktmpdir).and_return(tmp_dir) }
-    after { FileUtils.rm_rf(tmp_dir) }
 
     let(:cloud) { instance_double('Bosh::Cloud') }
     before { allow(Bosh::Director::Config).to receive(:cloud).and_return(cloud) }
@@ -29,7 +26,6 @@ describe Bosh::Director::Jobs::UpdateStemcell do
         @stemcell_file = Tempfile.new("stemcell_contents")
         File.open(@stemcell_file.path, "w") { |f| f.write(stemcell_contents) }
       end
-      after { FileUtils.rm_rf(@stemcell_file.path) }
 
       context 'uploading a local stemcell' do
         it "should upload a local stemcell" do
@@ -140,7 +136,6 @@ describe Bosh::Director::Jobs::UpdateStemcell do
         expect(cloud).to receive(:create_stemcell).with(anything, {"ram" => "2gb"}) do |image, _|
           contents = File.open(image) { |f| f.read }
           expect(contents).to eql("image contents")
-          "stemcell-cid"
         end
 
         update_stemcell_job = Bosh::Director::Jobs::UpdateStemcell.new(@stemcell_file.path)
@@ -200,7 +195,6 @@ describe Bosh::Director::Jobs::UpdateStemcell do
         expect(cloud).to receive(:create_stemcell).with(anything, {"ram" => "2gb"}) do |image, _|
           contents = File.open(image) { |f| f.read }
           expect(contents).to eql("image contents")
-          "stemcell-cid"
         end
 
         update_stemcell_job = Bosh::Director::Jobs::UpdateStemcell.new(@stemcell_file.path)
@@ -217,7 +211,6 @@ describe Bosh::Director::Jobs::UpdateStemcell do
         tar.add_file("image", {:mode => "0644", :mtime => 0}) { |os, _| os.write(image) }
       end
 
-      io.close
       gzip(io.string)
     end
   end

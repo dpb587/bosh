@@ -59,9 +59,7 @@ describe UpdateElbForWebsockets do
   describe UpdateElbForWebsockets::WebSocketElbHelpers do
     before do
       @receipt = YAML.load_file(asset "test-output.yml")
-      allow(subject).to receive_messages(load_receipt: @receipt)
 
-      @mock_vpc = double(Bosh::AwsCliPlugin::VPC)
       allow(Bosh::AwsCliPlugin::VPC).to receive(:find).with(ec2, @receipt['vpc']['id']).and_return(@mock_vpc)
     end
 

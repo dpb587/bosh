@@ -12,14 +12,11 @@ module Bosh::Director
       Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.id, type: 'missing_vm')
 
       instance = Models::Instance.make(deployment: deployment, job: 'job2', index: 0, uuid: 'job2index0')
-      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.id, type: 'unbound')
 
       instance = Models::Instance.make(deployment: deployment, job: 'job2', index: 1, uuid: 'job2index1')
-      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.id, type: 'missing_vm')
       Models::PersistentDisk.make(instance: instance)
 
       instance = Models::Instance.make(deployment: deployment, job: 'job2', index: 2, uuid: 'job2index2', ignore: true)
-      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.id, type: 'unresponsive_agent')
     end
 
     let(:deployment) { Models::Deployment[1] }
@@ -46,9 +43,7 @@ module Bosh::Director
           filtered_jobs = [['job1', 'job1index0'], ['job1', 'job1index1']]
           resolver = instance_double('Bosh::Director::ProblemResolver').as_null_object
           expect(ProblemResolver).to receive(:new).with(deployment).and_return(resolver)
-          allow(scan_and_fix).to receive(:with_deployment_lock).and_yield
           allow(resolver).to receive(:apply_resolutions).and_return(0)
-          allow(PostDeploymentScriptRunner).to receive(:run_post_deploys_after_resurrection)
 
           scanner = instance_double('Bosh::Director::ProblemScanner::Scanner')
           expect(ProblemScanner::Scanner).to receive(:new).and_return(scanner)
@@ -67,9 +62,7 @@ module Bosh::Director
         it 'should call the problem scanner with all of the jobs' do
           resolver = instance_double('Bosh::Director::ProblemResolver').as_null_object
           expect(ProblemResolver).to receive(:new).with(deployment).and_return(resolver)
-          allow(scan_and_fix).to receive(:with_deployment_lock).and_yield
           allow(resolver).to receive(:apply_resolutions).and_return(1)
-          allow(PostDeploymentScriptRunner).to receive(:run_post_deploys_after_resurrection)
 
           scanner = instance_double('Bosh::Director::ProblemScanner::Scanner')
           expect(ProblemScanner::Scanner).to receive(:new).and_return(scanner)
@@ -83,8 +76,6 @@ module Bosh::Director
       it 'should call the problem resolver' do
         scanner = instance_double('Bosh::Director::ProblemScanner::Scanner').as_null_object
         allow(ProblemScanner::Scanner).to receive_messages(new: scanner)
-        allow(scan_and_fix).to receive(:with_deployment_lock).and_yield
-        allow(PostDeploymentScriptRunner).to receive(:run_post_deploys_after_resurrection)
 
         resolver = instance_double('Bosh::Director::ProblemResolver')
         expect(ProblemResolver).to receive(:new).and_return(resolver)
@@ -96,7 +87,6 @@ module Bosh::Director
       it 'should call the post_deploy script runner' do
         scanner = instance_double('Bosh::Director::ProblemScanner::Scanner').as_null_object
         allow(ProblemScanner::Scanner).to receive_messages(new: scanner)
-        allow(scan_and_fix).to receive(:with_deployment_lock).and_yield
 
         resolver = instance_double('Bosh::Director::ProblemResolver')
         allow(ProblemResolver).to receive(:new).and_return(resolver)
@@ -116,7 +106,6 @@ module Bosh::Director
       before do
         scanner = instance_double('Bosh::Director::ProblemScanner::Scanner').as_null_object
         allow(ProblemScanner::Scanner).to receive_messages(new: scanner)
-        allow(scan_and_fix).to receive(:with_deployment_lock).and_yield
       end
 
       it 'should give a nice message for Lock::TimeoutError' do
@@ -144,7 +133,6 @@ module Bosh::Director
         it 'raises an error' do
           scanner = instance_double('Bosh::Director::ProblemScanner::Scanner').as_null_object
           allow(ProblemScanner::Scanner).to receive_messages(new: scanner)
-          allow(scan_and_fix).to receive(:with_deployment_lock).and_yield
 
           resolver = instance_double('Bosh::Director::ProblemResolver')
           expect(ProblemResolver).to receive(:new).and_return(resolver)

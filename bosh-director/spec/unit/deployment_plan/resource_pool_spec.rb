@@ -8,8 +8,6 @@ module Bosh::Director::DeploymentPlan
     let(:valid_spec) do
       {
         'name' => 'small',
-        'size' => max_size,
-        'network' => 'test',
         'stemcell' => {
           'name' => 'stemcell-name',
           'version' => '0.5.2'
@@ -19,7 +17,6 @@ module Bosh::Director::DeploymentPlan
       }
     end
 
-    let(:plan) { instance_double('Bosh::Director::DeploymentPlan::Planner') }
 
 
     describe 'creating' do
@@ -58,7 +55,6 @@ module Bosh::Director::DeploymentPlan
 
         it 'raises an error' do
           expect {
-          ResourcePool.new(valid_spec)
           }.not_to raise_error
         end
       end
@@ -73,7 +69,6 @@ module Bosh::Director::DeploymentPlan
 
       %w(size).each do |key|
         context "when #{key} is missing" do
-          before { valid_spec.delete(key) }
 
           it 'does not raise an error' do
             expect { ResourcePool.new(valid_spec) }.to_not raise_error

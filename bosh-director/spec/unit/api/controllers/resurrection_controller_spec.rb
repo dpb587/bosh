@@ -20,9 +20,6 @@ module Bosh::Director
           it 'allows putting all job instances into different resurrection_paused values' do
             deployment = Models::Deployment.create(name: 'foo', manifest: Psych.dump('foo' => 'bar'))
             instances = [
-              Models::Instance.create(deployment: deployment, job: 'dea', index: '0', state: 'started'),
-              Models::Instance.create(deployment: deployment, job: 'dea', index: '1', state: 'started'),
-              Models::Instance.create(deployment: deployment, job: 'dea', index: '2', state: 'started'),
             ]
             put '/', Yajl::Encoder.encode('resurrection_paused' => true), { 'CONTENT_TYPE' => 'application/json' }
             expect(last_response.status).to eq(200)

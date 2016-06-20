@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/models/ip_address'
 
 module Bosh::Director::Models
   describe IpAddress do
@@ -32,7 +31,6 @@ module Bosh::Director::Models
 
         invalid_ip.address = NetAddr::CIDR.create('10.10.0.1').to_i
         expect {
-          invalid_ip.save
         }.not_to raise_error
       end
     end

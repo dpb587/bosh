@@ -8,7 +8,6 @@ module Bosh::Director
     describe '#retryable_transaction' do
       it 'yields to Sequel' do
         def execute(error_message)
-          raise error_message
         end
 
         expect(fake_db).to receive(:transaction).and_return(true)
@@ -32,14 +31,12 @@ module Bosh::Director
       let(:db) { Bosh::Director::Config.db }
 
       before do
-        @success = false
         @tries = 0
 
         def execute(error_message)
           @tries += 1
           raise Sequel::DatabaseError, error_message if @tries < 3
 
-          @success = true
         end
       end
 

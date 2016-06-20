@@ -15,22 +15,16 @@ describe 'NonInteractiveProgressRenderer' do
     end
 
     it 'does not render subsequent progress' do
-      renderer.start(path, label)
 
       expect(renderer).to_not receive(:say)
-      renderer.progress(path, label, 50)
     end
 
     it 'renders error' do
-      renderer.start(path, label)
-      renderer.progress(path, label, 50)
       expect_render(path, error, renderer)
       renderer.error(path, error)
     end
 
     it 'renders finished' do
-      renderer.start(path, label)
-      renderer.progress(path, label, 50)
       expect_render(path, label, renderer)
       renderer.finish(path, label)
     end
@@ -53,25 +47,13 @@ describe 'NonInteractiveProgressRenderer' do
     end
 
     it 'does not render subsequent progress' do
-      renderer.start(path1, label)
-      renderer.start(path2, label)
-      renderer.start(path3, label)
 
       expect(renderer).to_not receive(:say)
 
-      renderer.progress(path1, label, 50)
-      renderer.progress(path2, label, 51)
-      renderer.progress(path3, label, 52)
     end
 
     it 'renders error' do
-      renderer.start(path1, label)
-      renderer.start(path2, label)
-      renderer.start(path3, label)
 
-      renderer.progress(path1, label, 50)
-      renderer.progress(path2, label, 51)
-      renderer.progress(path3, label, 52)
 
       expect_render(path1, error, renderer)
       renderer.error(path1, error)
@@ -82,13 +64,7 @@ describe 'NonInteractiveProgressRenderer' do
     end
 
     it 'renders finished' do
-      renderer.start(path1, label)
-      renderer.start(path2, label)
-      renderer.start(path3, label)
 
-      renderer.progress(path1, label, 50)
-      renderer.progress(path2, label, 51)
-      renderer.progress(path3, label, 52)
 
       expect_render(path1, label, renderer)
       renderer.finish(path1, label)
@@ -101,7 +77,6 @@ describe 'NonInteractiveProgressRenderer' do
 end
 
 def expect_render(path, label, renderer)
-  allow(renderer).to receive(:say).exactly(1).times
   expect(path).to receive(:truncate).and_return(path)
   expect(renderer).to receive(:say).with("#{path} #{label}")
 end

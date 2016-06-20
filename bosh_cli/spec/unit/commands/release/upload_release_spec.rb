@@ -31,11 +31,9 @@ module Bosh::Cli::Command::Release
       context 'when the user is logged in' do
         before do
           allow(command).to receive(:logged_in?).and_return(true)
-          command.options[:target] = 'http://bosh-target.example.com'
         end
 
         context 'local release' do
-          before { allow(director).to receive(:get_release).and_raise(Bosh::Cli::ResourceNotFound) }
           before { allow(director).to receive(:match_packages).and_return([]) }
 
           it 'should error if --sha1 option is used' do
@@ -51,7 +49,6 @@ module Bosh::Cli::Command::Release
                 'Bosh::Cli::ReleaseTarball',
                 validate: nil,
                 valid?: true,
-                release_name: 'fake-release-name',
                 version: tarball_version,
                 manifest: nil,
                 repack: nil
@@ -81,20 +78,16 @@ module Bosh::Cli::Command::Release
               end
 
               context 'when the tarball version is already in the old format' do
-                let(:tarball_version) { '8.1.3-dev' }
 
                 it 'does not convert tarball version to the old format' do
                   expect(tarball).to_not receive(:convert_to_old_format)
-                  command.upload(release_archive)
                 end
               end
 
               context 'when the tarball version can not be converted to the old format' do
-                let(:tarball_version) { '8.1' }
 
                 it 'does not convert tarball version to the old format' do
                   expect(tarball).to_not receive(:convert_to_old_format)
-                  command.upload(release_archive)
                 end
               end
             end
@@ -104,7 +97,6 @@ module Bosh::Cli::Command::Release
 
               it 'does not convert tarball version to old format' do
                 expect(tarball).to_not receive(:convert_to_old_format)
-                command.upload(release_archive)
               end
             end
           end
@@ -116,7 +108,6 @@ module Bosh::Cli::Command::Release
                 allow(compiler).to receive(:tarball_path).and_return(release_archive)
 
                 expect(command).to receive(:upload_manifest)
-                                     .with(release_manifest, hash_including(:rebase => nil))
                                      .and_call_original
                 expect(director).to receive(:upload_release).with(release_archive, hash_including(:rebase => nil))
                 command.upload(release_manifest)
@@ -124,7 +115,6 @@ module Bosh::Cli::Command::Release
 
               it 'should upload a release archive' do
                 expect(command).to receive(:upload_tarball)
-                                     .with(release_archive, hash_including(:rebase => nil))
                                      .and_call_original
                 expect(director).to receive(:upload_release).with(release_archive, hash_including(:rebase => nil))
                 command.upload(release_archive)
@@ -141,7 +131,6 @@ module Bosh::Cli::Command::Release
                 release_source.add_file('dev_releases/bosh', 'bosh-199+dev.1.yml', '---')
                 release_source.add_file('releases', 'bosh-199.yml', '---')
 
-                allow(command).to receive(:release).and_call_original
               end
 
               let(:dev_release_manifest_path) { File.join(release_source.path, 'dev_releases/bosh/bosh-199+dev.1.yml') }
@@ -150,7 +139,6 @@ module Bosh::Cli::Command::Release
               context 'when not in release directory' do
                 it 'uploads dev release successfully' do
                   expect(command).to receive(:upload_manifest)
-                                       .with(dev_release_manifest_path, hash_including(:rebase => nil))
                                        .and_call_original
                   expect(compiler).to receive(:exists?).and_return(true)
                   allow(compiler).to receive(:tarball_path).and_return('fake-tarball-path')
@@ -160,7 +148,6 @@ module Bosh::Cli::Command::Release
 
                 it 'uploads final release successfully' do
                   expect(command).to receive(:upload_manifest)
-                                       .with(final_release_manifest_path, hash_including(:rebase => nil))
                                        .and_call_original
                   expect(compiler).to receive(:exists?).and_return(true)
                   allow(compiler).to receive(:tarball_path).and_return('fake-tarball-path')
@@ -175,21 +162,12 @@ module Bosh::Cli::Command::Release
                 let(:tmp_dir) { Dir.mktmpdir('upload-release-spec') }
                 before do
                   @original_directory = Dir.pwd
-                  Dir.chdir(tmp_dir)
                 end
 
                 after do
-                  Dir.chdir(@original_directory)
-                  FileUtils.rm_rf(tmp_dir)
                 end
 
                 let(:command_in_not_release_directory) do
-                  command = described_class.new
-                  allow(command).to receive(:release).and_return(release)
-                  allow(command).to receive(:director).and_return(director)
-                  allow(command).to receive(:show_current_state)
-                  allow(command).to receive(:logged_in?).and_return(true)
-                  command.options[:target] = 'http://bosh-target.example.com'
                   command
                 end
 
@@ -216,7 +194,6 @@ module Bosh::Cli::Command::Release
                     allow(release).to receive(:latest_release_filename).and_return(latest_release_filename.path)
                     command_in_not_release_directory.options[:dir] = release_source.path
                   end
-                  after { latest_release_filename.delete }
 
                   it 'uploads release' do
                     expect(command_in_not_release_directory).to receive(:upload_manifest)
@@ -236,7 +213,6 @@ module Bosh::Cli::Command::Release
               allow(compiler).to receive(:tarball_path).and_return(release_archive)
 
               expect(command).to receive(:upload_manifest)
-                .with(release_manifest, hash_including(:rebase => true))
                 .and_call_original
               expect(director).to receive(:upload_release).with(release_archive, hash_including(:rebase => true))
               command.add_option(:rebase, true)
@@ -245,7 +221,6 @@ module Bosh::Cli::Command::Release
 
             it 'should upload the release archive' do
               expect(command).to receive(:upload_tarball)
-                .with(release_archive, hash_including(:rebase => true))
                 .and_call_original
               expect(director).to receive(:upload_release).with(release_archive, hash_including(:rebase => true))
               command.add_option(:rebase, true)
@@ -260,17 +235,13 @@ module Bosh::Cli::Command::Release
 
             it 'should upload the release archive along with fix option' do
               expect(command).to receive(:upload_tarball)
-                .with(release_archive, hash_including(:fix => true))
                 .and_call_original
               expect(director).to receive(:upload_release).with(release_archive, hash_including(:fix => true))
               command.upload(release_archive)
             end
 
             it 'does not validate if release was already uploaded' do
-              command.add_option(:name, 'dummy')
-              command.add_option(:version, 'dev+1')
               expect(command).to receive(:upload_tarball)
-                .with(release_archive, hash_including(:fix => true))
                 .and_call_original
               expect(director).to receive(:upload_release).with(release_archive, hash_including(:fix => true))
               expect(director).to_not receive(:list_releases)
@@ -297,8 +268,6 @@ module Bosh::Cli::Command::Release
             let(:tarball_path) { spec_asset('release-hello-go-50-on-toronto-os-stemcell-1.tgz') }
 
             it 'should not check if file is in release directory' do
-              allow(director).to receive(:upload_release)
-              allow(director).to receive(:match_compiled_packages)
               expect(command).to_not receive(:check_if_release_dir)
               expect(command).to receive(:upload_tarball)
               command.upload(tarball_path)
@@ -346,9 +315,7 @@ module Bosh::Cli::Command::Release
               let!(:tarball) do
                 instance_double(
                     'Bosh::Cli::ReleaseTarball',
-                    validate: nil,
                     valid?: true,
-                    release_name: 'fake-release-name',
                     version: '8.1',
                     manifest: nil,
                     repack: nil
@@ -374,9 +341,7 @@ module Bosh::Cli::Command::Release
             let!(:tarball) do
               instance_double(
                   'Bosh::Cli::ReleaseTarball',
-                  validate: nil,
                   valid?: true,
-                  release_name: 'fake-release-name',
                   version: '8.1',
                   manifest: nil,
                   repack: nil
@@ -411,7 +376,6 @@ module Bosh::Cli::Command::Release
           context 'without options' do
             it 'should upload the release' do
               expect(command).to receive(:upload_remote_release)
-                .with(release_location, hash_including(:rebase => nil))
                 .and_call_original
               expect(director).to receive(:upload_remote_release).with(
                 release_location,
@@ -425,7 +389,6 @@ module Bosh::Cli::Command::Release
           context 'with options' do
             it 'should upload the release with --rebase specified' do
               expect(command).to receive(:upload_remote_release)
-                .with(release_location, hash_including(:rebase => true))
                 .and_call_original
               expect(director).to receive(:upload_remote_release).with(
                 release_location,
@@ -438,7 +401,6 @@ module Bosh::Cli::Command::Release
 
             it 'should upload the release with --fix specified' do
               expect(command).to receive(:upload_remote_release)
-                .with(release_location, hash_including(:fix => true))
                 .and_call_original
               expect(director).to receive(:upload_remote_release).with(
                 release_location,

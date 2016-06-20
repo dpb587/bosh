@@ -6,7 +6,6 @@ describe Bosh::Director::DeploymentPlan::ReleaseVersion do
   end
 
   def find_release(name)
-    BD::Models::Release.find(:name => name)
   end
 
   def make_deployment(name)
@@ -163,7 +162,6 @@ describe Bosh::Director::DeploymentPlan::ReleaseVersion do
 
       # Making sure once bound template stays bound if we call
       # #use_template_named again
-      release.get_or_create_template('dea')
       expect(release.template('dea').model).to eq(t_dea)
     end
 
@@ -171,7 +169,6 @@ describe Bosh::Director::DeploymentPlan::ReleaseVersion do
       r_bar = make_release('bar')
 
       t_attrs = {
-        :release => r_bar,
         :name => 'dea',
         :blobstore_id => 'deadbeef',
         :version => '522',

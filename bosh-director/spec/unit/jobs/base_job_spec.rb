@@ -80,7 +80,6 @@ module Bosh::Director
     it 'should raise an exception when the task was not found' do
       testjob_class = Class.new(Jobs::BaseJob) do
         define_method :perform do
-          fail
         end
       end
 

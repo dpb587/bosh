@@ -15,8 +15,6 @@ module Bosh::Director::DeploymentPlan
       job = instance_double('Bosh::Director::DeploymentPlan::InstanceGroup',
         name: 'fake-job',
         spec: job_spec,
-        canonical_name: 'job',
-        instances: ['instance0'],
         default_network: {"gateway" => "default"},
         vm_type: vm_type,
         vm_extensions: [],
@@ -24,7 +22,6 @@ module Bosh::Director::DeploymentPlan
         env: env,
         package_spec: packages,
         persistent_disk_type: disk_pool,
-        is_errand?: false,
         link_spec: 'fake-link',
         compilation?: false,
         update_spec: {},
@@ -40,7 +37,6 @@ module Bosh::Director::DeploymentPlan
     let(:plan) do
       instance_double('Bosh::Director::DeploymentPlan::Planner', {
           name: 'fake-deployment',
-          model: deployment,
         })
     end
     let(:deployment) { Bosh::Director::Models::Deployment.make(name: 'fake-deployment') }
@@ -96,7 +92,6 @@ module Bosh::Director::DeploymentPlan
       end
 
       it 'does not require persistent_disk_type' do
-        allow(job).to receive(:persistent_disk_type).and_return(nil)
 
         spec = instance_spec.as_apply_spec
         expect(spec['persistent_disk']).to eq(0)
@@ -127,11 +122,6 @@ module Bosh::Director::DeploymentPlan
           expect(spec['networks']).to include(network_name)
 
           expect(spec['networks'][network_name]).to include({
-                'ip' => '192.168.0.10',
-                'netmask' => '255.255.255.0',
-                'cloud_properties' => {'foo' => 'bar'},
-                'dns_record_name' => '0.job.default.fake-deployment.bosh',
-                'gateway' => '192.168.0.254'
                 })
 
           expect(spec['persistent_disk']).to eq(0)
@@ -159,12 +149,6 @@ module Bosh::Director::DeploymentPlan
             expect(spec['networks']).to include(network_name)
 
             expect(spec['networks'][network_name]).to include(
-                  'type' => 'dynamic',
-                  'ip' => '127.0.0.1',
-                  'netmask' => '127.0.0.1',
-                  'gateway' => '127.0.0.1',
-                  'dns_record_name' => '0.job.default.fake-deployment.bosh',
-                  'cloud_properties' => network_spec['subnets'].first['cloud_properties'],
                   )
 
             expect(spec['persistent_disk']).to eq(0)
@@ -184,7 +168,6 @@ module Bosh::Director::DeploymentPlan
             {
                 'networks' => {
                     'default' => {
-                        'type' => 'dynamic',
                         'ip' => '192.0.2.19',
                         'netmask' => '255.255.255.0',
                         'gateway' => '192.0.2.1',
@@ -202,12 +185,6 @@ module Bosh::Director::DeploymentPlan
             expect(spec['networks']).to include(network_name)
 
             expect(spec['networks'][network_name]).to include(
-                        'type' => 'dynamic',
-                        'ip' => '192.0.2.19',
-                        'netmask' => '255.255.255.0',
-                        'gateway' => '192.0.2.1',
-                        'dns_record_name' => '0.job.default.fake-deployment.bosh',
-                        'cloud_properties' => network_spec['subnets'].first['cloud_properties'],
                     )
 
             expect(spec['persistent_disk']).to eq(0)

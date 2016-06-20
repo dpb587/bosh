@@ -13,19 +13,14 @@ module Bosh::Director
 
       describe '#delete' do
         let(:release) { Models::Release.make(name: 'release-1') }
-        let!(:release_version_1) { Models::ReleaseVersion.make(version: 1, release: release) }
         let!(:release_version_2) { Models::ReleaseVersion.make(version: 2, release: release) }
         let!(:package_1) { Models::Package.make(release: release, blobstore_id: 'package-blob-id-1') }
-        let!(:package_2) { Models::Package.make(release: release, blobstore_id: 'package-blob-id-2') }
         let!(:template_1) { Models::Template.make(release: release, blobstore_id: 'template-blob-id-1') }
-        let!(:template_2) { Models::Template.make(release: release, blobstore_id: 'template-blob-id-2') }
         let(:force) { false }
 
         before do
           allow(blobstore).to receive(:delete).with('package-blob-id-1')
-          allow(blobstore).to receive(:delete).with('package-blob-id-2')
           allow(blobstore).to receive(:delete).with('template-blob-id-1')
-          allow(blobstore).to receive(:delete).with('template-blob-id-2')
         end
 
         let(:errors) { release_deleter.delete(release, force) }

@@ -66,7 +66,6 @@ module Bosh::Director::DeploymentPlan
       end
 
       context 'when a job in nil zones with 3 instances' do
-        let(:desired_azs) { nil }
 
         it 'we expect two existing instances are reused and one new instance' do
           unmatched_desired_instances = [desired_instance, desired_instance, desired_instance]
@@ -224,7 +223,6 @@ module Bosh::Director::DeploymentPlan
 
       describe 'when existing instances have persistent disk' do
         describe 'when existing instances have no az, and desired have no azs' do
-          let(:desired_azs) { [] }
           it 'should not recreate the instances' do
             existing_0 = existing_instance_with_az(0, nil, [Bosh::Director::Models::PersistentDisk.make])
             unmatched_desired_instances = [desired_instance, desired_instance]
@@ -401,7 +399,6 @@ module Bosh::Director::DeploymentPlan
       describe 'when some existing instances have ignore flag as true' do
 
         describe 'when removing an az that has ignored instances' do
-          let(:desired_azs) { [az2] }
 
           it 'should raise' do
             existing_0 = existing_instance_with_az(0, az1.name, [])
@@ -413,11 +410,9 @@ module Bosh::Director::DeploymentPlan
         end
 
         describe 'when not using AZs and keeping enough desired instances' do
-          let(:desired_azs) { nil }
 
           it 'should place and match existing instances' do
             existing_0 = existing_instance_with_az(0, nil, [])
-            existing_0.update(ignore: true)
             results = zone_picker.place_and_match_in([desired_instance], [existing_0])
 
             existing = results.select(&:existing?)
@@ -430,7 +425,6 @@ module Bosh::Director::DeploymentPlan
         end
 
         describe 'when the desired instance count drops below the number of ignored instances' do
-          let(:desired_azs) { nil }
           it 'should raise' do
             existing_0 = existing_instance_with_az(0, nil, [])
             existing_0.update(ignore: true)

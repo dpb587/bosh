@@ -2,7 +2,6 @@ require 'spec_helper'
 require 'net/ssh/gateway'
 
 describe Bosh::Cli::Command::Ssh do
-  include FakeFS::SpecHelpers
 
   let(:command) { described_class.new }
   let(:net_ssh) { double('ssh') }
@@ -17,8 +16,6 @@ describe Bosh::Cli::Command::Ssh do
       'releases' => [],
       'jobs' => [
         {
-          'name' => 'dea',
-          'instances' => 1
         }
       ]
     }
@@ -26,7 +23,6 @@ describe Bosh::Cli::Command::Ssh do
 
   before do
     allow(command).to receive_messages(director: director, public_key: 'public_key', show_current_state: nil)
-    File.open('fake-deployment', 'w') { |f| f.write(manifest.to_yaml) }
     allow(command).to receive(:deployment).and_return('fake-deployment')
     allow(Process).to receive(:waitpid)
 
@@ -120,7 +116,6 @@ describe Bosh::Cli::Command::Ssh do
         allow(director).to receive(:get_task_result_log).and_return(JSON.dump([{'status' => 'success', 'ip' => '127.0.0.1'}]))
         allow(director).to receive(:cleanup_ssh)
         expect(director).to receive(:setup_ssh).
-          with('mycloud', 'dea', '0', 'testable_user', 'public_key', 'encrypted_password').
           and_return([:done, 1234])
 
         expect(ssh_session).to receive(:ssh_known_host_path).and_return("fake_path")
@@ -235,7 +230,6 @@ describe Bosh::Cli::Command::Ssh do
         end
 
         it 'should still setup ssh with gateway host even if no_gateway is specified' do
-          command.add_option(:no_gateway, true)
 
           expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, gateway_user, {}).and_return(net_ssh)
           expect(net_ssh).to receive(:open).with(anything, 22).and_return(2345)
@@ -254,10 +248,8 @@ describe Bosh::Cli::Command::Ssh do
         end
 
         context 'with a gateway user' do
-          let(:gateway_user) { 'gateway-user' }
 
           before do
-            command.add_option(:gateway_user, gateway_user)
           end
 
           it 'should setup ssh with gateway host and user' do
@@ -323,8 +315,6 @@ describe Bosh::Cli::Command::Ssh do
             context 'when the gateway connection raises an Exception' do
               let(:error_message) { 'a message' }
               before do
-                allow(command).to receive(:warn)
-                allow(Process).to receive(:spawn)
                 allow(director).to receive(:get_task_result_log).with(42).
                     and_return(JSON.generate([{'status' => 'success', 'ip' => '127.0.0.1'}]))
               end
@@ -381,7 +371,6 @@ describe Bosh::Cli::Command::Ssh do
               end
 
               after do
-                allow(director).to receive(:get_task_result_log).and_return(JSON.dump([{'status' => 'success', 'ip' => '127.0.0.1'}]))
               end
 
               it 'should call ssh with bosh known hosts path' do
@@ -401,11 +390,9 @@ describe Bosh::Cli::Command::Ssh do
       allow(director).to receive(:get_task_result_log).and_return(JSON.dump([{'status' => 'success', 'ip' => '127.0.0.1'}]))
       allow(director).to receive(:cleanup_ssh)
       expect(director).to receive(:setup_ssh).
-        with('mycloud', 'dea', '0', 'testable_user', 'public_key', 'encrypted_password').
         and_return([:done, 1234])
 
       command.add_option(:upload, false)
-      allow(command).to receive(:job_exists_in_deployment?).and_return(true)
 
       expect(ssh_session).to receive(:ssh_known_host_path).and_return("fake_path")
       expect(ssh_session).to receive(:ssh_private_key_path)

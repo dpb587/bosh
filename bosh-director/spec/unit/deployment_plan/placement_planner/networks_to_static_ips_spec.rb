@@ -8,11 +8,8 @@ module Bosh::Director::DeploymentPlan
       {
         'network-1' => [
           PlacementPlanner::NetworksToStaticIps::StaticIpToAzs.new('192.168.0.1', ['z2', 'z1']),
-          PlacementPlanner::NetworksToStaticIps::StaticIpToAzs.new('192.168.0.2', ['z2']),
         ],
         'network-2' => [
-          PlacementPlanner::NetworksToStaticIps::StaticIpToAzs.new('192.168.0.3', ['z2']),
-          PlacementPlanner::NetworksToStaticIps::StaticIpToAzs.new('192.168.0.4', ['z1']),
         ],
       }
     end
@@ -31,14 +28,11 @@ module Bosh::Director::DeploymentPlan
       context 'when there are AZs that are declared in job networks and in desired azs'do
         let(:desired_azs) do
           [
-            AvailabilityZone.new('z1', {}),
-            AvailabilityZone.new('z2', {}),
           ]
         end
 
         it 'does not raise an error' do
           expect {
-            networks_to_static_ips.validate_azs_are_declared_in_job_and_subnets(desired_azs)
           }.to_not raise_error
         end
       end
@@ -63,21 +57,18 @@ module Bosh::Director::DeploymentPlan
       context 'when job declares azs which is subset of azs on ip subnet' do
         let(:desired_azs) do
           [
-              AvailabilityZone.new('z1', {}),
           ]
         end
 
         let(:networks_to_static_ips_hash) do
           {
               'network-1' => [
-                  PlacementPlanner::NetworksToStaticIps::StaticIpToAzs.new('192.168.0.1', ['z2', 'z1']),
               ]
           }
         end
 
         it 'does not raise an error' do
           expect {
-            networks_to_static_ips.validate_ips_are_in_desired_azs(desired_azs)
           }.to_not raise_error
         end
       end
@@ -85,14 +76,11 @@ module Bosh::Director::DeploymentPlan
       context 'when there are AZs that are declared in job networks and in desired azs'do
         let(:desired_azs) do
           [
-            AvailabilityZone.new('z1', {}),
-            AvailabilityZone.new('z2', {}),
           ]
         end
 
         it 'does not raise an error' do
           expect {
-            networks_to_static_ips.validate_ips_are_in_desired_azs(desired_azs)
           }.to_not raise_error
         end
       end
@@ -133,7 +121,6 @@ module Bosh::Director::DeploymentPlan
         end
 
         context 'when desired azs are subset of subnet azs' do
-          let(:subnet_azs) { ['zone_2', 'zone_1'] }
 
           it 'returns static ip in desired az' do
             networks_to_static_ips = PlacementPlanner::NetworksToStaticIps.create(job_networks, desired_azs, 'fake-job')

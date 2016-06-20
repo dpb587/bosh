@@ -9,7 +9,6 @@ describe Bosh::AwsCliPlugin::VPC do
 
         expect(fake_vpc_collection).
             to receive(:create).
-            with('cider', {instance_tenancy: 'house rules'}).
             and_return(double('aws_vpc', id: 'vpc-1234567'))
 
         expect(described_class.create(fake_ec2, 'cider', 'house rules').vpc_id).to eq('vpc-1234567')
@@ -50,12 +49,6 @@ describe Bosh::AwsCliPlugin::VPC do
 
   describe 'subnets' do
     describe 'creation' do
-      let(:fake_aws_vpc) { double('aws_vpc', subnets: double('subnets')) }
-      let(:fake_ec2) { double('ec2') }
-      let(:vpc) { Bosh::AwsCliPlugin::VPC.new(fake_ec2, fake_aws_vpc).tap { |v| allow(v).to receive(:sleep) } }
-      let(:sub1) { double('sub1', id: 'amz-sub1') }
-      let(:tables) { double('route_tables') }
-      let(:new_table) { double('route_table') }
 
       before do
         expect(sub1).to receive(:state).and_return(:pending, :available)
@@ -63,12 +56,7 @@ describe Bosh::AwsCliPlugin::VPC do
       end
 
       it 'can create subnets with the specified CIDRs, tags, and AZs', pending: 'see story: #42828011' do
-        subnet_1_specs = {'cidr' => 'cider', 'availability_zone' => 'canada'}
-        subnet_2_specs = {'cidr' => 'cedar'}
-        sub2 = double('sub2')
 
-        allow(sub1).to receive(:state).and_return(:pending, :available)
-        allow(sub2).to receive(:state).and_return(:pending, :available)
 
         expect(sub1).to receive(:add_tag).with('Name', :value => 'sub1')
         expect(sub2).to receive(:add_tag).with('Name', :value => 'sub2')
@@ -76,7 +64,6 @@ describe Bosh::AwsCliPlugin::VPC do
         expect(fake_aws_vpc.subnets).to receive(:create).with('cider', {availability_zone: 'canada'}).and_return(sub1)
         expect(fake_aws_vpc.subnets).to receive(:create).with('cedar', {}).and_return(sub2)
 
-        vpc.create_subnets({'sub1' => subnet_1_specs, 'sub2' => subnet_2_specs})
       end
 
     end
@@ -118,7 +105,6 @@ describe Bosh::AwsCliPlugin::VPC do
                 }
             },
             'cf' => {
-                'nothing' => 21
             }
         }
 
@@ -160,7 +146,6 @@ describe Bosh::AwsCliPlugin::VPC do
                 }
             },
             'cf' => {
-                'nothing' => 21
             },
             'cf2' => {
                 'nat_instance' => {
@@ -224,7 +209,6 @@ describe Bosh::AwsCliPlugin::VPC do
         expect(existing_security_group).to receive :delete
 
         ingress_rules = [
-            {'protocol' => :tcp, 'ports' => 22, 'sources' => '1.2.3.0/24'}
         ]
         Bosh::AwsCliPlugin::VPC.new(double('ec2'), double('aws_vpc', security_groups: security_groups)).
             create_security_groups ['name' => 'sg', 'ingress' => ingress_rules]
@@ -239,7 +223,6 @@ describe Bosh::AwsCliPlugin::VPC do
         expect(security_groups).not_to receive(:create)
 
         ingress_rules = [
-            {'protocol' => :tcp, 'ports' => 22, 'sources' => '1.2.3.0/24'}
         ]
         Bosh::AwsCliPlugin::VPC.new(double('ec2'), double('aws_vpc', security_groups: security_groups)).
             create_security_groups ['name' => 'sg', 'ingress' => ingress_rules]
@@ -280,7 +263,6 @@ describe Bosh::AwsCliPlugin::VPC do
           fake_aws_route_table = double(AWS::EC2::RouteTable)
           fake_aws_route_table_collection = double(AWS::EC2::RouteTableCollection, create: fake_aws_route_table)
           fake_aws_vpc = double(
-              AWS::EC2::VPC,
               route_tables: fake_aws_route_table_collection,
               internet_gateway: fake_aws_internet_gateway
           )
@@ -301,7 +283,6 @@ describe Bosh::AwsCliPlugin::VPC do
           fake_aws_nat_instance = double(AWS::EC2::Instance)
           fake_aws_route_table_collection = double(AWS::EC2::RouteTableCollection, create: fake_aws_route_table)
           fake_aws_vpc = double(
-              AWS::EC2::VPC,
               route_tables: fake_aws_route_table_collection
           )
 
@@ -320,7 +301,6 @@ describe Bosh::AwsCliPlugin::VPC do
         fake_main_aws_route_table = double(AWS::EC2::RouteTable, main?: true)
         fake_secondary_aws_route_table = double(AWS::EC2::RouteTable, main?: false)
         fake_aws_vpc = double(
-            AWS::EC2::VPC,
             route_tables: [fake_main_aws_route_table, fake_secondary_aws_route_table]
         )
 

@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe Bosh::Cli::DeploymentHelper do
-  include FakeFS::SpecHelpers
 
   class DeploymentHelperTester
     include Bosh::Cli::DeploymentHelper
@@ -22,15 +21,12 @@ describe Bosh::Cli::DeploymentHelper do
     let(:manifest_warnings) { instance_double('Bosh::Cli::ManifestWarnings') }
 
     before do
-      class_double('Bosh::Cli::ManifestWarnings').as_stubbed_const
       allow(Bosh::Cli::ManifestWarnings).to receive(:new).and_return(manifest_warnings)
       allow(manifest_warnings).to receive(:report)
     end
 
     def make_cmd(options = {})
       cmd = Bosh::Cli::Command::Base.new(options)
-      cmd.extend(Bosh::Cli::DeploymentHelper)
-      cmd
     end
 
     it 'checks that actual director UUID matches the one in manifest' do
@@ -43,7 +39,6 @@ describe Bosh::Cli::DeploymentHelper do
       File.open('fake-deployment-file', 'w') { |f| f.write(manifest.to_yaml) }
       allow(cmd).to receive(:deployment).and_return('fake-deployment-file')
 
-      director = instance_double('Bosh::Cli::Client::Director')
       allow(cmd).to receive(:director).and_return(director)
 
       expect(director).to receive(:uuid).and_return('deadcafe')
@@ -75,7 +70,6 @@ describe Bosh::Cli::DeploymentHelper do
   describe '#job_exists_in_deployment?' do
     let(:manifest_hash) do
       {
-        'name' => 'mycloud',
         'jobs' => [{'name' => 'job1'}]
       }
     end
@@ -92,10 +86,8 @@ describe Bosh::Cli::DeploymentHelper do
   describe '#job_unique_in_deployment?' do
     let(:manifest_hash) do
       {
-        'name' => 'mycloud',
         'jobs' => [
           {'name' => 'job1', 'instances' => 1},
-          {'name' => 'job2', 'instances' => 2}
         ]
       }
     end
@@ -141,7 +133,6 @@ describe Bosh::Cli::DeploymentHelper do
   describe '#jobs_and_indexes' do
     before do
       allow(deployment_helper).to receive_messages(prepare_deployment_manifest: double(:manifest, hash: {
-        'name' => 'mycloud',
         'jobs' => [
           {'name' => 'job1', 'instances' => 1},
           {'name' => 'job2', 'instances' => 2},
@@ -165,11 +156,9 @@ describe Bosh::Cli::DeploymentHelper do
         current_deployment = {'manifest' => 'name: fake-deployment-name'}
 
         output = ''
-        allow(deployment_helper).to receive(:nl) { output += "\n" }
         allow(deployment_helper).to receive(:say) { |line| output += "#{line}\n" }
 
         allow(director).to receive(:get_deployment)
-                             .with('fake-deployment-name')
                              .and_return(current_deployment)
 
         deployment_helper.inspect_deployment_changes(manifest)

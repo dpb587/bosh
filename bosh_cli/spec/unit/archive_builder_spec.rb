@@ -29,7 +29,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
 
   let(:archive_dir) { release_source.path }
   let(:artifacts_dir) { release_source.artifacts_dir }
-  let(:basedir) { nil }
   let(:tmp_dirs) { [] }
 
   let(:resource_name) { 'pkg' }
@@ -42,12 +41,9 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
   before do
     release_source.add_file(resource_base, 'spec', resource_spec.to_yaml)
     release_source.add_dir('blobs')
-    release_source.add_dir('src')
   end
 
   after do
-    release_source.cleanup
-    tmp_dirs.each { |dir| FileUtils.rm_rf(dir) }
   end
 
   def open_archive(file)
@@ -71,7 +67,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
 
     before do
       matched_files.each { |f| release_source.add_file('src', f, "contents of #{f}") }
-      release_source.add_file('src', 'unmatched.txt')
     end
 
     it 'returns a BuildArtifact' do
@@ -102,7 +97,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
         before { allow(resource).to receive(:validate!).and_raise(Bosh::Cli::MissingLicense.new('missing-license-message')) }
 
         it 'prints a warning' do
-          allow(builder).to receive(:say)
           expect(builder).to receive(:say).with('Warning: missing-license-message')
           expect {
             builder.build(resource)
@@ -127,11 +121,9 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
 
       it 'does not upload the tarball' do
         expect(blobstore).to_not receive(:create)
-        builder.build(resource)
       end
 
       context 'when final' do
-        let(:final) { true }
 
         it 'writes no tarballs' do
           expect { builder.build(resource) }.not_to change { directory_listing(archive_dir) }
@@ -139,13 +131,11 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
 
         it 'does not upload the tarball' do
           expect(blobstore).to_not receive(:create)
-          builder.build(resource)
         end
       end
     end
 
     context 'when building final release' do
-      let(:storage_dir) { ".final_builds/packages/#{resource_name}" }
       let(:final) { true }
 
       before { allow(blobstore).to receive(:create).and_return('object_id') }
@@ -158,7 +148,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
       end
 
       it 'cleans staging directory' do
-        builder.build(resource)
         release_source.remove_file('src', 'lib/1.rb')
         second_resource = Bosh::Cli::Resources::Package.new(
           release_source.join(resource_base),
@@ -239,7 +228,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
       context 'when blobs have the same name as files in src' do
         before do
           release_source.add_file('src', 'README.txt', 'README from src')
-          release_source.add_file('blobs', 'README.txt', 'README from blobs')
         end
 
         it 'picks the content from src' do
@@ -259,7 +247,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
       let(:excluded_file_patterns) { ['.git', 'excluded.tgz', 'unmatched.txt'] }
 
       before do
-        release_source.add_files('src', matched_files + excluded_src)
         release_source.add_files('blobs', matched_blobs + excluded_blobs)
       end
 
@@ -285,7 +272,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
     end
 
     it 'is based on the matched files, ignoring unmatched files' do
-      release_source.add_file('src', 'an-unmatched-file.txt')
       artifact = builder.build(resource)
       expect(artifact.fingerprint).to eq(reference_fingerprint)
     end
@@ -322,7 +308,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
     end
 
     context 'when dependencies vary in order' do
-      let(:resource_deps) { ['bar', 'foo'] }
 
       it 'does not vary' do
         artifact = builder.build(resource)
@@ -359,7 +344,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
     end
 
     context 'when a file comes from blobs instead of src' do
-      before { FileUtils.mv(release_source.join('src', 'README.md'), release_source.join('blobs', 'README.md')) }
 
       it 'does not vary' do
         artifact = builder.build(resource)
@@ -371,7 +355,6 @@ describe Bosh::Cli::ArchiveBuilder, 'dev build' do
   describe 'pre_packaging script' do
     let(:temp_file) { Tempfile.new('pre_packaging.out') }
     before { release_source.add_file('src', '2.rb') }
-    after { temp_file.unlink }
 
     it 'is executed as part of the build' do
       release_source.add_file('packages', "#{resource_name}/pre_packaging",

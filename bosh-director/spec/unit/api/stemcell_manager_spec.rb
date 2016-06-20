@@ -64,7 +64,6 @@ module Bosh::Director
             {sha1: 'shawone'}
           }
 
-          before { allow(File).to receive(:exists?).with(stemcell_path).and_return(true) }
 
           it 'enqueues a task to upload a remote stemcell' do
             expect(job_queue).to receive(:enqueue).with(
@@ -80,7 +79,6 @@ module Bosh::Director
       end
 
       context 'when stemcell file does not exist' do
-        before { allow(File).to receive(:exists?).with(stemcell_path).and_return(false) }
 
         it 'raises an error' do
           expect(job_queue).to_not receive(:enqueue)
@@ -118,7 +116,6 @@ module Bosh::Director
           Bosh::Director::Models::Stemcell.create(
               name: 'my-stemcell-with-b-name',
               version: 'stemcell_version',
-              operating_system: 'stemcell_os',
               cid: 'cloud-id-b',
           )
         }
@@ -189,7 +186,6 @@ module Bosh::Director
           Bosh::Director::Models::Stemcell.create(
             name: 'some-other-name',
             version: '10.9-dev',
-            operating_system: 'stemcell_os',
             cid: 'cloud-id-b',
           )
         }
@@ -208,28 +204,24 @@ module Bosh::Director
           Bosh::Director::Models::Stemcell.create(
             name: 'my-stemcell-with-b-name',
             version: '10.9-dev',
-            operating_system: 'stemcell_os',
             cid: 'cloud-id-b',
           )
 
           Bosh::Director::Models::Stemcell.create(
             name: 'my-stemcell-with-b-name',
             version: '1471_2',
-            operating_system: 'stemcell_os',
             cid: 'cloud-id-b',
           )
 
           Bosh::Director::Models::Stemcell.create(
             name: 'my-stemcell-with-b-name',
             version: '1471_2_1',
-            operating_system: 'stemcell_os',
             cid: 'cloud-id-b',
           )
 
           Bosh::Director::Models::Stemcell.create(
             name: 'my-stemcell-with-b-name',
             version: '1471_9',
-            operating_system: 'stemcell_os',
             cid: 'cloud-id-b',
           )
         }
@@ -253,8 +245,6 @@ module Bosh::Director
               expect {
                 subject.latest_by_name('my-stemcell-with-b-name', '1471_3')
               }.to raise_error(
-                Bosh::Director::StemcellNotFound,
-                "Stemcell 'my-stemcell-with-b-name' exists, but version with prefix '1471_3' not found."
               )
             end
           end
@@ -268,7 +258,6 @@ module Bosh::Director
           Bosh::Director::Models::Stemcell.create(
             name: 'some-other-name',
             version: '10.9-dev',
-            operating_system: 'stemcell_os',
             cid: 'cloud-id-b',
           )
         }
@@ -285,14 +274,12 @@ module Bosh::Director
           Bosh::Director::Models::Stemcell.create(
             name: 'my-stemcell-with-b-name',
             version: '10.9-dev',
-            operating_system: 'stemcell_os',
             cid: 'cloud-id-b',
           )
 
           Bosh::Director::Models::Stemcell.create(
             name: 'my-stemcell-with-b-name',
             version: '1471_2',
-            operating_system: 'stemcell_os',
             cid: 'cloud-id-b',
           )
 
@@ -324,8 +311,6 @@ module Bosh::Director
               expect {
                 subject.latest_by_os('stemcell_os', '1471_4')
               }.to raise_error(
-                Bosh::Director::StemcellNotFound,
-                "Stemcell with Operating System 'stemcell_os' exists, but version with prefix '1471_4' not found."
               )
             end
           end

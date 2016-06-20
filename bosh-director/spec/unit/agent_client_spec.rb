@@ -7,7 +7,6 @@ module Bosh::Director
         let(:task) do
           {
             'agent_task_id' => 'fake-agent_task_id',
-            'state' => 'running',
             'value' => 'task value'
           }
         end
@@ -15,11 +14,9 @@ module Bosh::Director
         before do
           allow(client).to receive_messages(handle_message_with_retry: task)
           allow(client).to receive(:get_task) do
-            task['state'] = 'no longer running'
             task
           end
 
-          allow(client).to receive(:sleep).with(AgentClient::DEFAULT_POLL_INTERVAL)
         end
 
         it 'explicitly defines methods for long running messages (to poll)' do
@@ -37,7 +34,6 @@ module Bosh::Director
         end
 
         it 'stops polling once the task is no longer running' do
-          task['state'] = 'something other than running'
           client.public_send(message_name, 'fake', 'args')
           expect(client).to have_received(:get_task).with('fake-agent_task_id').exactly(1).times
         end
@@ -52,7 +48,6 @@ module Bosh::Director
       describe "##{message_name}" do
         let(:task) do
           {
-            'state' => 'running',
             'value' => 'task value'
           }
         end
@@ -62,8 +57,6 @@ module Bosh::Director
           allow(client).to receive(:wait_for_task)
 
           allow(client).to receive(:get_task) do
-            task['state'] = 'no longer running'
-            task
           end
         end
 
@@ -84,14 +77,11 @@ module Bosh::Director
           {
               'agent_task_id' => 'fake-agent_task_id',
               'state' => 'running',
-              'value' => 'task value'
           }
         end
 
         describe 'send asynchronous messages' do
           before do
-            allow(Config).to receive(:nats_rpc)
-            allow(Api::ResourceManager).to receive(:new)
           end
 
           it_acts_as_asynchronous_message :prepare
@@ -111,13 +101,11 @@ module Bosh::Director
         describe 'update_settings' do
           it 'packages the certificates into a map and sends to the agent' do
             expect(client).to receive(:send_message).with(:update_settings, "trusted_certs" => "these are the certificates")
-            allow(client).to receive(:get_task)
             client.update_settings("these are the certificates")
           end
 
           it 'periodically polls the update settings task while it is running' do
             allow(client).to receive(:handle_message_with_retry).and_return task
-            allow(client).to receive(:sleep).with(AgentClient::DEFAULT_POLL_INTERVAL)
             expect(client).to receive(:get_task).with('fake-agent_task_id')
             client.update_settings("these are the certificates")
           end
@@ -130,7 +118,6 @@ module Bosh::Director
           end
 
           it 'still raises an exception for other RPC failures' do
-            allow(client).to receive(:handle_method).and_raise(RpcRemoteException, "random failure!")
 
             expect(client).to_not receive(:warning)
             expect { client.update_settings("no certs") }.to raise_error
@@ -139,12 +126,10 @@ module Bosh::Director
 
         describe 'cancel drain' do
           it 'should stop execution if task was canceled' do
-            allow(client).to receive(:sleep).with(AgentClient::DEFAULT_POLL_INTERVAL)
             expect(client).to receive(:start_task).and_return task
             expect(client).to receive(:get_task_status).and_return task
 
             cancel_task = task.dup
-            cancel_task['state'] = 'not running'
             expect(client).to receive(:cancel_task).and_return cancel_task
 
             task_cancelled = TaskCancelled.new(1)
@@ -157,13 +142,11 @@ module Bosh::Director
         describe 'run_script' do
           it 'sends the script name to the agent' do
             expect(client).to receive(:send_message).with(:run_script, "script_name", {})
-            allow(client).to receive(:get_task)
             client.run_script("script_name", {})
           end
 
           it 'periodically polls the run_script task while it is running' do
             allow(client).to receive(:handle_message_with_retry).and_return task
-            allow(client).to receive(:sleep).with(AgentClient::DEFAULT_POLL_INTERVAL)
             expect(client).to receive(:get_task).with('fake-agent_task_id')
             client.run_script("script_name", {})
           end
@@ -177,7 +160,6 @@ module Bosh::Director
           end
 
           it 'still raises an exception for other RPC failures' do
-            allow(client).to receive(:handle_method).and_raise(RpcRemoteException, "random failure wooooooow!")
 
             expect(client).to_not receive(:warning)
             expect { client.run_script("script_name", {}) }.to raise_error
@@ -192,15 +174,10 @@ module Bosh::Director
         subject(:client) { AgentClient.with_vm_credentials_and_agent_id(nil, 'fake-agent-id') }
         let(:task) do
           {
-            'agent_task_id' => 'fake-agent_task_id',
-            'state' => 'running',
-            'value' => 'task value'
           }
         end
 
         before do
-          allow(Config).to receive(:nats_rpc)
-          allow(Api::ResourceManager).to receive(:new)
         end
 
         it 'sends delete_arp_entries to the agent' do
@@ -225,8 +202,6 @@ module Bosh::Director
         subject(:client) { AgentClient.with_vm_credentials_and_agent_id(nil, 'fake-agent-id') }
 
         before do
-          allow(Config).to receive(:nats_rpc)
-          allow(Api::ResourceManager).to receive(:new)
         end
 
         it_acts_as_synchronous_message :stop
@@ -239,11 +214,9 @@ module Bosh::Director
 
     describe 'ping <=> pong' do
       let(:stemcell) do
-        Models::Stemcell.make(:cid => 'stemcell-id')
       end
 
       let(:network_settings) do
-        { 'network_a' => { 'ip' => '1.2.3.4' } }
       end
 
       let(:credentials) { Bosh::Core::EncryptionHandler.generate_credentials }
@@ -255,9 +228,7 @@ module Bosh::Director
         nats_rpc = double('nats_rpc')
 
         allow(Config).to receive(:nats_rpc).and_return(nats_rpc)
-        Config.encryption = true
 
-        allow(App).to receive_messages(instance: double('App Instance').as_null_object)
 
         handler = Bosh::Core::EncryptionHandler.new('fake-agent-id', credentials)
         expect(nats_rpc).to receive(:send_request) do |*args, &blk|
@@ -296,7 +267,6 @@ module Bosh::Director
 
     it 'should include the current protocol version in each request' do
       expect(@nats_rpc).to receive(:send_request).
-        with(anything(), hash_including(protocol: Bosh::Director::AgentClient::PROTOCOL_VERSION)).
         and_yield({'value' => 'whatever'})
 
       client = AgentClient.new('foo', 'bar')
@@ -343,8 +313,6 @@ module Bosh::Director
 
       it 'should retry only methods in the options list' do
         client_opts = {
-          timeout: 0.1,
-          retry_methods: { foo: 10 }
         }
 
         args = { method: :baz, arguments: [] }
@@ -366,7 +334,6 @@ module Bosh::Director
           with('foo.bar', hash_including(args)).exactly(2).times.and_raise(Bosh::Director::RpcTimeout)
 
         client_opts = {
-          timeout: 0.1,
           retry_methods: { baz: 1 }
         }
 
@@ -384,8 +351,6 @@ module Bosh::Director
           with('foo.bar', hash_including(args)).once.and_raise(RuntimeError.new('foo'))
 
         client_opts = {
-          timeout: 0.1,
-          retry_methods: { retry_method: 10 }
         }
 
         client = AgentClient.new('foo', 'bar', client_opts)
@@ -424,7 +389,6 @@ module Bosh::Director
         it 'should raise an exception if task was cancelled' do
           testjob_class = Class.new(Jobs::BaseJob) do
             define_method :perform do
-              'foo'
             end
           end
           task_id = 1
@@ -554,7 +518,6 @@ module Bosh::Director
           nats_rpc_response = {
             'value' => {
               'state' => 'running',
-              'agent_task_id' => 'fake-task-id',
             }
           }
 
@@ -564,8 +527,6 @@ module Bosh::Director
 
           nats_rpc_response = {
             'value' => {
-              'state' => 'done',
-              'agent_task_id' => 'fake-task-id'
             }
           }
 
@@ -581,7 +542,6 @@ module Bosh::Director
         it 'sleeps for the default poll interval' do
           client = AgentClient.new('fake-service-name', 'fake-client-id')
 
-          allow(fake_block).to receive(:call)
 
           nats_rpc_response = {
             'value' => {
@@ -595,7 +555,6 @@ module Bosh::Director
 
           nats_rpc_response = {
             'value' => {
-              'value' => 'fake-return-value',
             }
           }
 
@@ -613,7 +572,6 @@ module Bosh::Director
 
           nats_rpc_response = {
             'value' => {
-              'state' => 'done',
               'value' => 'fake-return-value',
             }
           }
@@ -633,7 +591,6 @@ module Bosh::Director
           nats_rpc_response = {
             'value' => {
               'state' => 'running',
-              'agent_task_id' => 'fake-task-id'
             }
           }
 
@@ -643,8 +600,6 @@ module Bosh::Director
 
           nats_rpc_response = {
             'value' => {
-              'state' => 'done',
-              'value' => 'fake-return-value',
             }
           }
 

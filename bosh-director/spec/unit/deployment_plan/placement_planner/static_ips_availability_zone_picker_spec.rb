@@ -13,7 +13,6 @@ module Bosh::Director::DeploymentPlan
     let(:deployment_repo) { DeploymentRepo.new }
     let(:desired_instances) { [].tap { |a| desired_instance_count.times { a << new_desired_instance } } }
     let(:desired_instance_count) { 3 }
-    let(:event_log) { Bosh::Director::EventLog::Log.new(StringIO.new('')) }
     let(:index_assigner) { PlacementPlanner::IndexAssigner.new(deployment_model) }
     let(:instance_repo) { Bosh::Director::DeploymentPlan::InstanceRepository.new(network_reservation_repository, logger) }
     let(:instance_plans) { zone_picker.place_and_match_in(desired_instances, existing_instances) }
@@ -36,10 +35,7 @@ module Bosh::Director::DeploymentPlan
       spec = {
         'range' => range,
         'gateway' => NetAddr::CIDR.create(range)[1].ip,
-        'dns' => ['8.8.8.8'],
         'static' => static_ips,
-        'reserved' => [],
-        'cloud_properties' => {},
       }
       spec['azs'] = zone_names if zone_names
       spec
@@ -68,9 +64,6 @@ module Bosh::Director::DeploymentPlan
         'resource_pools' => [
           {
             'name' => 'a',
-            'size' => 3,
-            'cloud_properties' => {},
-            'network' => 'a',
             'stemcell' => {'name' => 'ubuntu-stemcell', 'version' => '1'}
           }
         ],
@@ -85,7 +78,6 @@ module Bosh::Director::DeploymentPlan
     let(:manifest_hash) do
       {
         'name' => 'simple',
-        'director_uuid' => 'deadbeef',
         'releases' => [{'name' => 'bosh-release', 'version' => '0.1-dev'}],
         'update' => {'canaries' => 2, 'canary_watch_time' => 4000, 'max_in_flight' => 1, 'update_watch_time' => 20},
         'jobs' => [
@@ -95,7 +87,6 @@ module Bosh::Director::DeploymentPlan
             'resource_pool' => 'a',
             'instances' => desired_instance_count,
             'networks' => job_networks,
-            'properties' => {},
             'azs' => job_availability_zones
           }
         ]
@@ -123,13 +114,10 @@ module Bosh::Director::DeploymentPlan
               {'name' => 'a',
                 'subnets' => [
                   make_subnet_spec('192.168.1.0/24', ['192.168.1.10 - 192.168.1.14'], nil),
-                  make_subnet_spec('192.168.2.0/24', ['192.168.2.10 - 192.168.2.14'], nil),
                 ]
               },
               {'name' => 'b',
                 'subnets' => [
-                  make_subnet_spec('10.10.1.0/24', ['10.10.1.10 - 10.10.1.14'], nil),
-                  make_subnet_spec('10.10.2.0/24', ['10.10.2.10 - 10.10.2.14'], nil),
                 ]
               }
             ]
@@ -145,7 +133,6 @@ module Bosh::Director::DeploymentPlan
         end
 
         context 'when the job specifies a single network with all static IPs from a single AZ' do
-          let(:static_ips) { ['192.168.1.10 - 192.168.1.12'] }
 
           it 'assigns instances to the AZ' do
             expect(new_instance_plans.size).to eq(3)
@@ -193,7 +180,6 @@ module Bosh::Director::DeploymentPlan
             ]
           end
 
-          let(:static_ips) { ['192.168.1.10', '192.168.1.11', '192.168.1.12'] }
 
           it 'picks az that is specified on a job and static IP belongs to' do
               expect(new_instance_plans.size).to eq(3)
@@ -333,8 +319,6 @@ module Bosh::Director::DeploymentPlan
 
           it 'raises an error' do
             expect{ instance_plans }.to raise_error(
-                Bosh::Director::JobNetworkInstanceIpMismatch,
-                "Failed to evenly distribute static IPs between zones for instance group 'fake-job'"
               )
           end
         end
@@ -382,8 +366,6 @@ module Bosh::Director::DeploymentPlan
                 expect {
                   new_instance_plans
                 }.to raise_error(
-                    Bosh::Director::NetworkReservationError,
-                    "Existing instance 'fake-job/#{existing_instances[1].index}' is using IP '192.168.2.10' in availability zone 'zone2'"
                 )
               end
           end
@@ -397,7 +379,6 @@ module Bosh::Director::DeploymentPlan
                 existing_instance_with_az_and_ips('zone2', ['192.168.2.10']),
               ]
             end
-            let(:job_availability_zones) { ['zone1', 'zone2'] }
 
             context 'when AZ is the same' do
               it 'picks new IP for instance that is not used by other instances' do
@@ -453,16 +434,12 @@ module Bosh::Director::DeploymentPlan
             end
 
             context 'when AZ to which instance belongs is removed' do
-              let(:new_subnet_azs) { ['zone2'] }
               let(:job_availability_zones) { ['zone2'] }
-              before { cloud_config_hash['compilation']['az'] = 'zone2' }
 
               it 'raises an error' do
                 expect {
                   new_instance_plans
                 }.to raise_error(
-                    Bosh::Director::NetworkReservationError,
-                    "Existing instance 'fake-job/#{existing_instances[0].index}' is using IP '192.168.1.10' in availability zone 'zone1'"
                   )
               end
             end
@@ -551,7 +528,6 @@ module Bosh::Director::DeploymentPlan
                 ]
               end
 
-              let(:a_static_ips) { ['192.168.1.10 - 192.168.1.11', '192.168.2.10 -192.168.2.11'] }
               let(:b_static_ips) { ['10.10.1.10', '10.10.1.12', '10.10.2.10 - 10.10.2.11'] }
 
               it 'keeps instances that match static IPs, and assigns new static IPs to instances with different IPs' do
@@ -713,7 +689,6 @@ module Bosh::Director::DeploymentPlan
                 let(:existing_instances) do
                   [
                     existing_instance_with_az_and_ips('zone1', ['192.168.1.10', '10.10.1.10']),
-                    existing_instance_with_az_and_ips('zone2', ['192.168.2.10', '10.10.2.11'])
                   ]
                 end
 
@@ -721,8 +696,6 @@ module Bosh::Director::DeploymentPlan
                   expect {
                     new_instance_plans
                   }.to raise_error(
-                      Bosh::Director::NetworkReservationError,
-                      "Existing instance 'fake-job/#{existing_instances[0].index}' is using IP '192.168.1.10' in availability zone 'zone1'"
                     )
                 end
               end
@@ -805,7 +778,6 @@ module Bosh::Director::DeploymentPlan
 
         context 'when network name was changed' do
           let(:desired_instance_count) { 2 }
-          let(:job_networks) { [{'name' => 'a', 'static_ips' => static_ips}] }
           let(:static_ips) { ['192.168.1.10', '192.168.2.10'] }
           let(:existing_instances) do
             [

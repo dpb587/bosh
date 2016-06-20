@@ -6,10 +6,6 @@ module Bosh::Director
     let(:deployment_model) { Models::Deployment.make(manifest: YAML.dump(manifest)) }
     let!(:instance) do
       Models::Instance.make(
-        job: manifest['jobs'].first['name'],
-        index: 0,
-        deployment: deployment_model,
-        cloud_properties_hash: {'foo' => 'bar'},
         spec: spec.merge({env: {'key1' => 'value1'}}),
         agent_id: 'agent-007',
         vm_cid: 'vm-cid'
@@ -19,8 +15,6 @@ module Bosh::Director
     let(:spec) do
       {
         'deployment' => 'simple',
-        'job' => {'name' => 'job'},
-        'index' => 0,
         'vm_type' => {
           'name' => 'steve',
           'cloud_properties' => { 'foo' => 'bar' },
@@ -33,7 +27,6 @@ module Bosh::Director
 
     before do
       fake_app
-      allow(App.instance.blobstores.blobstore).to receive(:create).and_return('fake-blobstore-id')
     end
 
     it 'registers under missing_vm type' do
@@ -41,7 +34,6 @@ module Bosh::Director
     end
 
     it 'should call recreate_vm_skip_post_start when set to auto' do
-      allow(handler).to receive(:recreate_vm_skip_post_start)
       expect(handler).to receive(:recreate_vm_skip_post_start).with(instance)
       handler.auto_resolve
     end
@@ -78,7 +70,6 @@ module Bosh::Director
         expect(fake_cloud).to receive(:delete_vm).with(instance.vm_cid)
         expect(fake_cloud).
           to receive(:create_vm).
-            with('agent-222', Bosh::Director::Models::Stemcell.all.first.cid, {'foo' => 'bar'}, anything, [], {'key1' => 'value1'}).
             and_return('new-vm-cid')
 
         fake_job_context
@@ -98,11 +89,8 @@ module Bosh::Director
         let(:spec) do
           {
             'deployment' => 'simple',
-            'job' => {'name' => 'job'},
-            'index' => 0,
             'vm_type' => {
               'name' => 'steve',
-              'cloud_properties' => { 'foo' => 'bar' },
             },
             'stemcell' => manifest['resource_pools'].first['stemcell'],
             'networks' => networks,

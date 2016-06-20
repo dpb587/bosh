@@ -4,10 +4,7 @@ describe Bosh::Monitor do
   describe 'config=' do
     let(:http_config) { {} }
     let(:valid_config) { {
-      'logfile' => Tempfile.new('logfile').path,
-      'director' => {},
       'http' => http_config,
-      'loglevel' => 'debug',
       'em_threadpool_size' => 20,
       'plugins' => %w(plugin1 plugin2)
     } }
@@ -22,8 +19,6 @@ describe Bosh::Monitor do
 
     context 'with a valid configuration' do
       it 'should log to STDOUT when no logfile is provided' do
-        valid_config.delete('logfile')
-        Bosh::Monitor.config = valid_config
       end
 
       context 'without intervals' do
@@ -72,7 +67,6 @@ describe Bosh::Monitor do
       end
 
       context 'with broken http config' do
-        let(:http_config) { 6 }
 
         it 'should not set any http values' do
           expect(Bosh::Monitor.http_port).to be_nil

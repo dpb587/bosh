@@ -21,7 +21,6 @@ module Bosh::Director
 
       it 'should authenticate normal users' do
         Models::User.make(username: 'foo', password: BCrypt::Password.create('bar'))
-        Models::User.make(username: 'bad', password: BCrypt::Password.create('test'))
 
         expect(@user_manager.authenticate('foo', 'bar')).to be(true)
         expect(@user_manager.authenticate('bad', 'Test')).to be(false)

@@ -23,7 +23,6 @@ module Bosh::AwsCliPlugin
         let(:vpc2) { instance_double('Bosh::AwsCliPlugin::VPC', vpc_id: 'fake-vpc-id-2') }
 
         before do
-          allow(vpc).to receive(:dhcp_options).and_return(vpc_aws_dhcp_options)
           allow(vpc2).to receive(:dhcp_options).and_return(vpc_2_aws_dhcp_options)
         end
         let(:vpc_aws_dhcp_options) { instance_double('AWS::EC2::DHCPOptions', id: 'fake-dhcp-options-id-1') }
@@ -92,7 +91,6 @@ module Bosh::AwsCliPlugin
             expect(ec2).not_to receive(:delete_internet_gateways)
             expect(vpc_aws_dhcp_options).not_to receive(:delete)
 
-            vpc_destroyer.delete_all
           end
         end
       end

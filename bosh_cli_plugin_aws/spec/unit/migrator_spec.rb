@@ -13,7 +13,6 @@ describe Bosh::AwsCliPlugin::Migrator do
   let(:mock_s3) { double("Bosh::AwsCliPlugin::S3").as_null_object }
 
   after do
-    FileUtils.rm_rf(@tempdir)
   end
 
   before do
@@ -26,7 +25,6 @@ describe Bosh::AwsCliPlugin::Migrator do
 
     allow(Bosh::AwsCliPlugin::S3).to receive(:new).and_return(mock_s3)
     allow(mock_s3).to receive(:fetch_object_contents).and_return(nil)
-    allow(mock_s3).to receive(:upload_to_bucket).and_return(nil)
   end
 
   it "should not create the old s3 bucket if there is one already" do
@@ -92,7 +90,6 @@ describe Bosh::AwsCliPlugin::Migrator do
       it "should only write the specific version to the versions file" do
         expect(mock_s3).to receive(:bucket_exists?).with('deployment-name-bosh-artifacts').and_return(true)
 
-        allow(mock_s3).to receive(:create_bucket)
 
         expect(mock_s3).to receive(:upload_to_bucket)
         .with('deployment-name-bosh-artifacts', "aws_migrations/migrations.yaml",
@@ -105,7 +102,6 @@ describe Bosh::AwsCliPlugin::Migrator do
         expect(mock_s3).to receive(:bucket_exists?).with('deployment-name-bosh-artifacts').and_return(true)
         expect(mock_s3).
             to receive(:fetch_object_contents).
-            with('deployment-name-bosh-artifacts', "aws_migrations/migrations.yaml").
             and_return(YAML.dump(@expected_migrations.collect{|m|m.to_hash}))
 
         expect(mock_s3).not_to receive(:create_bucket)
@@ -131,7 +127,6 @@ describe Bosh::AwsCliPlugin::Migrator do
         expect(mock_s3).to receive(:bucket_exists?).with('deployment-name-bosh-artifacts').and_return(true)
         expect(mock_s3).
             to receive(:fetch_object_contents).
-            with('deployment-name-bosh-artifacts', "aws_migrations/migrations.yaml").
             and_return(YAML.dump(@expected_migrations[0..5].collect{|m|m.to_hash}))
 
         ordered_expectations = expect(mock_s3).to receive(:create_bucket).ordered
@@ -146,7 +141,6 @@ describe Bosh::AwsCliPlugin::Migrator do
         expect(mock_s3).to receive(:bucket_exists?).with('deployment-name-bosh-artifacts').and_return(true)
         expect(mock_s3).
             to receive(:fetch_object_contents).
-            with('deployment-name-bosh-artifacts', "aws_migrations/migrations.yaml").
             and_return(YAML.dump(@expected_migrations.collect{|m|m.to_hash}))
 
         expect(mock_s3).not_to receive(:create_bucket)
@@ -157,7 +151,6 @@ describe Bosh::AwsCliPlugin::Migrator do
       it "should write the migrations in the S3 bucket after each migration" do
         expect(mock_s3).to receive(:bucket_exists?).with('deployment-name-bosh-artifacts').and_return(true)
 
-        allow(mock_s3).to receive(:create_bucket)
         successful_migrations = []
         @expected_migrations.each do |migration|
 
@@ -183,7 +176,6 @@ describe Bosh::AwsCliPlugin::Migrator do
       it "should need a migration if S3 file has migrations, but not all" do
         expect(mock_s3).
             to receive(:fetch_object_contents).
-            with('deployment-name-bosh-artifacts', "aws_migrations/migrations.yaml").
             and_return(YAML.dump(@expected_migrations[0..5].collect{|m|m.to_hash}))
 
         expect(subject.needs_migration?).to be(true)
@@ -192,7 +184,6 @@ describe Bosh::AwsCliPlugin::Migrator do
       it 'should not need a migration if S3 file has all the migrations' do
         expect(mock_s3).
             to receive(:fetch_object_contents).
-            with('deployment-name-bosh-artifacts', "aws_migrations/migrations.yaml").
             and_return(YAML.dump(@expected_migrations.collect{|m|m.to_hash}))
 
         expect(subject.needs_migration?).to be(false)

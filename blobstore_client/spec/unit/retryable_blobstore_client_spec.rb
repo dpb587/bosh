@@ -22,7 +22,6 @@ module Bosh::Blobstore
         returned_file = double('fake-file')
         expect(wrapped_client)
           .to receive(:get)
-          .with('fake-id', nil, {})
           .and_return(returned_file)
         expect(subject.get('fake-id', nil)).to eq(returned_file)
       end

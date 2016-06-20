@@ -1,7 +1,5 @@
 require 'spec_helper'
-require 'date'
 require 'timecop'
-require 'bosh/director/log_bundles_cleaner'
 
 module Bosh::Director
   describe LogBundlesCleaner do
@@ -26,7 +24,6 @@ module Bosh::Director
       end
 
       before { Timecop.travel(Date.new(2011, 10, 10)) }
-      after { Timecop.return }
 
       it 'deletes old log bundles from the database and keeps recent ones' do
         %w(fake-very-old-blob-id fake-old-blob-id fake-recent-blob-id fake-future-blob-id).each do |id|
@@ -50,7 +47,6 @@ module Bosh::Director
 
       it 'keeps log bundle in the database if it fails to delete associated blob' do
         expect(blobstore).to receive(:delete).
-           with('fake-very-old-blob-id').
            and_raise(Bosh::Blobstore::BlobstoreError)
 
         expect(blobstore).to receive(:delete).with('fake-old-blob-id').and_return(true)
@@ -62,7 +58,6 @@ module Bosh::Director
 
       it 'deletes log bundle from the database if associated blob is not found' do
         expect(blobstore).to receive(:delete).
-           with('fake-very-old-blob-id').
            and_raise(Bosh::Blobstore::NotFound)
 
         log_bundles_cleaner.clean

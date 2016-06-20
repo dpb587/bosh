@@ -11,7 +11,6 @@ module Bosh::Director
       db[:deployments] << {id: 1, name: 'fake-deployment-name', manifest: '{}'}
       db[:instances] << {id: 1, job: 'fake-job', index: 1, deployment_id: 1, state: 'started'}
       db[:instances] << {
-        id: 2,
         job: 'fake-job',
         index: 2,
         deployment_id: 1,
@@ -19,7 +18,6 @@ module Bosh::Director
         spec_json: '{"update":{"serial":null}}'
       }
       db[:instances] << {
-        id: 3,
         job: 'fake-job',
         index: 3,
         deployment_id: 1,
@@ -27,7 +25,6 @@ module Bosh::Director
         spec_json: '{"update":{"serial":true}}'
       }
       db[:instances] << {
-        id: 4,
         job: 'fake-job',
         index: 4,
         deployment_id: 1,
@@ -35,7 +32,6 @@ module Bosh::Director
         spec_json: '{"update":{"serial":false}}'
       }
       db[:instances] << {
-        id: 5,
         job: 'fake-job',
         index: 5,
         deployment_id: 1,
@@ -43,7 +39,6 @@ module Bosh::Director
         spec_json: '{"update":{}}'
       }
       db[:instances] << {
-        id: 6,
         job: 'fake-job',
         index: 6,
         deployment_id: 1,

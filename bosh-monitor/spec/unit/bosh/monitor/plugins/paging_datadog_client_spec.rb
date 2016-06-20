@@ -36,14 +36,11 @@ describe PagingDatadogClient do
       let(:alert) {
         Dogapi::Event.new(
           "message",
-          :date_happened => Time.now.to_i - 300,
           :priority => priority,
-          :tags => ["some", "tags"]
         )
       }
 
       context "with a normal priority alert" do
-        let(:priority) { "normal" }
 
         it "adds the datadog recipient to the end of the message" do
           paging_client.emit_event(alert)

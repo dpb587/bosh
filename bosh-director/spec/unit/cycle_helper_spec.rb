@@ -15,10 +15,7 @@ describe Bosh::Director::CycleHelper do
 
   it "should detect more complicated cycles" do
     graph = {
-      :A => [:B],
-      :B => [:C],
       :C => [:D],
-      :D => [:B]
     }
 
     expect { Bosh::Director::CycleHelper.check_for_cycle([:A, :B, :C]) { |vertex| graph[vertex] } }.to raise_exception
@@ -26,11 +23,8 @@ describe Bosh::Director::CycleHelper do
 
   it "should not detect cycles when it's acyclic" do
     graph = {
-      :A => [:B, :C],
-      :B => [:C]
     }
 
-    Bosh::Director::CycleHelper.check_for_cycle([:A, :B, :C]) { |vertex| graph[vertex] }
   end
 
   it "should return connected vertices when requested" do
@@ -48,7 +42,6 @@ describe Bosh::Director::CycleHelper do
 
   it "should raise an exception when an referenced edge is not found" do
     graph = {
-      :A => [:B, :C],
       :B => [:D]
     }
 

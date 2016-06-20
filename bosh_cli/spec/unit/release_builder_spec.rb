@@ -28,7 +28,6 @@ module Bosh::Cli
     end
 
     after do
-      release_source.cleanup
     end
 
     def new_builder(options = {})
@@ -41,11 +40,9 @@ module Bosh::Cli
         final_index = Versions::VersionsIndex.new(final_storage_dir)
 
         final_index.add_version('deadbeef', { 'version' => '7.4.1' })
-        final_index.add_version('deadcafe', { 'version' => '7.3.1' })
 
         builder = new_builder(final: true)
         expect(builder.version).to eq('7.4.2')
-        builder.build
       end
 
       it 'creates a dev version in sync with latest final version' do
@@ -53,11 +50,9 @@ module Bosh::Cli
         final_index = Versions::VersionsIndex.new(final_storage_dir)
 
         final_index.add_version('deadbeef', { 'version' => '7.4' })
-        final_index.add_version('deadcafe', { 'version' => '7.3.1' })
 
         builder = new_builder
         expect(builder.version).to eq('7.4+dev.1')
-        builder.build
       end
 
       it 'bumps the dev version matching the latest final release' do
@@ -65,19 +60,14 @@ module Bosh::Cli
         final_index = Versions::VersionsIndex.new(final_storage_dir)
 
         final_index.add_version('deadbeef', { 'version' => '7.3' })
-        final_index.add_version('deadcafe', { 'version' => '7.2' })
 
         dev_storage_dir = File.join(release_source.path, 'dev_releases', release_name)
         dev_index = Versions::VersionsIndex.new(dev_storage_dir)
 
-        dev_index.add_version('deadabcd', { 'version' => '7.4.1-dev' })
-        dev_index.add_version('deadbeef', { 'version' => '7.3.2.1-dev' })
         dev_index.add_version('deadturkey', { 'version' => '7.3.2-dev' })
-        dev_index.add_version('deadcafe', { 'version' => '7.3.1-dev' })
 
         builder = new_builder
         expect(builder.version).to eq('7.3+dev.3')
-        builder.build
       end
     end
 
@@ -132,7 +122,6 @@ module Bosh::Cli
 
     it 'excludes license tarballs in the release' do
       builder = new_builder
-      builder.build
       tarball_files = list_tar_files(builder.tarball_path)
       expect(tarball_files).to_not include('./license.tgz')
     end
@@ -169,17 +158,9 @@ module Bosh::Cli
 
     it 'has a list of jobs affected by building this release' do
       job_artifacts = [
-        instance_double(Bosh::Cli::BuildArtifact, name: 'job1', new_version?: true, dependencies: ['bar', 'baz']),
-        instance_double(Bosh::Cli::BuildArtifact, name: 'job2', new_version?: false, dependencies: ['foo', 'baz']),
-        instance_double(Bosh::Cli::BuildArtifact, name: 'job3', new_version?: false, dependencies: ['baz', 'zb']),
-        instance_double(Bosh::Cli::BuildArtifact, name: 'job4', new_version?: false, dependencies: ['bar', 'baz']),
       ]
 
       package_artifacts = [
-        instance_double(Bosh::Cli::BuildArtifact, name: 'foo', new_version?: true),
-        instance_double(Bosh::Cli::BuildArtifact, name: 'bar', new_version?: false),
-        instance_double(Bosh::Cli::BuildArtifact, name: 'baz', new_version?: false),
-        instance_double(Bosh::Cli::BuildArtifact, name: 'zb', new_version?: true),
       ]
 
       builder = ReleaseBuilder.new(@release, package_artifacts, job_artifacts, license_artifact, release_name)
@@ -233,7 +214,6 @@ module Bosh::Cli
           it 'uses given version' do
             builder = new_builder({ final: true, version: '3.123' })
             expect(builder.version).to eq('3.123')
-            builder.build
           end
         end
       end
@@ -242,7 +222,6 @@ module Bosh::Cli
         it 'allows a version to be specified for dev releases' do
           builder = new_builder({ final: false, version: '3.123.1-rc.2' })
           expect(builder.version).to eq('3.123.1-rc.2')
-          builder.build
         end
       end
     end
@@ -259,7 +238,6 @@ module Bosh::Cli
         it 'generates a dev timestamp release' do
           builder = new_builder({ timestamp_version: true })
           expect(builder.version).to match(/0\+dev\.[0-9]{10}/)
-          builder.build
         end
 
         context 'and a final release already exists' do
@@ -271,7 +249,6 @@ module Bosh::Cli
 
             builder = new_builder({ timestamp_version: true})
             expect(builder.version).to match(/7\.4\+dev\.[0-9]{10}/)
-            builder.build
           end
         end
 
@@ -285,11 +262,9 @@ module Bosh::Cli
             dev_storage_dir = File.join(release_source.path, 'dev_releases', release_name)
             dev_index = Versions::VersionsIndex.new(dev_storage_dir)
 
-            dev_index.add_version('deadcafe', { 'version' => '7.3.1-dev' })
 
             builder = new_builder({ timestamp_version: true })
             expect(builder.version).to match(/7\.3\+dev\.[0-9]{10}/)
-            builder.build
           end
         end
       end

@@ -11,7 +11,6 @@ module Bosh::Blobstore
       @options = { 'blobstore_path' => @tmp }
     end
 
-    after { FileUtils.rm_rf(@tmp) }
 
     it 'should require blobstore_path option' do
       expect { LocalClient.new({}) }.to raise_error
@@ -30,7 +29,6 @@ module Bosh::Blobstore
       describe '#exists?' do
         it 'should return true if the object already exists' do
           File.open(File.join(@tmp, 'foo'), 'w') do |fh|
-            fh.puts('bar')
           end
 
           client = LocalClient.new(@options)
@@ -60,7 +58,6 @@ module Bosh::Blobstore
           client = LocalClient.new(@options)
           fh = File.open(test_file)
           id = client.create(fh)
-          fh.close
           original = File.new(test_file).readlines
 
           stored = File.new(File.join(@tmp, id)).readlines

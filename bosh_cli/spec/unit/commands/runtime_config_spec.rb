@@ -4,22 +4,15 @@ describe Bosh::Cli::Command::RuntimeConfig do
   let(:director) { double(Bosh::Cli::Client::Director) }
   let(:runner) { instance_double('Bosh::Cli::Runner') }
   subject(:runtime_config_command) { described_class.new(nil, director) }
-  let(:actual) { Bosh::Cli::Config.output.string }
-  let(:valid_runtime_manifest) { Psych.dump(Bosh::Spec::Deployments.simple_runtime_config) }
 
   before { @config = Support::TestConfig.new(runtime_config_command) }
-  after { @config.clean }
 
   before :each do
     target = 'https://127.0.0.1:8080'
 
     config = @config.load
-    config.target = target
-    config.set_alias('target', 'alpha', 'http://127.0.0.1:8080')
 
-    config.save
 
-    runtime_config_command.add_option(:non_interactive, true)
     runtime_config_command.add_option(:target, target)
     runtime_config_command.add_option(:username, 'user')
     runtime_config_command.add_option(:password, 'pass')
@@ -28,8 +21,6 @@ describe Bosh::Cli::Command::RuntimeConfig do
   end
 
   before(:each) do
-    allow(runtime_config_command).to receive(:runner).and_return(runner)
-    allow(runner).to receive(:usage).and_return('fake runner usage')
   end
 
   it "show outputs latest runtime config" do

@@ -10,7 +10,6 @@ module Bosh::Director
       let(:template) { Models::Template.make(blobstore_id: 'template-blob-id') }
 
       before do
-        release_version.add_template(template)
         allow(blobstore).to receive(:delete)
       end
 
@@ -24,12 +23,10 @@ module Bosh::Director
           end
 
           it 'disassociates with release versions' do
-            template_deleter.delete(template, force)
             expect(release_version.templates).to be_empty
           end
 
           it 'destroys the template' do
-            template_deleter.delete(template, force)
             expect(Models::Template.all).to be_empty
           end
 
@@ -48,12 +45,10 @@ module Bosh::Director
           end
 
           it 'disassociates with release versions' do
-            template_deleter.delete(template, force)
             expect(release_version.templates).to be_empty
           end
 
           it 'destroys the template' do
-            template_deleter.delete(template, force)
             expect(Models::Template.all).to be_empty
           end
 
@@ -63,10 +58,8 @@ module Bosh::Director
 
           context 'when deleting the blob fails' do
             before do
-              allow(blobstore).to receive(:delete).and_raise('wont')
             end
             it 'destroys the template' do
-              template_deleter.delete(template, force)
               expect(Models::Template.all).to be_empty
             end
           end

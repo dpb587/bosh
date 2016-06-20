@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'rack/test'
-require 'bosh/director/api/controllers/cloud_configs_controller'
 
 module Bosh::Director
   describe Api::Controllers::CloudConfigsController do
@@ -10,7 +9,6 @@ module Bosh::Director
     let(:config) do
       config = Config.load_hash(SpecHelper.spec_get_director_config)
       identity_provider = Support::TestIdentityProvider.new(config.get_uuid_provider)
-      allow(config).to receive(:identity_provider).and_return(identity_provider)
       config
     end
 
@@ -47,7 +45,6 @@ module Bosh::Director
       end
 
       context 'when user is reader' do
-        before { basic_authorize('reader', 'reader') }
 
         it 'forbids access' do
           expect(post('/', '', {'CONTENT_TYPE' => 'text/yaml'}).status).to eq(401)
@@ -55,7 +52,6 @@ module Bosh::Director
       end
 
       context 'when user is team-admin' do
-        before { basic_authorize('dev-team-member', 'dev-team-member') }
 
         it 'forbid access' do
           expect(post('/', '', {'CONTENT_TYPE' => 'text/yaml'}).status).to eq(401)
@@ -99,17 +95,12 @@ module Bosh::Director
         authorize('admin', 'admin')
 
         Models::CloudConfig.new(
-          properties: 'config_from_time_immortal',
-          created_at: Time.now - 3,
         ).save
         Models::CloudConfig.new(
-          properties: 'config_from_last_year',
-          created_at: Time.now - 2,
         ).save
         newer_cloud_config_properties = "---\nsuper_shiny: new_config"
         Models::CloudConfig.new(
           properties: newer_cloud_config_properties,
-          created_at: Time.now - 1,
         ).save
 
 
@@ -127,7 +118,6 @@ module Bosh::Director
         expect(last_response.status).to eq(400)
         expect(last_response.body).to eq("limit is required")
 
-        get "/?limit="
         expect(last_response.status).to eq(400)
         expect(last_response.body).to eq("limit is required")
 

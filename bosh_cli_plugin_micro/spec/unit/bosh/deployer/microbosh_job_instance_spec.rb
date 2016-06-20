@@ -1,7 +1,4 @@
-require 'spec_helper'
-require 'logger'
 require 'bosh/deployer/microbosh_job_instance'
-require 'bosh/director/core/templates/rendered_templates_archive'
 
 module Bosh::Deployer
   describe MicroboshJobInstance do

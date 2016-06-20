@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/rendered_job_templates_cleaner'
 
 module Bosh::Director
   describe RenderedJobTemplatesCleaner do
@@ -15,8 +14,6 @@ module Bosh::Director
       let(:stale_archive) do
         Models::RenderedTemplatesArchive.make(
           blobstore_id: 'fake-blob-id',
-          instance: instance_model,
-          created_at: Time.new(2013, 02, 01),
         )
       end
 
@@ -44,8 +41,6 @@ module Bosh::Director
       let(:stale_archive) do
         Models::RenderedTemplatesArchive.make(
           blobstore_id: 'fake-blob-id',
-          instance: instance_model,
-          created_at: Time.new(2013, 02, 01),
         )
       end
 

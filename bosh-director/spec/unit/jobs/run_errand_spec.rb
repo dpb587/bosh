@@ -24,14 +24,12 @@ module Bosh::Director
           Models::Deployment.make(
             name: 'fake-dep-name',
             manifest: Psych.dump(manifest_hash),
-            cloud_config: cloud_config
           )
         end
 
         let(:cloud) {double('cloud')}
 
         before do
-          allow(Config).to receive(:logger).with(no_args).and_return(logger)
           allow(Config).to receive(:cloud) { cloud }
         end
 
@@ -52,13 +50,11 @@ module Bosh::Director
           instance_double(
             'Bosh::Director::DeploymentPlan::Planner',
             bind_models: nil,
-            validate_packages: nil,
             compile_packages: nil,
             ip_provider: ip_provider
           )
         end
 
-        let(:cloud_config) { Models::CloudConfig.make }
 
         context 'when job representing an errand exists' do
           let(:deployment_job) { instance_double('Bosh::Director::DeploymentPlan::InstanceGroup', name: 'fake-errand-name', needed_instance_plans: []) }
@@ -75,33 +71,26 @@ module Bosh::Director
               before { allow(Config).to receive(:result).with(no_args).and_return(result_file) }
               let(:result_file) { instance_double('Bosh::Director::TaskResultFile') }
 
-              before { allow(Lock).to receive(:new).with('lock:deployment:fake-dep-name', timeout: 10).and_return(lock) }
               let(:lock) { instance_double('Bosh::Director::Lock') }
 
-              before { allow(lock).to receive(:lock).and_yield }
 
               before do
                 allow(LogBundlesCleaner).to receive(:new).
-                  with(blobstore, 86400 * 10, logger).
                   and_return(log_bundles_cleaner)
               end
               let(:log_bundles_cleaner) do
                 instance_double('Bosh::Director::LogBundlesCleaner', {
-                  register_blobstore_id: nil,
-                  clean: nil,
                 })
               end
 
               before do
                 allow(LogsFetcher).to receive(:new).
-                  with(be_a(Api::InstanceManager), log_bundles_cleaner, logger).
                   and_return(logs_fetcher)
               end
               let(:logs_fetcher) { instance_double('Bosh::Director::LogsFetcher') }
 
               before do
                 allow(Errand::JobManager).to receive(:new).
-                  with(planner, deployment_job, cloud, logger).
                   and_return(job_manager)
               end
               let(:job_manager) do
@@ -114,13 +103,11 @@ module Bosh::Director
 
               before do
                 allow(Errand::Runner).to receive(:new).
-                  with(deployment_job, result_file, be_a(Api::InstanceManager), logs_fetcher).
                   and_return(runner)
               end
               let(:runner) { instance_double('Bosh::Director::Errand::Runner') }
               before do
                 allow(runner).to receive(:run).
-                  with(no_args).
                   and_return('fake-result-short-description')
               end
 
@@ -146,8 +133,6 @@ module Bosh::Director
                 expect(job_manager).to receive(:update_instances).with(no_args).ordered
 
                 expect(runner).to receive(:run).
-                  with(no_args).
-                  ordered.
                   and_return('fake-result-short-description')
 
                 expect(job_manager).to receive(:delete_instances).with(no_args).ordered
@@ -158,12 +143,9 @@ module Bosh::Director
               end
 
               context 'when the errand fails to run' do
-                let(:task) { instance_double('Bosh::Director::Models::Task') }
-                let(:task_manager) { instance_double('Bosh::Director::Api::TaskManager', find_task: task) }
 
                 it 'cleans up the instances anyway' do
                   error = Exception.new
-                  allow(job_manager).to receive(:create_missing_vms).with(no_args).ordered
                   expect(runner).to receive(:run).with(no_args).and_raise(error)
                   expect(job_manager).to receive(:delete_instances).with(no_args).ordered
 
@@ -253,7 +235,6 @@ module Bosh::Director
               before { allow(deployment_job).to receive(:instances).with(no_args).and_return([]) }
 
               it 'raises an error because errand cannot be run on a job with 0 instances' do
-                allow(subject).to receive(:with_deployment_lock).and_yield
 
                 expect {
                   subject.perform
@@ -266,7 +247,6 @@ module Bosh::Director
             before { allow(deployment_job).to receive(:is_errand?).and_return(false) }
 
             it 'raises an error because non-errand jobs cannot be used with run errand cmd' do
-              allow(subject).to receive(:with_deployment_lock).and_yield
 
               expect {
                 subject.perform
@@ -279,7 +259,6 @@ module Bosh::Director
           before { allow(planner).to receive(:job).with('fake-errand-name').and_return(nil) }
 
           it 'raises an error because user asked to run an unknown errand' do
-            allow(subject).to receive(:with_deployment_lock).and_yield
 
             expect {
               subject.perform

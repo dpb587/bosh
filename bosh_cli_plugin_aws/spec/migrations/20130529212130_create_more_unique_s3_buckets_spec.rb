@@ -19,7 +19,6 @@ describe CreateMoreUniqueS3Buckets do
       expect(mock_s3).not_to receive :move_bucket
       expect(mock_s3).not_to receive :delete_bucket
 
-      subject.execute
     end
   end
 
@@ -27,8 +26,6 @@ describe CreateMoreUniqueS3Buckets do
     before do
       expect(mock_s3).to receive(:bucket_exists?).with("dev102-bosh-blobstore").and_return(true)
       expect(mock_s3).to receive(:bucket_exists?).with("dev102-cf-com-bosh-artifacts").and_return(true)
-      allow(mock_s3).to receive(:move_bucket)
-      allow(mock_s3).to receive(:delete_bucket)
     end
 
     it "should create the buckets" do

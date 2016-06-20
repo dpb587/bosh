@@ -1,6 +1,4 @@
 require 'spec_helper'
-require 'aws-sdk'
-require 'logger'
 require 'bosh/deployer/instance_manager/aws'
 
 module Bosh::Deployer
@@ -15,10 +13,8 @@ module Bosh::Deployer
         cloud_options: {
           'properties' => {
             'registry' => {
-              'endpoint' => 'fake-registry-endpoint',
             },
             'aws' => {
-              'ssh_user' => 'fake-ssh-user',
               'ec2_private_key' => 'fake-private-key',
             },
           },
@@ -41,7 +37,6 @@ module Bosh::Deployer
 
       it 'creates a new ssh tunnel to bosh vm and forwards bosh registry port' do
         allow(instance_manager).to receive(:client_services_ip).
-          with(no_args).
           and_return('fake-client-services-ip')
 
         allow(registry).to receive(:port).and_return('fake-registry-port')

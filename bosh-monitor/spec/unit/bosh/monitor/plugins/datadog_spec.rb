@@ -116,7 +116,6 @@ describe Bhm::Plugins::DataDog do
     it "should do nothing if node_id is missing" do
       expect(EM).to_not receive(:defer)
       heartbeat = make_heartbeat({ timestamp: Time.now.to_i, node_id: nil })
-      subject.process(heartbeat)
     end
   end
 
@@ -124,7 +123,6 @@ describe Bhm::Plugins::DataDog do
 
     it "didn't freak out once timeout sendidng datadog event" do
       expect(EM).to receive(:defer).and_yield
-      heartbeat = make_heartbeat
       allow(dog_client).to receive(:emit_event).and_raise(Timeout::Error)
       alert = make_alert
       expect { subject.process(alert) }.to_not raise_error
@@ -132,7 +130,6 @@ describe Bhm::Plugins::DataDog do
 
     it "didn't freak out with exceptions while sendidng datadog event" do
       expect(EM).to receive(:defer).and_yield
-      heartbeat = make_heartbeat
       allow(dog_client).to receive(:emit_event).and_raise
       alert = make_alert
       expect { subject.process(alert) }.to_not raise_error

@@ -4,7 +4,6 @@ module Bosh::Director
   describe PostDeploymentScriptRunner do
     context "Given a deployment instance" do
       let(:agent) { instance_double(
-                        'Bosh::Director::AgentClient',
       )}
       let(:instance_data_set) { instance_double(
                             'Sequel::Dataset'

@@ -23,11 +23,9 @@ describe Bosh::Director::Api::TaskManager do
         file = File.join(dir, 'file')
         file_gz = File.join(dir, 'file.gz')
         FileUtils.touch(file)
-        FileUtils.touch(file_gz)
 
         expect(File).not_to receive(:open)
 
-        manager.decompress(file_gz, file)
       end
     end
   end
@@ -44,7 +42,6 @@ describe Bosh::Director::Api::TaskManager do
 
     it 'should return the task log path' do
       allow(task).to receive_messages(output: task_dir)
-      allow(manager).to receive(:decompress)
 
       expect(File).to receive(:directory?).with(task_dir).and_return(true)
 

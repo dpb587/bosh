@@ -19,24 +19,18 @@ module Bosh::Director
       let(:instance1_model) do
         Models::Instance.make(
           job: 'fake-job-name',
-          index: 0,
-          deployment: deployment,
         )
       end
 
-      let(:deployment) { Models::Deployment.make(name: 'fake-dep-name') }
 
       before { allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instance1_model.credentials, instance1_model.agent_id).and_return(agent_client) }
       let(:agent_client) { instance_double('Bosh::Director::AgentClient') }
 
       describe '#run' do
         let(:event_log_stage) { instance_double('Bosh::Director::EventLog::Stage') }
-        before { allow(Config.event_log).to receive(:begin_stage).and_return(event_log_stage) }
 
-        before { allow(event_log_stage).to receive(:advance_and_track).and_yield }
 
         context 'when agent is able to run errands' do
-          before { allow(Config).to receive(:result).and_return(result_file) }
           let(:result_file) { instance_double('File', write: nil) }
 
           let(:agent_task_result) do
@@ -86,7 +80,6 @@ module Bosh::Director
           end
 
           it 'records errand running in the event log' do
-            event_log_stage = instance_double('Bosh::Director::EventLog::Stage')
             expect(Config.event_log).to receive(:begin_stage).with('Running errand', 1).and_return(event_log_stage)
             expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/0').and_yield
             subject.run
@@ -96,11 +89,9 @@ module Bosh::Director
             errand_result = instance_double('Bosh::Director::Errand::Result', to_hash: {})
 
             expect(errand_result).to receive(:short_description).
-               with('fake-job-name').
                and_return('fake-short-description')
 
             expect(Errand::Result).to receive(:from_agent_task_results).
-              with(agent_task_result, 'fake-logs-blobstore-id').
               and_return(errand_result)
 
             expect(subject.run).to eq('fake-short-description')
@@ -147,11 +138,7 @@ module Bosh::Director
             it 'writes the errand result received from the agent\'s cancellation' do
               expect(result_file).to receive(:write) do |text|
                 expect(JSON.parse(text)).to eq(
-                  'exit_code' => 123,
-                  'stdout' => 'fake-stdout',
-                  'stderr' => 'fake-stderr',
                   'logs' => {
-                    'blobstore_id' => 'fake-logs-blobstore-id'
                   },
                 )
               end
@@ -166,11 +153,7 @@ module Bosh::Director
             it 'writes run_errand response with nil blobstore_id if fetching logs fails' do
               expect(result_file).to receive(:write) do |text|
                 expect(JSON.parse(text)).to eq(
-                  'exit_code' => 123,
-                  'stdout' => 'fake-stdout',
-                  'stderr' => 'fake-stderr',
                   'logs' => {
-                    'blobstore_id' => nil,
                   },
                 )
               end
@@ -241,7 +224,6 @@ module Bosh::Director
         context 'when no errand is running' do
           it 'does not send a message to the agent' do
             expect(agent_client).not_to receive(:cancel_task)
-            subject.cancel
           end
         end
       end
@@ -253,8 +235,6 @@ module Bosh::Director
       describe '#run' do
         it 'raises an error' do
           expect { subject.run }.to raise_error(
-            DirectorError,
-            /Must have at least one instance group instance to run an errand/,
           )
         end
       end

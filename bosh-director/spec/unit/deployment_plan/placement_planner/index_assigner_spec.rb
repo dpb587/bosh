@@ -44,7 +44,6 @@ module Bosh::Director::DeploymentPlan
         context 'when there are existing instances on that job with gaps' do
           before do
             Bosh::Director::Models::Instance.make(job: 'fake-job', index: 0, deployment: deployment_model)
-            Bosh::Director::Models::Instance.make(job: 'fake-job', index: 2, deployment: deployment_model)
           end
 
           it 'returns unused index' do

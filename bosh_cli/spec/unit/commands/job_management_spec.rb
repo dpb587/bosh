@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe Bosh::Cli::Command::JobManagement do
-  include FakeFS::SpecHelpers
 
   let(:command) { described_class.new }
   let(:deployment) { 'dep1' }
@@ -10,7 +9,6 @@ describe Bosh::Cli::Command::JobManagement do
 
   before(:each) do
     allow(director).to receive(:change_job_state).and_return(:done, nil, '')
-    allow(command).to receive_messages(target: 'http://bosh.example.com')
     allow(command).to receive_messages(logged_in?: true)
     allow(command).to receive_messages(inspect_deployment_changes: false)
     allow(command).to receive(:nl)
@@ -18,7 +16,6 @@ describe Bosh::Cli::Command::JobManagement do
     allow(command).to receive(:director).and_return(director)
 
     allow(command).to receive(:deployment).and_return('fake-deployment')
-    File.open('fake-deployment', 'w') { |f| f.write(deployment_manifest.to_yaml) }
 
     allow(command).to receive(:show_current_state)
   end
@@ -74,7 +71,6 @@ describe Bosh::Cli::Command::JobManagement do
 
     context 'if the bosh CLI is running interactively' do
       before do
-        command.options[:non_interactive] = false
       end
 
       context 'when there has been a change in the manifest locally' do
@@ -94,12 +90,10 @@ describe Bosh::Cli::Command::JobManagement do
 
       context 'when there has not been a change in the manifest locally' do
         before do
-          allow(command).to receive_messages(inspect_deployment_changes: false)
         end
 
         context 'if we do not confirm the command' do
           before do
-            allow(command).to receive(:say)
             allow(command).to receive_messages(confirmed?: false)
           end
 
@@ -174,14 +168,11 @@ describe Bosh::Cli::Command::JobManagement do
   end
 
   shared_examples :skips_drain do |options|
-    method_name = options.fetch(:with)
 
-    before { command.options[:skip_drain] = true }
 
     context 'when skip-drain is specified' do
       it 'passes it to director request' do
         expect(director).to receive(:change_job_state).with(deployment, manifest_yaml, 'dea', '0', anything, {skip_drain: true})
-        command.public_send(method_name, 'dea', '0')
       end
     end
   end
@@ -204,7 +195,6 @@ describe Bosh::Cli::Command::JobManagement do
 
   describe 'stop a job' do
     before do
-      command.options[:hard] = false
     end
 
     it_behaves_like 'a command which modifies the vm state', with: :stop_job,

@@ -22,14 +22,12 @@ describe 'InteractiveProgressRenderer' do
     end
 
     it 'renders error' do
-      renderer.start(path, label)
       renderer.progress(path, label, 50)
       expect_error_render(path, error, 1, renderer)
       renderer.error(path, error)
     end
 
     it 'renders finished' do
-      renderer.start(path, label)
       renderer.progress(path, label, 50)
       expect_finish_render(path, label, 1, renderer)
       renderer.finish(path, label)
@@ -70,10 +68,7 @@ describe 'InteractiveProgressRenderer' do
     it 'renders error' do
       renderer.start(path1, label)
       renderer.start(path2, label)
-      renderer.start(path3, label)
 
-      renderer.progress(path1, label, 50)
-      renderer.progress(path2, label, 51)
       renderer.progress(path3, label, 52)
 
       expect_error_render(path1, error, 3, renderer)
@@ -87,10 +82,7 @@ describe 'InteractiveProgressRenderer' do
     it 'renders finished' do
       renderer.start(path1, label)
       renderer.start(path2, label)
-      renderer.start(path3, label)
 
-      renderer.progress(path1, label, 50)
-      renderer.progress(path2, label, 51)
       renderer.progress(path3, label, 52)
 
       expect_finish_render(path1, label, 3, renderer)
@@ -104,7 +96,6 @@ describe 'InteractiveProgressRenderer' do
 end
 
 def expect_start_render(path, label, renderer)
-  allow(renderer).to receive(:say).exactly(7).times
   expect(path).to receive(:truncate).and_return(path)
   expect(path).to receive(:make_yellow).and_return(path)
   expect(renderer).to receive(:say).with(path, " \n")
@@ -117,7 +108,6 @@ def expect_start_render(path, label, renderer)
 end
 
 def expect_progress_render(path, label, index, renderer)
-  allow(renderer).to receive(:say).exactly(6).times
   expect(path).to receive(:truncate).and_return(path)
   expect(path).to_not receive(:make_yellow)
   expect(renderer).to receive(:say).with("\e[s", "")
@@ -129,7 +119,6 @@ def expect_progress_render(path, label, index, renderer)
 end
 
 def expect_finish_render(path, label, index, renderer)
-  allow(renderer).to receive(:say).exactly(6).times
   expect(path).to receive(:truncate).and_return(path)
   expect(path).to_not receive(:make_yellow)
   expect(label).to receive(:make_green).and_return(label)
@@ -142,7 +131,6 @@ def expect_finish_render(path, label, index, renderer)
 end
 
 def expect_error_render(path, message, index, renderer)
-  allow(renderer).to receive(:say).exactly(6).times
   expect(path).to receive(:truncate).and_return(path)
   expect(path).to_not receive(:make_yellow)
   expect(message).to receive(:make_red).and_return(message)

@@ -3,7 +3,6 @@ require 'blobstore_client/null_blobstore_client'
 
 module Bosh::Blobstore
   describe NullBlobstoreClient do
-    subject(:client) { described_class.new }
 
     it_implements_base_client_interface
 

@@ -13,11 +13,8 @@ describe Bosh::Director::ProblemHandlers::Base do
     auto_resolution :baz
 
     attr_reader :message
-    attr_reader :resource_id
 
     def initialize(resource_id, data)
-      super
-      @resource_id = resource_id
       @message = data["message"]
     end
 
@@ -38,11 +35,8 @@ describe Bosh::Director::ProblemHandlers::Base do
     auto_resolution :zb
 
     attr_reader :message
-    attr_reader :resource_id
 
     def initialize(resource_id, data)
-      super
-      @resource_id = resource_id
       @message = data["message"]
     end
 

@@ -142,11 +142,8 @@ module Bosh::Director::DeploymentPlan::PlacementPlanner
       let(:networks_to_static_ips) do
         {
           'network-1' => [
-            NetworksToStaticIps::StaticIpToAzs.new('ip-1', ['z1', 'z2']),
-            NetworksToStaticIps::StaticIpToAzs.new('ip-2', ['z2', 'z3']),
           ],
           'network-2' => [
-            NetworksToStaticIps::StaticIpToAzs.new('ip-3', ['z4']),
             NetworksToStaticIps::StaticIpToAzs.new('ip-4', ['z1', 'z3']),
           ]
         }

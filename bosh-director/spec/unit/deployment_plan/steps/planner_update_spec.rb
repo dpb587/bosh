@@ -40,16 +40,12 @@ module Bosh::Director::DeploymentPlan
         before { allow(agent_client).to receive(:get_state).and_return(vm_state) }
         let(:vm_state) do
           {
-            'deployment' => 'fake-deployment',
             'networks' => {
               'fake-network' => {
-                'ip' => '127.0.0.1',
               },
             },
             'resource_pool' => {
-              'name' => 'fake-resource-pool',
             },
-            'index' => 0,
           }
         end
 
@@ -58,7 +54,6 @@ module Bosh::Director::DeploymentPlan
 
           let(:base_job) { Bosh::Director::Jobs::BaseJob.new }
           let(:multi_job_updater) { instance_double('Bosh::Director::DeploymentPlan::SerialMultiJobUpdater', run: nil) }
-          let(:assembler) { Assembler.new(deployment_plan, nil, cloud, nil, logger) }
           let(:cloud_config) { nil }
           let(:runtime_config) { nil }
 
@@ -78,7 +73,6 @@ module Bosh::Director::DeploymentPlan
                   'templates' => [
                     {
                       'name' => 'fake-template',
-                      'release' => 'fake-release',
                     }
                   ],
                   'resource_pool' => 'fake-resource-pool',
@@ -94,27 +88,19 @@ module Bosh::Director::DeploymentPlan
               'resource_pools' => [
                 {
                   'name' => 'fake-resource-pool',
-                  'size' => 1,
-                  'cloud_properties' => {},
                   'stemcell' => {
                     'name' => 'fake-stemcell',
                     'version' => 'fake-stemcell-version',
                   },
-                  'network' => 'fake-network',
-                  'jobs' => []
                 }
               ],
               'networks' => [
                 {
                   'name' => 'fake-network',
-                  'type' => 'manual',
-                  'cloud_properties' => {},
                   'subnets' => [
                     {
-                      'name' => 'fake-subnet',
                       'range' => '127.0.0.0/20',
                       'gateway' => '127.0.0.2',
-                      'cloud_properties' => {},
                       'static' => ['127.0.0.1'],
                     }
                   ]
@@ -129,7 +115,6 @@ module Bosh::Director::DeploymentPlan
               'compilation' => {
                 'workers' => 1,
                 'network' => 'fake-network',
-                'cloud_properties' => {},
               },
               'update' => {
                 'canaries' => 1,
@@ -144,16 +129,13 @@ module Bosh::Director::DeploymentPlan
 
           let(:task) {Bosh::Director::Models::Task.make(:id => 42, :username => 'user')}
           before do
-            allow(Bosh::Director::Config).to receive(:dns_enabled?).and_return(false)
             allow(base_job).to receive(:task_id).and_return(task.id)
             allow(Bosh::Director::Config).to receive(:current_job).and_return(base_job)
-            allow(Bosh::Director::Config).to receive(:record_events).and_return(true)
           end
 
           before { allow(Bosh::Director::App).to receive_message_chain(:instance, :blobstores, :blobstore).and_return(blobstore) }
           let(:blobstore) { instance_double('Bosh::Blobstore::Client') }
 
-          before { allow_any_instance_of(Bosh::Director::JobRenderer).to receive(:render_job_instances) }
           before { allow_any_instance_of(Bosh::Director::JobRenderer).to receive(:render_job_instance) }
 
           it 'deletes the existing VM, and creates a new VM with the same IP' do
@@ -161,7 +143,6 @@ module Bosh::Director::DeploymentPlan
             expect(cloud).to receive(:create_vm)
                                .with(anything, stemcell.cid, anything, { 'fake-network' => hash_including('ip' => '127.0.0.1') }, anything, anything)
                                .and_return('vm-cid-2')
-                               .ordered
 
             update_step.perform
             expect(Bosh::Director::Models::Instance.find(vm_cid: 'vm-cid-1')).to be_nil

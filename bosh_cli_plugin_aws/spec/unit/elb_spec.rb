@@ -32,9 +32,7 @@ describe Bosh::AwsCliPlugin::ELB do
       allow(elb).to receive(:aws_iam).and_return(fake_aws_iam)
 
       allow(vpc).to receive(:subnets).and_return({ 'sub_name1' => 'sub_id1', 'sub_name2' => 'sub_id2' })
-      allow(vpc).to receive(:security_group_by_name).with('security_group_name').and_return(fake_aws_security_group)
 
-      allow(Bosh::Common).to receive(:wait)
     end
 
     describe 'is successful' do
@@ -83,7 +81,6 @@ describe Bosh::AwsCliPlugin::ELB do
                                              'security_group' => 'security_group_name',
                                              'https' => true,
                                              'ssl_cert' => cert_name,
-                                             'dns_record' => 'myapp',
                                              'domain' => 'dev102.cf.com' }, certs)).to eq(new_elb)
           end
         end
@@ -99,7 +96,6 @@ describe Bosh::AwsCliPlugin::ELB do
                                              'security_group' => 'security_group_name',
                                              'https' => true,
                                              'ssl_cert' => cert_name,
-                                             'dns_record' => 'myapp',
                                              'domain' => 'dev102.cf.com' }, certs)
           end
         end
@@ -115,7 +111,6 @@ describe Bosh::AwsCliPlugin::ELB do
                                              'security_group' => 'security_group_name',
                                              'https' => true,
                                              'ssl_cert' => cert_name,
-                                             'dns_record' => 'myapp',
                                              'domain' => 'dev102.cf.com' }, certs)
           end
         end
@@ -135,7 +130,6 @@ describe Bosh::AwsCliPlugin::ELB do
                                              'security_group' => 'security_group_name',
                                              'https' => true,
                                              'ssl_cert' => cert_name,
-                                             'dns_record' => 'myapp',
                                              'domain' => 'dev102.cf.com' }, certs)).to eq(new_elb)
           end
         end
@@ -155,12 +149,8 @@ describe Bosh::AwsCliPlugin::ELB do
               'security_group' => 'security_group_name',
               'https' => true,
               'ssl_cert' => cert_name,
-              'dns_record' => 'myapp',
-              'domain' => 'dev102.cf.com'
             }, certs)
           }.to raise_error(
-            Bosh::AwsCliPlugin::ELB::BadCertificateError,
-            /Unable to upload ELB SSL Certificate.*BEGIN CERTIFICATE/m
           )
         end
       end
@@ -168,8 +158,6 @@ describe Bosh::AwsCliPlugin::ELB do
   end
 
   describe 'deletion' do
-    let(:load_balancers) { [] }
-    let(:server_certificates) { [] }
 
     before do
       allow(elb).to receive(:aws_elb).and_return(fake_aws_elb)

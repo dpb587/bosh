@@ -14,7 +14,6 @@ describe Bosh::Cli::BackupDestinationPath do
 
   around do |example|
     Timecop.freeze do
-      example.run
     end
   end
 
@@ -36,22 +35,18 @@ describe Bosh::Cli::BackupDestinationPath do
     context 'if the user provides a non-existent path' do
       context 'if they put a tarball extension on the end of the path' do
         context 'if the path ends in .tgz' do
-          let(:dest_file) { 'backup.tgz' }
 
           it 'uses the passed in path' do
             Dir.mktmpdir do |temp_dir|
-              dest_path = File.join(temp_dir, dest_file)
               expect(dest.create_from_path(dest_path)).to eq dest_path
             end
           end
         end
 
         context 'if the path ends in .tar.gz' do
-          let(:dest_file) { 'backup.tar.gz' }
 
           it 'uses the passed in path' do
             Dir.mktmpdir do |temp_dir|
-              dest_path = File.join(temp_dir, dest_file)
               expect(dest.create_from_path(dest_path)).to eq dest_path
             end
           end
@@ -59,11 +54,9 @@ describe Bosh::Cli::BackupDestinationPath do
       end
 
       context 'if they do not put a tarball extension on the end of the path' do
-        let(:dest_file) { 'backup' }
 
         it 'adds .tgz to the supplied path' do
           Dir.mktmpdir do |temp_dir|
-            dest_path = File.join(temp_dir, dest_file)
             expect(dest.create_from_path(dest_path)).to eq "#{dest_path}.tgz"
           end
         end

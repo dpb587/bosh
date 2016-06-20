@@ -5,7 +5,6 @@ module Bosh::Director
     describe 'parse' do
       describe 'disk_size' do
         context 'when size is negative' do
-          let(:spec) { {'name' => 'fake-name', 'disk_size' => -100} }
 
           it 'raises an error' do
             expect {
@@ -68,9 +67,6 @@ module Bosh::Director
           context 'when cloud_properties is not a hash' do
             let(:spec) do
               {
-                'name' => 'fake-name',
-                'disk_size' => 100,
-                'cloud_properties' => 'string-property'
               }
             end
 

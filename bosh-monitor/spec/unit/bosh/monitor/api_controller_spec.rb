@@ -9,8 +9,6 @@ describe Bosh::Monitor::ApiController do
   end
 
   let(:config) { class_double(Bosh::Monitor)  }
-  before { stub_const("Bhm", config) }
-  before { allow(EM).to receive(:add_periodic_timer) { } }
 
   describe "/healthz" do
     let(:periodic_timers) { [] }
@@ -36,8 +34,6 @@ describe Bosh::Monitor::ApiController do
 
     context 'when a thread has become available in the EM thread pool within a time limit' do
       it 'returns 200 OK' do
-        now + Bosh::Monitor::ApiController::PULSE_TIMEOUT + 1
-        run_em_timers
 
         get '/healthz'
         expect(last_response.status).to eq(200)

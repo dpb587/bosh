@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh_cli_plugin_aws/aws_provider'
 
 module Bosh::AwsCliPlugin
   describe AwsProvider do

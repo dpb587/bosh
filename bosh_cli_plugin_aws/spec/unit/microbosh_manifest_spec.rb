@@ -19,7 +19,6 @@ describe Bosh::AwsCliPlugin::MicroboshManifest do
 
   it 'warns when name is missing' do
     vpc_config['name'] = nil
-    allow(manifest).to receive(:private_key_path)
     expect(manifest).to receive(:warning).with('Missing name field').at_least(1).times
     manifest.to_y
   end
@@ -72,16 +71,12 @@ describe Bosh::AwsCliPlugin::MicroboshManifest do
   end
 
   it 'does not warn when name is present' do
-    vpc_config['name'] = 'bill'
     expect(manifest).not_to receive(:warning).with('Missing name field')
-    manifest.to_y
   end
 
   describe 'loading the director ssl config' do
     context 'when the setting is set correctly' do
       it 'loads the director ssl cert files' do
-        vpc_receipt['ssl_certs']['director_cert']['certificate'] = asset('ca/bosh.pem')
-        vpc_receipt['ssl_certs']['director_cert']['private_key'] = asset('ca/bosh.key')
 
         expect(manifest.director_ssl_cert).to match /BEGIN CERTIFICATE/
         expect(manifest.director_ssl_key).to match /BEGIN RSA PRIVATE KEY/
@@ -93,13 +88,9 @@ describe Bosh::AwsCliPlugin::MicroboshManifest do
       let(:non_existant_key) { asset('ca/not_real_ca.key') }
 
       before do
-        FileUtils.rm_f(non_existant_cert)
-        FileUtils.rm_f(non_existant_key)
       end
 
       it 'creates the certificate for the user' do
-        vpc_receipt['ssl_certs']['director_cert']['certificate'] = non_existant_cert
-        vpc_receipt['ssl_certs']['director_cert']['private_key'] = non_existant_key
 
         expect(manifest.director_ssl_cert).to match /BEGIN CERTIFICATE/
         expect(manifest.director_ssl_key).to match /BEGIN RSA PRIVATE KEY/

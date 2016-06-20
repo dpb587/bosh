@@ -6,7 +6,6 @@ module Bosh::Director
     let(:instance) do
       instance_double(
         'Bosh::Director::DeploymentPlan::Instance',
-        deployment_model: Models::Deployment.make,
         rendered_templates_archive: nil,
         configuration_hash: {'fake-spec' => true},
         template_hashes: []
@@ -18,7 +17,6 @@ module Bosh::Director
         desired_instance: DeploymentPlan::DesiredInstance.new(job),
         existing_instance: nil,
         instance: instance,
-        needs_recreate?: false
       )
     end
     let(:agent_client) { instance_double('Bosh::Director::AgentClient') }
@@ -27,7 +25,6 @@ module Bosh::Director
       def self.it_does_not_send_prepare
         it 'does not send prepare message to the instance' do
           expect(agent_client).not_to receive(:prepare)
-          preparer.prepare
         end
       end
       before do
@@ -46,7 +43,6 @@ module Bosh::Director
           end
 
           context 'when instance does not need to be recreated' do
-            before { allow(instance_plan).to receive_messages(needs_recreate?: false) }
 
             it 'sends prepare message to the instance' do
               expect(agent_client).to receive(:prepare).with(apply_spec)
@@ -63,8 +59,6 @@ module Bosh::Director
             end
 
             context 'and agent responds with an error' do
-              before { allow(agent_client).to receive(:prepare).and_raise(error) }
-              let(:error) { RpcRemoteException.new('fake-agent-error') }
 
               it 'does not propagate the error because all errors from prepare are ignored' do
                 expect { preparer.prepare }.to_not raise_error
@@ -83,12 +77,10 @@ module Bosh::Director
         end
 
         context "when state of the instance is 'detached'" do
-          before { allow(instance).to receive(:state).with(no_args).and_return('detached') }
           it_does_not_send_prepare
         end
 
         context 'when instance needs to be shut down' do
-          before { allow(instance_plan).to receive_messages(needs_shutting_down?: true) }
           it_does_not_send_prepare
         end
       end

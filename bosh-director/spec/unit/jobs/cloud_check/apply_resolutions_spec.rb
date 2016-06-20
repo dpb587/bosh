@@ -23,7 +23,6 @@ module Bosh::Director
     describe '#perform' do
       context 'when resolution succeeds' do
         it 'should normalize the problem ids' do
-          allow(job).to receive(:with_deployment_lock).and_yield
 
           expect(resolver).to receive(:apply_resolutions).with(normalized_resolutions)
 
@@ -39,7 +38,6 @@ module Bosh::Director
         end
 
         it 'applies the resolutions' do
-          allow(job).to receive(:with_deployment_lock).and_yield
 
           expect(resolver).to receive(:apply_resolutions).and_return(1)
 
@@ -47,7 +45,6 @@ module Bosh::Director
         end
 
         it 'runs the post-deploy script' do
-          allow(job).to receive(:with_deployment_lock).and_yield
           allow(resolver).to receive(:apply_resolutions)
 
           expect(Bosh::Director::PostDeploymentScriptRunner).to receive(:run_post_deploys_after_resurrection).with(deployment)
@@ -58,7 +55,6 @@ module Bosh::Director
 
       context 'when resolution fails' do
         it 'raises an error' do
-          allow(job).to receive(:with_deployment_lock).and_yield
 
           expect(resolver).to receive(:apply_resolutions).and_return([1, 'error message'])
 
@@ -68,7 +64,6 @@ module Bosh::Director
         end
 
         it 'does not run the post-deploy script' do
-          allow(job).to receive(:with_deployment_lock).and_yield
 
           expect(resolver).to receive(:apply_resolutions).and_return([1, 'error message'])
 

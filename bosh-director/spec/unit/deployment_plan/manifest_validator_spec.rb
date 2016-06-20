@@ -13,8 +13,6 @@ module Bosh
           expect {
             manifest_validator.validate(manifest_hash, nil)
           }.to raise_error(
-              Bosh::Director::DeploymentInvalidProperty,
-              "Deployment manifest contains 'disk_types' section, but it can only be used in cloud-config."
             )
         end
 
@@ -23,8 +21,6 @@ module Bosh
           expect {
             manifest_validator.validate(manifest_hash, nil)
           }.to raise_error(
-              Bosh::Director::DeploymentInvalidProperty,
-              "Deployment manifest contains 'vm_types' section, but it can only be used in cloud-config."
             )
         end
 
@@ -33,14 +29,11 @@ module Bosh
           expect {
             manifest_validator.validate(manifest_hash, nil)
           }.to raise_error(
-              Bosh::Director::DeploymentInvalidProperty,
-              "Deployment manifest contains 'azs' section, but it can only be used in cloud-config."
             )
         end
 
         context 'without cloud-config' do
           it 'accepts a manifest without jobs' do
-            manifest_hash.delete('jobs')
 
             expect { manifest_validator.validate(manifest_hash, nil) }.not_to raise_error
           end
@@ -50,8 +43,6 @@ module Bosh
             expect {
               manifest_validator.validate(manifest_hash, nil)
             }.to raise_error(
-                Bosh::Director::DeploymentInvalidProperty,
-                "Deployment manifest instance groups contain 'migrated_from', but it can only be used with cloud-config."
               )
           end
         end
@@ -69,8 +60,6 @@ module Bosh
             expect {
               manifest_validator.validate(manifest_hash, cloud_config_hash)
             }.to raise_error(
-                DeploymentInvalidProperty,
-                'Deployment manifest should not contain cloud config properties: ["resource_pools", "compilation"]'
               )
           end
         end

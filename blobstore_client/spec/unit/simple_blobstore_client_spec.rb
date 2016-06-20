@@ -67,7 +67,6 @@ module Bosh::Blobstore
       it 'should fetch an object' do
         allow(response).to receive_messages(status: 200)
         expect(httpclient).to receive(:get).
-          with('http://localhost/resources/some object', :header => {}).
           and_yield('content_id').
           and_return(response)
 
@@ -77,7 +76,6 @@ module Bosh::Blobstore
       it 'should raise an exception when there is an error fetching an object' do
         allow(response).to receive_messages(status: 500, content: 'error message')
         expect(httpclient).to receive(:get).
-          with('http://localhost/resources/some object', :header => {}).
           and_return(response)
 
         expect { client.get('some object') }.to raise_error BlobstoreError, /Could not fetch object/
@@ -86,7 +84,6 @@ module Bosh::Blobstore
       it 'should delete an object' do
         allow(response).to receive_messages(status: 204, content: '')
         expect(httpclient).to receive(:delete).
-          with('http://localhost/resources/some object', :header => {}).
           and_return(response)
 
         client.delete('some object')
@@ -95,7 +92,6 @@ module Bosh::Blobstore
       it 'should raise Bosh::Blobstore::NotFound error when the file is not found in blobstore during deleting' do
         allow(response).to receive_messages(status: 404, content: '')
         expect(httpclient).to receive(:delete).
-          with('http://localhost/resources/some object', :header => {}).
           and_return(response)
 
         expect { client.delete('some object') }.to raise_error NotFound, /Object 'some object' is not found/
@@ -104,7 +100,6 @@ module Bosh::Blobstore
       it 'should raise an exception when there is an error deleting an object' do
         allow(response).to receive_messages(status: 500, content: '')
         expect(httpclient).to receive(:delete).
-          with('http://localhost/resources/some object', :header => {}).
           and_return(response)
 
         expect { client.delete('some object') }.to raise_error BlobstoreError, /Could not delete object/

@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'rack/test'
 
 shared_examples :auth_provider_shared_tests do
   it 'returns auth header provided by UAA' do
@@ -47,7 +46,6 @@ describe Bosh::Monitor::AuthProvider do
       'client_secret' => 'fake-client-secret'
     }
   end
-  let(:logger) { double(:logger) }
 
   context 'when director is in UAA mode' do
     let(:auth_info) { {'user_authentication' => { 'type' => 'uaa', 'options' => {'url' => 'uaa-url'}} } }

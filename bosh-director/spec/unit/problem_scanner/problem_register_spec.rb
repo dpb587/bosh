@@ -4,7 +4,6 @@ module Bosh::Director
   describe ProblemScanner::ProblemRegister do
     subject(:problem_register) { described_class.new(deployment, logger) }
     let(:deployment) { Models::Deployment.make(name: 'fake-deployment') }
-    let(:logger) { double(:logger, info: nil) }
 
     describe '#problem_found' do
       let(:resource) { double(:resource, id: 123) }
@@ -29,7 +28,6 @@ module Bosh::Director
             deployment_id: deployment.id,
             type: 'fake-problem-type',
             resource_id: 123,
-            state: 'open',
             counter: 1
           )
         end
@@ -55,8 +53,6 @@ module Bosh::Director
               deployment_id: deployment.id,
               type: 'fake-problem-type',
               resource_id: 123,
-              state: 'open',
-              counter: 1
             )
           end
         end

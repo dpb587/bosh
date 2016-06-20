@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/deployment_plan/job_spec_parser'
 
 describe Bosh::Director::DeploymentPlan::JobSpecParser do
   subject(:parser) { described_class.new(deployment_plan, event_log, logger) }
@@ -8,12 +7,9 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
   let(:deployment_plan) do
     instance_double(
       'Bosh::Director::DeploymentPlan::Planner',
-      model: Bosh::Director::Models::Deployment.make,
       properties: {},
       update: nil,
-      name: 'fake-deployment',
       networks: [network],
-      releases: {}
     )
   end
   let(:network) { Bosh::Director::DeploymentPlan::ManualNetwork.new('fake-network-name', [], logger) }
@@ -35,14 +31,12 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       instance_double('Bosh::Director::DeploymentPlan::ResourcePool', env: resource_pool_env)
     end
     let(:disk_type) { instance_double('Bosh::Director::DeploymentPlan::DiskType') }
-    before { allow(deployment_plan).to receive(:disk_type).and_return(disk_type) }
 
     before { allow(Bosh::Director::DeploymentPlan::UpdateConfig).to receive(:new) }
     before { allow(deployment_plan).to receive(:release).and_return(job_rel_ver) }
     let(:job_rel_ver) do
       instance_double(
         'Bosh::Director::DeploymentPlan::ReleaseVersion',
-        template: nil,
       )
     end
 
@@ -74,7 +68,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       end
 
       it "defaults lifecycle profile to 'service'" do
-        job_spec.delete('lifecycle')
         job = parser.parse(job_spec)
         expect(job.lifecycle).to eq('service')
       end
@@ -85,8 +78,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-          Bosh::Director::JobInvalidLifecycle,
-          "Invalid lifecycle 'unknown' for 'fake-job-name', valid lifecycle profiles are: service, errand",
         )
       end
     end
@@ -100,21 +91,17 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       it 'complains about unknown release' do
         job_spec['release'] = 'unknown-release-name'
         expect(deployment_plan).to receive(:release)
-          .with('unknown-release-name')
           .and_return(nil)
 
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-          Bosh::Director::JobUnknownRelease,
-          "Instance group 'fake-job-name' references an unknown release 'unknown-release-name'",
         )
       end
 
       context 'when there is no job-level release defined' do
         before { job_spec.delete('release') }
 
-        context 'when the deployment has zero releases'
 
         context 'when the deployment has exactly one release' do
           it "picks the deployment's release" do
@@ -128,7 +115,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
         context 'when the deployment has more than one release' do
           it "does not pick a release" do
-            job_spec.delete('release')
 
             allow(deployment_plan).to receive(:releases).and_return([instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion', name: ""), instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion', name:"")])
 
@@ -147,12 +133,9 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         job_spec['template'] = 'fake-template-name'
 
         expect(deployment_plan).to receive(:release)
-          .with('fake-release-name')
-          .and_return(job_rel_ver)
 
         template = make_template('fake-template-name', job_rel_ver)
         expect(job_rel_ver).to receive(:get_or_create_template)
-          .with('fake-template-name')
           .and_return(template)
 
         job = parser.parse(job_spec)
@@ -163,16 +146,13 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         job_spec['template'] = 'fake-template-name'
 
         allow(deployment_plan).to receive(:release)
-                                  .with('fake-release-name')
                                   .and_return(job_rel_ver)
 
         template1 = make_template('fake-template-name', job_rel_ver)
         allow(job_rel_ver).to receive(:get_or_create_template)
-                              .with('fake-template-name')
                               .and_return(template1)
 
         expect(event_log).not_to receive(:warn_deprecated)
-        parser.parse(job_spec)
       end
 
       it 'parses multiple templates' do
@@ -182,17 +162,13 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         )
 
         expect(deployment_plan).to receive(:release)
-          .with('fake-release-name')
-          .and_return(job_rel_ver)
 
         template1 = make_template('fake-template1-name', job_rel_ver)
         expect(job_rel_ver).to receive(:get_or_create_template)
-          .with('fake-template1-name')
           .and_return(template1)
 
         template2 = make_template('fake-template2-name', job_rel_ver)
         expect(job_rel_ver).to receive(:get_or_create_template)
-          .with('fake-template2-name')
           .and_return(template2)
 
         job = parser.parse(job_spec)
@@ -201,23 +177,16 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
       it "issues a deprecation warning when 'template' has an array value" do
         job_spec['template'] = %w(
-          fake-template1-name
-          fake-template2-name
         )
 
         allow(deployment_plan).to receive(:release)
-                                   .with('fake-release-name')
                                    .and_return(job_rel_ver)
 
         template1 = make_template('fake-template1-name', job_rel_ver)
         allow(job_rel_ver).to receive(:get_or_create_template)
-                               .with('fake-template1-name')
-                               .and_return(template1)
 
         template2 = make_template('fake-template2-name', job_rel_ver)
         allow(job_rel_ver).to receive(:get_or_create_template)
-                               .with('fake-template2-name')
-                               .and_return(template2)
 
         parser.parse(job_spec)
         expect(event_log).to have_received(:warn_deprecated).with(
@@ -233,7 +202,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         fake_releases = 2.times.map {
           instance_double(
             'Bosh::Director::DeploymentPlan::ReleaseVersion',
-            template: nil,
           )
         }
         expect(deployment_plan).to receive(:releases).and_return(fake_releases)
@@ -241,8 +209,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-          Bosh::Director::JobMissingRelease,
-          "Cannot tell what release job 'fake-job-name' is supposed to use, please explicitly specify one",
         )
       end
     end
@@ -256,39 +222,31 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
             job_spec[keyword] = [{
               'name' => 'fake-template-name',
               'release' => 'fake-template-release',
-              'consumes' => {'a' => {'from' => 'link_name'}}
             }]
             release_model = Bosh::Director::Models::Release.make(name: 'fake-release')
             version = Bosh::Director::Models::ReleaseVersion.make(version: '1.0.0')
-            release_model.add_version(version)
 
             fake_template_release_model = Bosh::Director::Models::Release.make(name: 'fake-template-release')
             fake_template_release_version_model = Bosh::Director::Models::ReleaseVersion.make(version: '1', release: fake_template_release_model)
             fake_template_release_version_model.add_template(Bosh::Director::Models::Template.make(name: 'fake-template-name', release: fake_template_release_model))
 
             deployment_model = Bosh::Director::Models::Deployment.make(name: 'deployment', link_spec_json: "{\"job_name\":{\"template_name\":{\"link_name\":{\"name\":\"link_name\",\"type\":\"link_type\"}}}}")
-            version.add_deployment(deployment_model)
           end
 
           let(:template_rel_ver) { instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion', name: 'fake-template-release', version: '1') }
 
           context 'when job specifies a release' do
             before do
-              job_spec['release'] = 'fake-job-release'
 
             end
             let(:template) { make_template('fake-template-name', template_rel_ver) }
 
             before do
               allow(deployment_plan).to receive(:release)
-                                           .with('fake-template-release')
                                            .and_return(template_rel_ver)
 
               allow(template_rel_ver).to receive(:get_or_create_template)
-                                            .with('fake-template-name')
                                             .and_return(template)
-              allow(template).to receive(:add_link_from_manifest)
-              allow(template).to receive(:add_template_scoped_properties)
             end
 
             it 'sets job template from release specified in a hash' do
@@ -298,10 +256,7 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           end
 
           context 'when job does not specify a release' do
-            before { job_spec.delete('release') }
 
-            before { allow(deployment_plan).to receive(:releases).and_return([deployment_rel_ver]) }
-            let(:deployment_rel_ver) { instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion', name: "") }
             let(:template) { make_template('fake-template-name', nil) }
 
             let(:provides_link) { instance_double('Bosh::Director::DeploymentPlan::Link',name: 'zz') }
@@ -311,18 +266,11 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
             before do
               allow(deployment_plan).to receive(:release)
-                                           .with('fake-template-release')
                                            .and_return(template_rel_ver)
 
-              allow(provides_template).to receive(:provided_links).and_return([provides_link])
-              allow(provides_job).to receive(:templates).and_return([provides_template])
-              allow(deployment_plan).to receive(:instance_groups).and_return([provides_job])
 
               allow(template_rel_ver).to receive(:get_or_create_template)
-                                            .with('fake-template-name')
                                             .and_return(template)
-              allow(template).to receive(:add_link_from_manifest)
-              allow(template).to receive(:add_template_scoped_properties)
             end
 
             it 'sets job template from release specified in a hash' do
@@ -339,7 +287,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
                 'Bosh::Director::DeploymentPlan::ReleaseVersion',
                 name: 'fake-template-release',
                 version: '1',
-                template: nil,
             )
           end
 
@@ -351,17 +298,13 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           end
 
           context 'when job specifies a release' do
-            before { job_spec['release'] = 'fake-job-release' }
 
             it 'sets job template from job release' do
               allow(deployment_plan).to receive(:release)
-                .with('fake-job-release')
                 .and_return(job_rel_ver)
 
               template = make_template('fake-template-name', nil)
-              allow(template).to receive(:add_template_scoped_properties)
               expect(job_rel_ver).to receive(:get_or_create_template)
-                .with('fake-template-name')
                 .and_return(template)
 
               job = parser.parse(job_spec)
@@ -380,8 +323,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
                 expect {
                   parser.parse(job_spec)
                 }.to raise_error(
-                  Bosh::Director::JobMissingRelease,
-                  "Cannot tell what release template 'fake-template-name' (instance group 'fake-job-name') is supposed to use, please explicitly specify one",
                 )
               end
             end
@@ -391,12 +332,10 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
               let(:template) { make_template('fake-template-name', nil) }
               before do
                 allow(deployment_plan).to receive(:releases).and_return([deployment_rel_ver])
-                allow(template).to receive(:add_template_scoped_properties)
               end
 
               it 'sets job template from deployment release because first release assumed as default' do
                 expect(deployment_rel_ver).to receive(:get_or_create_template)
-                  .with('fake-template-name')
                   .and_return(template)
 
                 job = parser.parse(job_spec)
@@ -411,8 +350,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
                 expect {
                   parser.parse(job_spec)
                 }.to raise_error(
-                  Bosh::Director::JobMissingRelease,
-                  "Cannot tell what release template 'fake-template-name' (instance group 'fake-job-name') is supposed to use, please explicitly specify one",
                 )
               end
             end
@@ -428,7 +365,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           end
 
           it 'raises an error because all referenced releases need to be specified under releases' do
-            job_spec['name'] = 'fake-job-name'
 
             expect(deployment_plan).to receive(:release)
               .with('fake-template-release')
@@ -437,8 +373,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
             expect {
               parser.parse(job_spec)
             }.to raise_error(
-              Bosh::Director::JobUnknownRelease,
-              "Job 'fake-template-name' (instance group 'fake-job-name') references an unknown release 'fake-template-release'",
             )
           end
         end
@@ -447,7 +381,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           before do
             job_spec[keyword] = [
               {'name' => 'fake-template-name1'},
-              {'name' => 'fake-template-name2'},
               {'name' => 'fake-template-name1'},
             ]
           end
@@ -458,28 +391,20 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
             fake_template_release_model = Bosh::Director::Models::Release.make(name: 'fake-template-release')
             fake_template_release_version_model = Bosh::Director::Models::ReleaseVersion.make(version: '1', release: fake_template_release_model)
             fake_template_release_version_model.add_template(Bosh::Director::Models::Template.make(name: 'fake-template-name1', release: fake_template_release_model))
-            fake_template_release_version_model.add_template(Bosh::Director::Models::Template.make(name: 'fake-template-name2', release: fake_template_release_model))
-            fake_template_release_version_model.add_template(Bosh::Director::Models::Template.make(name: 'fake-template-name3', release: fake_template_release_model))
 
             job_rel_ver = instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion', name: 'fake-template-release', version: '1')
             allow(deployment_plan).to receive(:release)
-              .with('fake-job-release')
               .and_return(job_rel_ver)
 
             allow(job_rel_ver).to receive(:get_or_create_template) do |name|
               template = instance_double('Bosh::Director::DeploymentPlan::Template', name: name)
-              allow(template).to receive(:add_template_scoped_properties)
-              template
             end
           end
 
           it 'raises an error because job dirs on a VM will become ambiguous' do
-            job_spec['name'] = 'fake-job-name'
             expect {
               parser.parse(job_spec)
             }.to raise_error(
-              Bosh::Director::JobInvalidTemplates,
-              "Colocated job 'fake-template-name1' is already added to the instance group 'fake-job-name'",
             )
           end
         end
@@ -504,14 +429,11 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
             # resolve first release and template obj
             rel_ver1 = instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion', name: 'fake-template-release1', version: '1')
             allow(deployment_plan).to receive(:release)
-                                      .with('fake-template-release1')
                                       .and_return(rel_ver1)
 
             template1 = make_template('fake-template-name1', rel_ver1)
-            allow(template1).to receive(:add_template_scoped_properties)
 
             expect(rel_ver1).to receive(:get_or_create_template)
-                               .with('fake-template-name1')
                                .and_return(template1)
 
             # resolve second release and template obj
@@ -521,13 +443,10 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
                                       .and_return(rel_ver2)
 
             template2 = make_template('fake-template-name2', rel_ver2)
-            allow(template2).to receive(:add_template_scoped_properties)
 
             expect(rel_ver2).to receive(:get_or_create_template)
-                               .with('fake-template-name2')
                                .and_return(template2)
 
-            job_spec['name'] = 'fake-job-name'
             parser.parse(job_spec)
           end
         end
@@ -538,8 +457,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
             expect {
               parser.parse(job_spec)
             }.to raise_error(
-              Bosh::Director::ValidationMissingField,
-              "Required property 'name' was not specified in object ({})",
             )
           end
         end
@@ -550,8 +467,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
             expect {
               parser.parse(job_spec)
             }.to raise_error(
-              Bosh::Director::ValidationInvalidType,
-              %{Object ("not-a-hash") did not match the required type 'Hash'},
             )
           end
         end
@@ -562,14 +477,12 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
                 'Bosh::Director::DeploymentPlan::ReleaseVersion',
                 name: 'fake-template-release',
                 version: '1',
-                template: nil,
             )
           end
 
           before do
             job_spec['templates'] = [
                 {'name' => 'fake-template-name',
-                 'links' => {'db' => 'a.b.c'},
                  'properties' => {
                      'property_1' => 'property_1_value',
                      'property_2' => {
@@ -578,7 +491,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
                  }
                 }
             ]
-            job_spec['release'] = 'fake-job-release'
 
             fake_template_release_model = Bosh::Director::Models::Release.make(name: 'fake-template-release')
             fake_template_release_version_model = Bosh::Director::Models::ReleaseVersion.make(version: '1', release: fake_template_release_model)
@@ -587,15 +499,12 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
           it 'assigns those properties to the intended template' do
             allow(deployment_plan).to receive(:release)
-                                          .with('fake-job-release')
                                           .and_return(job_rel_ver)
 
             template = make_template('fake-template-name', nil)
             allow(job_rel_ver).to receive(:get_or_create_template)
-                                      .with('fake-template-name')
                                       .and_return(template)
             expect(template).to receive(:add_template_scoped_properties)
-                                    .with({"property_1"=>"property_1_value", "property_2"=>{'life' => 'isInteresting'}}, 'fake-job-name')
 
             parser.parse(job_spec)
           end
@@ -607,14 +516,12 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
                 'Bosh::Director::DeploymentPlan::ReleaseVersion',
                 name: 'fake-template-release',
                 version: '1',
-                template: nil,
             )
           end
 
           before do
             job_spec['templates'] = [
                 {'name' => 'fake-template-name',
-                 'links' => {'db' => 'a.b.c'},
                  'properties' => {
                      'property_1' => 'property_1_value',
                      'property_2' => {
@@ -623,7 +530,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
                  }
                 }
             ]
-            job_spec['release'] = 'fake-job-release'
 
             fake_template_release_model = Bosh::Director::Models::Release.make(name: 'fake-template-release')
             fake_template_release_version_model = Bosh::Director::Models::ReleaseVersion.make(version: '1', release: fake_template_release_model)
@@ -632,17 +538,13 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
           it "does not throw an error" do
             allow(deployment_plan).to receive(:release)
-                                          .with('fake-job-release')
                                           .and_return(job_rel_ver)
 
             template = make_template('fake-template-name', nil)
             allow(job_rel_ver).to receive(:get_or_create_template)
-                                      .with('fake-template-name')
                                       .and_return(template)
             allow(template).to receive(:add_template_scoped_properties)
-                                    .with({"property_1"=>"property_1_value", "property_2"=>{'life' => 'isInteresting'}}, 'fake-job-name')
 
-            parser.parse(job_spec)
           end
         end
       end
@@ -653,8 +555,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           expect {
             parser.parse(job_spec)
           }.to raise_error(
-            Bosh::Director::ValidationInvalidType,
-            %{Property '#{keyword}' value ("not-an-array") did not match the required type 'Array'},
           )
         end
       end
@@ -676,12 +576,9 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           job_spec['templates'] = []
           job_spec['template'] = []
         end
-        before { allow(event_log).to receive(:warn_deprecated) }
 
         it 'raises' do
           expect { parser.parse(job_spec) }.to raise_error(
-             Bosh::Director::JobInvalidTemplates,
-            "Instance group 'fake-job-name' specifies both template and templates keys, only one is allowed"
           )
         end
       end
@@ -689,29 +586,21 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       context 'when both jobs and templates are specified' do
         before do
           job_spec['templates'] = []
-          job_spec['jobs'] = []
         end
-        before { allow(event_log).to receive(:warn_deprecated) }
 
         it 'raises' do
           expect { parser.parse(job_spec) }.to raise_error(
-                                                   Bosh::Director::JobInvalidTemplates,
-                                                   "Instance group 'fake-job-name' specifies both templates and jobs keys, only one is allowed"
                                                )
         end
       end
 
       context 'when neither key is specified' do
         before do
-          job_spec.delete('templates')
-          job_spec.delete('template')
           job_spec.delete('jobs')
         end
 
         it 'raises' do
           expect { parser.parse(job_spec) }.to raise_error(
-             Bosh::Director::ValidationMissingField,
-             "Instance group 'fake-job-name' does not specify template, templates, or jobs keys, one is required"
           )
         end
       end
@@ -725,7 +614,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       end
 
       it 'allows persistent disk to be nil' do
-        job_spec.delete('persistent_disk')
         job = parser.parse(job_spec)
         expect(job.persistent_disk_type).to eq(nil)
       end
@@ -735,8 +623,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-          Bosh::Director::JobInvalidPersistentDisk,
-          "Instance group 'fake-job-name' references an invalid persistent disk size '-300'"
         )
       end
     end
@@ -745,7 +631,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       it 'parses persistent_disk_type' do
         job_spec['persistent_disk_type'] = 'fake-disk-pool-name'
         expect(deployment_plan).to receive(:disk_type)
-          .with('fake-disk-pool-name')
           .and_return(disk_type)
 
         job = parser.parse(job_spec)
@@ -755,14 +640,10 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       it 'complains about unknown disk type' do
         job_spec['persistent_disk_type'] = 'unknown-disk-pool'
         expect(deployment_plan).to receive(:disk_type)
-          .with('unknown-disk-pool')
-          .and_return(nil)
 
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-          Bosh::Director::JobUnknownDiskType,
-          "Instance group 'fake-job-name' references an unknown disk type 'unknown-disk-pool'"
         )
       end
     end
@@ -771,7 +652,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       it 'parses persistent_disk_pool' do
         job_spec['persistent_disk_pool'] = 'fake-disk-pool-name'
         expect(deployment_plan).to receive(:disk_type)
-                                     .with('fake-disk-pool-name')
                                      .and_return(disk_type)
 
         job = parser.parse(job_spec)
@@ -781,14 +661,10 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       it 'complains about unknown disk pool' do
         job_spec['persistent_disk_pool'] = 'unknown-disk-pool'
         expect(deployment_plan).to receive(:disk_type)
-                                     .with('unknown-disk-pool')
-                                     .and_return(nil)
 
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-            Bosh::Director::JobUnknownDiskType,
-            "Instance group 'fake-job-name' references an unknown disk pool 'unknown-disk-pool'"
           )
       end
     end
@@ -801,8 +677,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-            Bosh::Director::JobInvalidPersistentDisk,
-            "Instance group 'fake-job-name' references both a persistent disk size '300' and a persistent disk pool 'fake-disk-pool-name'"
           )
       end
       it 'raises an error if persistent_disk and persistent_disk_type are both present' do
@@ -812,8 +686,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-            Bosh::Director::JobInvalidPersistentDisk,
-            "Instance group 'fake-job-name' references both a persistent disk size '300' and a persistent disk type 'fake-disk-pool-name'"
           )
       end
       it 'raises an error if persistent_disk_type and persistent_disk_pool are both present' do
@@ -823,7 +695,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-            Bosh::Director::JobInvalidPersistentDisk,
             "Instance group 'fake-job-name' specifies both 'disk_types' and 'disk_pools', only one key is allowed. " +
               "'disk_pools' key will be DEPRECATED in the future."
           )
@@ -833,8 +704,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
     describe 'resource_pool key' do
       it 'parses resource pool' do
         expect(deployment_plan).to receive(:resource_pool)
-          .with('fake-resource-pool-name')
-          .and_return(resource_pool)
 
         job = parser.parse(job_spec)
         expect(job.vm_type.name).to eq('fake-vm-type')
@@ -848,16 +717,12 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         before do
           job_spec['env'] = {'env1' => 'something'}
           expect(deployment_plan).to receive(:resource_pool)
-           .with('fake-resource-pool-name')
-           .and_return(resource_pool)
         end
 
         it 'complains' do
           expect {
             parser.parse(job_spec)
           }.to raise_error(
-              Bosh::Director::JobAmbiguousEnv,
-              "Instance group 'fake-job-name' and resource pool: 'fake-resource-pool-name' both declare env properties"
             )
         end
       end
@@ -867,8 +732,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         before do
           job_spec['env'] = {'job' => 'env'}
           expect(deployment_plan).to receive(:resource_pool)
-                                       .with('fake-resource-pool-name')
-                                       .and_return(resource_pool)
         end
 
         it 'should assign the job env to the job' do
@@ -880,14 +743,11 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       it 'complains about unknown resource pool' do
         job_spec['resource_pool'] = 'unknown-resource-pool'
         expect(deployment_plan).to receive(:resource_pool)
-          .with('unknown-resource-pool')
           .and_return(nil)
 
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-          Bosh::Director::JobUnknownResourcePool,
-          "Instance group 'fake-job-name' references an unknown resource pool 'unknown-resource-pool'"
         )
       end
     end
@@ -897,7 +757,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         allow(deployment_plan).to receive(:vm_type).with('fake-vm-type').and_return(
             Bosh::Director::DeploymentPlan::VmType.new({
                 'name' => 'fake-vm-type',
-                'cloud_properties' => {}
               })
           )
         allow(deployment_plan).to receive(:stemcell).with('fake-stemcell').and_return(
@@ -938,8 +797,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
         it 'errors out' do
           expect{parser.parse(job_spec)}.to raise_error(
-              Bosh::Director::JobUnknownVmType,
-              "Instance group 'fake-job-name' references an unknown vm type 'fake-vm-type'"
             )
         end
       end
@@ -951,8 +808,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
         it 'errors out' do
           expect{parser.parse(job_spec)}.to raise_error(
-              Bosh::Director::JobUnknownStemcell,
-              "Instance group 'fake-job-name' references an unknown stemcell 'fake-stemcell'"
             )
         end
       end
@@ -971,7 +826,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       let(:vm_extension_2) do
         {
             'name'             => 'vm_extension_2',
-            'cloud_properties' => {'another_property' => 'value1', 'property' => 'value2'}
         }
       end
 
@@ -982,7 +836,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
             'release'   => 'fake-release-name',
             'vm_type' => 'fake-vm-type',
             'stemcell' => 'fake-stemcell',
-            'env' => {'key' => 'value'},
             'instances' => 1,
             'networks'  => [{'name' => 'fake-network-name'}]
         }
@@ -992,12 +845,10 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         allow(deployment_plan).to receive(:vm_type).with('fake-vm-type').and_return(
             Bosh::Director::DeploymentPlan::VmType.new({
                                                            'name' => 'fake-vm-type',
-                                                           'cloud_properties' => {}
                                                        })
         )
         allow(deployment_plan).to receive(:stemcell).with('fake-stemcell').and_return(
             Bosh::Director::DeploymentPlan::Stemcell.parse({
-                                                               'alias' => 'fake-stemcell',
                                                                'os' => 'fake-os',
                                                                'version' => 1
                                                            })
@@ -1027,15 +878,12 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       it 'complains about unsatisfiable property mappings' do
         props = { 'foo' => 'bar' }
 
-        job_spec['properties'] = props
         job_spec['property_mappings'] = { 'db' => 'ccdb' }
 
-        allow(deployment_plan).to receive(:properties).and_return(props)
 
         expect {
           parser.parse(job_spec)
         }.to raise_error(
-          Bosh::Director::JobInvalidPropertyMapping,
         )
       end
     end
@@ -1059,8 +907,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           expect {
             parser.parse(job_spec)
           }.to raise_error(
-            Bosh::Director::JobNetworkInstanceIpMismatch,
-            "Instance group 'fake-job-name' has 4 instances but was allocated 3 static IPs",
           )
         end
       end
@@ -1071,8 +917,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           expect {
             parser.parse(job_spec)
           }.to raise_error(
-            Bosh::Director::JobNetworkInstanceIpMismatch,
-            "Instance group 'fake-job-name' has 2 instances but was allocated 3 static IPs",
           )
         end
       end
@@ -1086,7 +930,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
       context 'when there are multiple networks specified as default for a property' do
         it 'errors' do
-          job_spec['instances'] = 3
           job_spec['networks'].first['default'] = ['gateway', 'dns']
           job_spec['networks'] << job_spec['networks'].first.merge('name' => 'duped-network') # dupe it
           duped_network = Bosh::Director::DeploymentPlan::ManualNetwork.new('duped-network', [], logger)
@@ -1095,7 +938,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           expect {
             parser.parse(job_spec)
           }.to raise_error(
-              Bosh::Director::JobNetworkMultipleDefaults,
               "Instance group 'fake-job-name' specified more than one network to contain default. " +
                 "'dns' has default networks: 'fake-network-name', 'duped-network'. "+
                 "'gateway' has default networks: 'fake-network-name', 'duped-network'."
@@ -1107,7 +949,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         context 'when there is only one network' do
           it 'picks the only network as default' do
             job_spec['instances'] = 3
-            allow(deployment_plan).to receive(:networks).and_return([network])
             parsed_job = parser.parse(job_spec)
 
             expect(parsed_job.default_network['dns']).to eq('fake-network-name')
@@ -1141,7 +982,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           expect {
             parser.parse(job_spec)
           }.to raise_error(
-              Bosh::Director::JobMissingAvailabilityZones, "Instance group 'fake-job-name' has empty availability zones"
             )
         end
       end
@@ -1156,7 +996,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
         it 'raises an exception if the value are not strings' do
           job_spec['azs'] = ['valid_zone', 3]
           allow(network).to receive(:has_azs?).and_return(true)
-          allow(deployment_plan).to receive(:availability_zone).with("valid_zone") { instance_double(Bosh::Director::DeploymentPlan::AvailabilityZone) }
 
           expect {
             parser.parse(job_spec)
@@ -1174,7 +1013,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           expect {
             parser.parse(job_spec)
           }.to raise_error(
-              Bosh::Director::JobUnknownAvailabilityZone, "Instance group 'fake-job-name' references unknown availability zone 'nonexistent_zone'"
             )
         end
 
@@ -1184,8 +1022,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           expect {
             parser.parse(job_spec)
           }.to raise_error(
-              Bosh::Director::JobNetworkMissingRequiredAvailabilityZone,
-                "Instance group 'fake-job-name' must specify availability zone that matches availability zones of network 'fake-network-name'"
             )
         end
 
@@ -1226,7 +1062,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
           expect {
             parser.parse(job_spec)
           }.to raise_error(
-              Bosh::Director::ValidationInvalidType, "Property 'azs' value (3) did not match the required type 'Array'"
             )
         end
       end
@@ -1267,7 +1102,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
             expect {
               parser.parse(job_spec)
             }.to raise_error(
-                Bosh::Director::DeploymentInvalidMigratedFromJob,
                 "Instance group 'job-1' specified for migration to instance group 'fake-job-name' refers to availability zone 'unknown_az'. " +
                   "Az 'unknown_az' is not in the list of availability zones of instance group 'fake-job-name'."
               )
@@ -1278,7 +1112,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
     describe 'remove_dev_tools' do
       let(:resource_pool_env) { {} }
-      before { allow(Bosh::Director::Config).to receive(:remove_dev_tools).and_return(false) }
 
       it 'does not add remove_dev_tools by default' do
         job = parser.parse(job_spec)
@@ -1302,7 +1135,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
 
       describe 'when both the job and director specify' do
         before do
-          allow(Bosh::Director::Config).to receive(:remove_dev_tools).and_return(true)
           job_spec['env'] = {'bosh' => {'remove_dev_tools' => false}}
         end
 
@@ -1326,8 +1158,6 @@ describe Bosh::Director::DeploymentPlan::JobSpecParser do
       instance_double(
         'Bosh::Director::DeploymentPlan::Template',
         name: name,
-        release: rel_ver,
-        link_infos: {}
       )
     end
   end

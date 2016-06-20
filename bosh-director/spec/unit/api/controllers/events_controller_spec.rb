@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'rack/test'
-require 'bosh/director/api/controllers/events_controller'
 
 module Bosh::Director
   module Api
@@ -12,25 +11,18 @@ module Bosh::Director
       let(:timestamp) { Time.now }
 
       before do
-        App.new(config)
       end
 
       context 'events' do
         before do
           Models::Event.make(
-            'timestamp' => timestamp,
             'user' => 'test',
-            'action' => 'create',
-            'object_type' => 'deployment',
             'object_name' => 'depl1',
             'task' => '1'
           )
           Models::Event.make(
             'parent_id' => 1,
-            'timestamp' => timestamp,
             'user' => 'test',
-            'action' => 'create',
-            'object_type' => 'deployment',
             'object_name' => 'depl1',
             'task' => '2',
           )
@@ -96,7 +88,6 @@ module Bosh::Director
         before do
           basic_authorize 'admin', 'admin'
           Models::Event.make('deployment' => 'name')
-          Models::Event.make('deployment' => 'not the droid we are looking for')
         end
 
         it 'returns a filtered list of events' do
@@ -111,7 +102,6 @@ module Bosh::Director
         before do
           basic_authorize 'admin', 'admin'
           Models::Event.make('task' => 4)
-          Models::Event.make('task' => 5)
         end
 
         it 'returns a filtered list of events' do
@@ -126,7 +116,6 @@ module Bosh::Director
         before do
           basic_authorize 'admin', 'admin'
           Models::Event.make('instance' => 'job/4')
-          Models::Event.make('instance' => 'job/5')
         end
 
         it 'returns a filtered list of events' do
@@ -144,10 +133,7 @@ module Bosh::Director
 
         context 'when before_id, instance, deployment and task are specified' do
           before do
-            Models::Event.make('instance' => 'job/4')
             Models::Event.make('instance' => 'job/5', 'task' => 4, 'deployment' => 'name')
-            Models::Event.make('task' => 5)
-            Models::Event.make('deployment' => 'not the droid we are looking for')
           end
 
           it 'returns the anded results' do
@@ -326,9 +312,7 @@ module Bosh::Director
         context 'when number of returned events is less than EVENT_LIMIT' do
           it 'returns empty list if before_id < minimal id' do
             (1..10).each do |i|
-              Models::Event.make
             end
-            Models::Event.filter("id <  ?", 5).delete
             get '?before_id=4'
             body = Yajl::Parser.parse(last_response.body)
 

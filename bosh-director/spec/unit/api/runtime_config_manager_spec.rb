@@ -39,16 +39,10 @@ describe Bosh::Director::Api::RuntimeConfigManager do
       days = 24*60*60
 
       Bosh::Director::Models::RuntimeConfig.new(
-        properties: 'config_from_time_immortal',
-        created_at: Time.now - 3*days,
       ).save
       older_runtime_config = Bosh::Director::Models::RuntimeConfig.new(
-        properties: 'config_from_yesteryear',
-        created_at: Time.now - 2*days,
       ).save
       newer_runtime_config = Bosh::Director::Models::RuntimeConfig.new(
-        properties: "---\nsuper_shiny: new_config",
-        created_at: Time.now - 1*days,
       ).save
 
       runtime_configs = manager.list(2)
@@ -64,12 +58,8 @@ describe Bosh::Director::Api::RuntimeConfigManager do
       days = 24*60*60
 
       Bosh::Director::Models::RuntimeConfig.new(
-        properties: 'config_from_last_year',
-        created_at: Time.now - 2*days,
       ).save
       newer_runtime_config = Bosh::Director::Models::RuntimeConfig.new(
-        properties: "---\nsuper_shiny: new_config",
-        created_at: Time.now - 1*days,
       ).save
 
       runtime_config = manager.latest

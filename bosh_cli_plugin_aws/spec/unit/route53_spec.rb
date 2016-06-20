@@ -81,11 +81,7 @@ describe Bosh::AwsCliPlugin::Route53 do
           with(:hosted_zone_id => "???").and_return(fake_aws_response)
       allow(fake_aws_response).to receive(:data).and_return(
         resource_record_sets: [{
-          name: "\\052.foobar.org.",
-          type: "A",
-          ttl: 3600,
           resource_records: [{
-            value: "172.111.222.333"
         }]
        }]
       )

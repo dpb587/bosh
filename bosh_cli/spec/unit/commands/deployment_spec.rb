@@ -16,7 +16,6 @@ describe Bosh::Cli::Command::Deployment do
   end
 
   after do
-    release_source.cleanup
   end
 
   it 'allows deleting the deployment' do
@@ -35,8 +34,6 @@ describe Bosh::Cli::Command::Deployment do
 
   it 'gracefully handles attempts to delete a non-existent deployment' do
     expect(director).to receive(:delete_deployment)
-                          .with('foo', force: false)
-                          .and_raise(Bosh::Cli::ResourceNotFound)
     expect {
       cmd.delete('foo')
     }.to_not raise_error
@@ -51,32 +48,26 @@ describe Bosh::Cli::Command::Deployment do
 
   describe 'deployment' do
     before { @config = Support::TestConfig.new(cmd) }
-    after { @config.clean }
 
     context 'with multiple potential targets' do
       before do
-        allow(director).to receive(:get_status).and_return({'uuid' => 'director-uuid'})
         config = @config.load
         config.target = 'http://127.0.0.1:8080'
         config.set_alias('target', 'alpha', 'http://127.0.0.1:8080')
         config.set_deployment('/path/to/alpha.yml')
 
         config.target = 'http://127.0.0.1:8081'
-        config.set_alias('target', 'beta', 'http:/127.0.0.1:8081')
         config.set_deployment('/path/to/beta.yml')
         config.save
       end
 
-      let(:director) { instance_double(Bosh::Cli::Client::Director) }
       it 'can retrieve deployment manifest for current target' do
-        allow(Bosh::Cli::Client::Director).to receive(:new).and_return(director)
         cmd.options.delete(:target) # work around the before block
         expect(cmd).to receive(:say).with('/path/to/beta.yml')
         cmd.set_current()
       end
 
       it 'can retrieve deployment manifest for an explicit target' do
-        allow(Bosh::Cli::Client::Director).to receive(:new).and_return(director)
         cmd.add_option(:target, 'alpha')
         expect(cmd).to receive(:say).with('/path/to/alpha.yml')
         cmd.set_current()
@@ -100,10 +91,8 @@ describe Bosh::Cli::Command::Deployment do
         manifest_file
       end
 
-      after { FileUtils.rm_rf(manifest_file) }
 
       context 'when current target uuid is not the same as the uuid in manifest' do
-        let(:director) { instance_double(Bosh::Cli::Client::Director) }
 
         it 'changes current target and ca_cert' do
           expect(Bosh::Cli::Client::Director).to receive(:new).with(
@@ -137,15 +126,11 @@ describe Bosh::Cli::Command::Deployment do
   describe 'deploy' do
     it 'returns error when release has version create but no url' do
       manifest = {
-        'name' => 'example',
         'releases' => [
           {
-            'name' => 'sample-release',
             'version' => 'create'
           }
         ],
-        'jobs' => [],
-        'properties' => {}
       }
 
       allow(cmd).to receive(:build_manifest).and_return(double(:manifest, hash: manifest))

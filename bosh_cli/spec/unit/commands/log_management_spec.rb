@@ -12,22 +12,16 @@ describe Bosh::Cli::Command::LogManagement do
 
   let(:manifest) do
     {
-      'name' => deployment,
-      'uuid' => 'totally-and-universally-unique',
       'jobs' => [{
-        'name' => 'dea',
-        'instances' => instance_count
       }]
     }
   end
 
   before do
-    allow(command).to receive_messages(target: 'http://bosh.example.com')
     allow(command).to receive_messages(logged_in?: true)
     allow(command).to receive_messages(director: director)
     allow(command).to receive_messages(prepare_deployment_manifest: double(:manifest, hash: manifest, name: 'mycloud'))
     allow(command).to receive(:say)
-    allow(command).to receive(:show_current_state)
     allow(director).to receive_messages(fetch_logs: 'resource-id', download_resource: '/tmp/resource')
   end
 
@@ -50,12 +44,10 @@ describe Bosh::Cli::Command::LogManagement do
     end
 
     context 'when a deployment is targeted' do
-      before { allow(command).to receive_messages(target: 'http://bosh.example.com:25555') }
 
       it_requires_logged_in_user ->(command) { command.fetch_logs('dea', '6') }
 
       context 'when logged in' do
-        before { allow(command).to receive_messages(:logged_in? => true) }
 
         it 'does not allow --only and --all together' do
           command.options[:only] = %w(cloud_controller uaa)
@@ -91,7 +83,6 @@ describe Bosh::Cli::Command::LogManagement do
           end
 
           it 'ignores the --all option' do
-            command.options[:all] = true
 
             expect(director).to receive(:fetch_logs).with(deployment, job, index, 'agent', nil).and_return('resource_id')
             command.fetch_logs(job, index)
@@ -99,7 +90,6 @@ describe Bosh::Cli::Command::LogManagement do
         end
 
         context 'when fetching job logs' do
-          before { command.options[:job] = true }
 
           it 'successfully retrieves the log resource id when fetching logs by job id' do
             expect(director).to receive(:fetch_logs).with(deployment, job, id, 'job', nil).and_return('resource_id')
@@ -112,7 +102,6 @@ describe Bosh::Cli::Command::LogManagement do
           end
 
           it 'ignores the --all option' do
-            command.options[:all] = true
 
             expect(director).to receive(:fetch_logs).with(deployment, job, index, 'job', nil).and_return('resource_id')
             command.fetch_logs(job, index)
@@ -151,7 +140,6 @@ describe Bosh::Cli::Command::LogManagement do
             Timecop.freeze do
               time = Time.now.strftime('%Y-%m-%d-%H-%M-%S')
 
-              allow(director).to receive_messages(fetch_logs: 'resource-id')
               expect(director).to receive(:download_resource).with('resource-id').and_return('/wonderful/path')
               expect(FileUtils).to receive(:mv).with('/wonderful/path', "#{Dir.pwd}/#{job}.#{index}.#{time}.tgz")
               command.fetch_logs(job, index)
@@ -163,7 +151,6 @@ describe Bosh::Cli::Command::LogManagement do
               command.options[:dir] = '/woah-now'
               time = Time.now.strftime('%Y-%m-%d-%H-%M-%S')
 
-              allow(director).to receive_messages(fetch_logs: 'resource-id')
               expect(director).to receive(:download_resource).with('resource-id').and_return('/wonderful/path')
               expect(FileUtils).to receive(:mv).with('/wonderful/path', "/woah-now/#{job}.#{index}.#{time}.tgz")
               command.fetch_logs(job, index)

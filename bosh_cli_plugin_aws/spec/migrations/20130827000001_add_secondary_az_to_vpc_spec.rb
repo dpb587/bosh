@@ -30,7 +30,6 @@ describe AddSecondaryAzToVpc do
 
     expect(vpc).to receive(:subnets).and_return(
       {
-        "cf1" => "subnet-xxxxxxx1",
       },
       {
         "cf1" => "subnet-xxxxxxx1",
@@ -55,7 +54,6 @@ describe AddSecondaryAzToVpc do
   it "does not create the new subnets if they already exist" do
     expect(vpc).to receive(:subnets).and_return(
       {
-        "cf1" => "subnet-xxxxxxx1",
         "cf2" => cf2_id,  # already there, panic!
         "bosh2" => bosh2_id,  # already there, panic!
       },

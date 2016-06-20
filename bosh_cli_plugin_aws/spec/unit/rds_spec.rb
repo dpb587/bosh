@@ -15,7 +15,6 @@ describe Bosh::AwsCliPlugin::RDS do
   describe "subnet_group_exists?" do
     it "should return false if the db subnet group does not exist" do
       expect(fake_aws_rds_client).to receive(:describe_db_subnet_groups).
-          with(:db_subnet_group_name => "subnetgroup").
           and_raise AWS::RDS::Errors::DBSubnetGroupNotFoundFault
 
       expect(rds.subnet_group_exists?("subnetgroup")).to be(false)
@@ -23,7 +22,6 @@ describe Bosh::AwsCliPlugin::RDS do
 
     it "should return true if the db subnet group exists" do
       expect(fake_aws_rds_client).to receive(:describe_db_subnet_groups).
-          with(:db_subnet_group_name => "subnetgroup").
           and_return("not_used")
 
       expect(rds.subnet_group_exists?("subnetgroup")).to be(true)
@@ -72,7 +70,6 @@ describe Bosh::AwsCliPlugin::RDS do
     let(:fake_vpc) { instance_double('Bosh::AwsCliPlugin::VPC', cidr_block: '1.2.3.4/0') }
 
     it "should delegate the VPC object to create a DB-friendly security group" do
-      allow(Bosh::AwsCliPlugin::VPC).to receive_messages(new: fake_vpc)
 
       expected_parameters = {
           "name" => "seeseedeebee",
@@ -133,7 +130,6 @@ describe Bosh::AwsCliPlugin::RDS do
 
     it "creates the utf8 db_parameter_group" do
       expect(fake_aws_rds_client).to receive(:describe_db_parameter_groups).
-          with(:db_parameter_group_name => 'utf8').
           and_raise(AWS::RDS::Errors::DBParameterGroupNotFound)
       expect(fake_aws_rds_client).to receive(:create_db_parameter_group).
           with(:db_parameter_group_name => 'utf8',

@@ -149,8 +149,6 @@ properties:
 
   context 'when ip address range environment variables are present' do
     it 'generates manifest that includes given ranges' do
-      env['BOSH_AWS_NETWORK_RESERVED'] = ''
-      env['BOSH_AWS_NETWORK_STATIC'] = ''
 
       expected_yaml = yaml_manifest.gsub('RESERVED_IP_RANGE', '10.10.0.2 - 10.10.0.9')
       expected_yaml = expected_yaml.gsub('STATIC_IP_RANGE', '10.10.0.10 - 10.10.0.30')

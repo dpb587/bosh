@@ -15,7 +15,6 @@ module Bosh::Director
     let!(:disk2) { Models::PersistentDisk.make(:instance_id => instance2.id) }
     let!(:snap2a) { Models::Snapshot.make(snapshot_cid: "snap2a", persistent_disk_id: disk2.id) }
     let!(:instance3) { Models::Instance.make(deployment: deployment) }
-    let!(:disk3) { Models::PersistentDisk.make(:instance_id => instance3.id) }
     let!(:instance4) { Models::Instance.make }
     let!(:disk4) { Models::PersistentDisk.make(:instance_id => instance4.id) }
     let!(:snap4a) { Models::Snapshot.make(snapshot_cid: "snap4a", persistent_disk_id: disk4.id) }

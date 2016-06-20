@@ -13,7 +13,6 @@ module Bosh::Director
       )
     end
 
-    let(:disk_owners) { {} }
     let(:problem_register) { instance_double('Bosh::Director::ProblemScanner::ProblemRegister') }
     let(:cloud) { instance_double('Bosh::Cloud') }
     let(:deployment) { Models::Deployment.make(name: 'fake-deployment') }
@@ -56,12 +55,10 @@ module Bosh::Director
 
       context 'when cloud does not implement has_disk?' do
         before do
-          allow(cloud).to receive(:has_disk?).and_raise(Bosh::Clouds::NotImplemented)
         end
 
         it 'does not register any problems' do
           expect(problem_register).to_not receive(:problem_found)
-          disk_scanner.scan
         end
       end
 
@@ -76,11 +73,9 @@ module Bosh::Director
       end
 
       context 'when disk is not associated with VM' do
-        let(:vm) { nil }
 
         it 'reports no problems' do
           expect(problem_register).to_not receive(:problem_found)
-          disk_scanner.scan
         end
       end
 

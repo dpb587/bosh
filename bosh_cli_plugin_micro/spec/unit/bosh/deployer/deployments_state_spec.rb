@@ -1,8 +1,5 @@
 require 'spec_helper'
-require 'bosh/deployer/deployments_state'
-require 'logger'
 
-require 'bosh/deployer/instance_manager/vsphere'
 
 module Bosh::Deployer
   describe DeploymentsState do
@@ -20,9 +17,7 @@ module Bosh::Deployer
         let(:deployments) do
           {
             'instances' => [
-              { 'name' => 'micro-bar' },
             ],
-            'disks' => [],
           }
         end
 
@@ -40,7 +35,6 @@ module Bosh::Deployer
       context 'when bosh-deployments.yml does not exist in directory' do
         let(:deployments) { { 'instances' => [], 'disks' => [] } }
         before do
-          allow(File).to receive(:exists?).and_return(false)
         end
 
         it 'initializes with an empty deployment' do
@@ -55,22 +49,18 @@ module Bosh::Deployer
       let(:deployments) do
         {
           'instances' => [
-            { name: 'micro-bar' },
           ],
           'disks' => [
-            { uuid: 'fake-disk-uuid' },
           ],
         }
       end
       let(:infrastructure) do
         instance_double(
-          'Bosh::Deployer::InstanceManager::Vsphere',
         )
       end
 
       let(:models_instance) do
         double(
-          'Bosh::Deployer::Models::Instance',
           multi_insert: nil,
           find: nil,
           new: instance_state,
@@ -82,7 +72,6 @@ module Bosh::Deployer
       end
       let(:instance_state) do
         double(
-          'Bosh::Deployer::Models::Instance',
           :uuid= => nil,
           :name= => nil,
           :stemcell_sha1= => nil,
@@ -104,7 +93,6 @@ module Bosh::Deployer
         before do
           allow(models_instance).to receive(:find).and_return(instance_state)
         end
-        let(:instance_state) { double('Bosh::Deployer::Models::Instance') }
 
         it 'sets state to instance model' do
           subject.load_deployment('micro-bar')

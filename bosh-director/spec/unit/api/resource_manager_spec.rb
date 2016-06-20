@@ -6,11 +6,9 @@ module Bosh::Director
   describe Api::ResourceManager do
     before(:each) do
       @blobstore_dir = File.join(Dir.tmpdir, 'blobstore')
-      FileUtils.mkdir(@blobstore_dir)
     end
 
     after(:each) do
-      FileUtils.rm_rf(@blobstore_dir)
     end
 
     let(:blobstore) { Bosh::Blobstore::Client.create('local', 'blobstore_path' => @blobstore_dir) }
@@ -43,10 +41,8 @@ module Bosh::Director
       five_minutes_old = File.join(manager.resource_tmpdir, 'resource-ten_minutes_old')
       one_minute_old = File.join(manager.resource_tmpdir, 'resource-one_minute_old')
 
-      FileUtils.touch([five_minutes_old], mtime: Time.now - 301)
       FileUtils.touch([one_minute_old], mtime: Time.now - 60)
 
-      manager.clean_old_tmpfiles
 
       expect(File.exist?(five_minutes_old)).to eq false
       expect(File.exist?(one_minute_old)).to eq true

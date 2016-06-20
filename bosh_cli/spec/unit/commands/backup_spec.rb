@@ -14,7 +14,6 @@ describe Bosh::Cli::Command::Backup do
     context 'when user is not logged in' do
       before do
         allow(command).to receive_messages(:logged_in? => false)
-        command.options[:target] = 'http://bosh-target.example.com'
       end
 
       it 'fails' do
@@ -25,7 +24,6 @@ describe Bosh::Cli::Command::Backup do
     context 'when nothing is targetted' do
       before do
         allow(command).to receive_messages(:target => nil)
-        allow(command).to receive_messages(:logged_in? => true)
       end
 
       it 'fails' do
@@ -41,15 +39,12 @@ describe Bosh::Cli::Command::Backup do
         command.options[:username] = 'bosh'
         command.options[:password] = 'b05h'
         command.options[:target] = target
-        allow(command).to receive(:show_current_state)
 
-        allow(Bosh::Cli::BackupDestinationPath).to receive_message_chain(:new, :create_from_path) { dest }
 
         allow(FileUtils).to receive(:mv)
       end
 
       after do
-        FileUtils.rm_rf(download_path)
       end
 
       it 'logs the path where the backup was put' do
@@ -90,7 +85,6 @@ describe Bosh::Cli::Command::Backup do
 
         context 'when the --force option is false' do
           before do
-            command.options[:force] = false
           end
 
           it 'does not overwrite the file and tells the user about the --force option' do

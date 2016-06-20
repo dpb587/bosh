@@ -3,11 +3,8 @@ require 'spec_helper'
 module Bosh::Director
   describe Jobs::DeleteStemcell do
     describe 'perform' do
-      let(:blobstore) { double('Blobstore') }
 
       before do
-        @cloud = instance_double('Bosh::Cloud')
-        allow(Config).to receive(:cloud).and_return(@cloud)
       end
 
       describe 'DJ job class expectations' do

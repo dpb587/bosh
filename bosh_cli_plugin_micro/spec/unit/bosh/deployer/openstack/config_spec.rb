@@ -3,7 +3,6 @@ require 'fog'
 
 describe Bosh::Deployer::Config do
   before { @dir = Dir.mktmpdir('bdc_spec') }
-  after { FileUtils.remove_entry_secure @dir }
 
   it 'should default agent properties' do
     config = Psych.load_file(spec_asset('test-bootstrap-config-openstack.yml'))
@@ -19,7 +18,6 @@ describe Bosh::Deployer::Config do
   it 'should map network properties' do
     config = Psych.load_file(spec_asset('test-bootstrap-config-openstack.yml'))
     config['dir'] = @dir
-    Bosh::Deployer::Config.configure(config)
 
     networks = Bosh::Deployer::Config.networks
     expect(networks).to be_kind_of(Hash)
@@ -42,7 +40,6 @@ describe Bosh::Deployer::Config do
   end
 
   it 'should contain default vm resource properties' do
-    Bosh::Deployer::Config.configure('dir' => @dir, 'cloud' => { 'plugin' => 'openstack' })
     resources = Bosh::Deployer::Config.resources
     expect(resources).to be_kind_of(Hash)
 
@@ -59,13 +56,11 @@ describe Bosh::Deployer::Config do
   it 'should have openstack and registry object access' do
     config = Psych.load_file(spec_asset('test-bootstrap-config-openstack.yml'))
     config['dir'] = @dir
-    Bosh::Deployer::Config.configure(config)
     openstack = double(Fog::Compute)
     allow(Fog::Compute).to receive(:new).and_return(openstack)
     glance = double(Fog::Image)
     allow(Fog::Image).to receive(:new).and_return(glance)
     volume = double(Fog::Volume)
-    allow(Fog::Volume).to receive(:new).and_return(volume)
     cloud = Bosh::Deployer::Config.cloud
     expect(cloud.respond_to?(:openstack)).to be(true)
     expect(cloud.respond_to?(:registry)).to be(true)

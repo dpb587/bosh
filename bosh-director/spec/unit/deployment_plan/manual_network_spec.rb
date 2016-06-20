@@ -3,14 +3,8 @@ require 'spec_helper'
 describe Bosh::Director::DeploymentPlan::ManualNetwork do
   let(:manifest_hash) do
    manifest_hash = Bosh::Spec::Deployments.legacy_manifest
-   manifest_hash['networks'].first['subnets'].first['range'] = network_range
-   manifest_hash['networks'].first['subnets'].first['reserved'] << '192.168.1.3'
-   manifest_hash['networks'].first['subnets'].first['static'] = static_ips
-   manifest_hash
   end
   let(:manifest) { Bosh::Director::Manifest.new(manifest_hash, nil, nil) }
-  let(:network_range) { '192.168.1.0/24' }
-  let(:static_ips) { [] }
   let(:network_spec) { manifest_hash['networks'].first }
   let(:planner_factory) { BD::DeploymentPlan::PlannerFactory.create(BD::Config.logger) }
   let(:deployment_plan) { planner_factory.create_from_manifest(manifest, nil, nil, {}) }
@@ -49,7 +43,6 @@ describe Bosh::Director::DeploymentPlan::ManualNetwork do
       let(:manifest) do
         manifest = Bosh::Spec::Deployments.legacy_manifest
         manifest['networks'].first['subnets'] << Bosh::Spec::Deployments.subnet({
-            'range' => '192.168.1.0/28',
           })
         Bosh::Director::Manifest.new(manifest, nil, nil)
       end
@@ -197,8 +190,6 @@ describe Bosh::Director::DeploymentPlan::ManualNetwork do
       expect {
         manual_network
       }.to raise_error(
-          Bosh::Director::JobInvalidAvailabilityZone,
-          "Subnets on network 'a' must all either specify availability zone or not"
         )
     end
   end

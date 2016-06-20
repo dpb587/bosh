@@ -48,12 +48,10 @@ describe Bosh::Director::Config do
     end
 
     it 'sets a default' do
-      test_config['scan_and_fix'].delete('auto_fix_stateful_nodes')
 
       described_class.configure(test_config)
       expect(described_class.fix_stateful_nodes).to eq(false)
 
-      test_config.delete('scan_and_fix')
       described_class.configure(test_config)
       expect(described_class.fix_stateful_nodes).to eq(false)
     end
@@ -87,7 +85,6 @@ describe Bosh::Director::Config do
       it 'returns a compiled package cache blobstore' do
         expect(Bosh::Blobstore::Client)
           .to receive(:safe_create)
-          .with('local', 'blobstore_path' => '/path/to/some/bucket')
         described_class.compiled_package_cache_blobstore
       end
     end

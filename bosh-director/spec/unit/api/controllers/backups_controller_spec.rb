@@ -8,7 +8,6 @@ module Bosh::Director
 
       subject(:app) { described_class.new(config) }
       let(:config) { Config.load_hash(SpecHelper.spec_get_director_config) }
-      let(:temp_dir) { Dir.mktmpdir}
 
       it 'requires auth' do
         get '/'

@@ -53,7 +53,6 @@ module Bosh::Blobstore
         subject.get('foobar')
 
         expect(httpclient).to have_received(:get)
-                              .with('http://localhost/88/foobar', {}, { 'Authorization' => 'Basic am9objpzbWl0aA==' })
       end
     end
 

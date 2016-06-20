@@ -85,7 +85,6 @@ module Bosh::Director::DeploymentPlan
     end
 
     def desired_instance(zone = nil)
-      DesiredInstance.new(job, 'started', nil, zone)
     end
   end
 end

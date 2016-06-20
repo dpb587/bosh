@@ -30,8 +30,6 @@ module Bosh::Director
 
       context 'when removing all except the latest two releases' do
         before do
-          Models::ReleaseVersion.make(version: 10, release: release_1)
-          Models::ReleaseVersion.make(version: 9, release: release_1)
           Models::ReleaseVersion.make(version: 10, release: release_2)
           Models::ReleaseVersion.make(version: 9, release: release_2)
         end

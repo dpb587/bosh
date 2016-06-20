@@ -1,6 +1,4 @@
 require 'spec_helper'
-require 'logger'
-require 'bosh/director/models/package'
 
 module Bosh::Director::Models
   describe Package do

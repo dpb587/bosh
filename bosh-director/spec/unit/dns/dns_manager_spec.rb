@@ -87,7 +87,6 @@ module Bosh::Director
         it 'does not do anything' do
           expect(Open3).to_not receive(:capture3)
           expect {
-            dns_manager.flush_dns_cache
           }.to_not raise_error
         end
       end
@@ -101,7 +100,6 @@ module Bosh::Director
 
       context 'when dns_publisher is disabled' do
         it 'calls nothing on the dns_publisher' do
-          dns_manager.flush_dns_cache
         end
       end
     end
@@ -120,7 +118,6 @@ module Bosh::Director
 
       context 'when dns_publisher is disabled' do
         it 'calls nothing on the dns_publisher' do
-          dns_manager.flush_dns_cache
         end
       end
     end
@@ -138,14 +135,12 @@ module Bosh::Director
 
       context 'when dns_publisher is disabled' do
         it 'calls nothing on the dns_publisher' do
-          dns_manager.cleanup_dns_records
         end
       end
     end
 
     describe '#find_dns_record_names_by_instance' do
       context 'instance model is not set' do
-        let(:instance_model) { nil }
 
         it 'returns an empty list' do
           expect(dns_manager.find_dns_record_names_by_instance(instance_model)).to eq([])
@@ -211,11 +206,9 @@ module Bosh::Director
 
         context 'when instance has records in dns provider but not in local repo' do
           before do
-            dns_provider.create_or_update_dns_records('fake-uuid.job-a.network-a.dep.bosh', '1.2.3.4')
           end
 
           it 'removes them from dns provider' do
-            dns_manager.delete_dns_for_instance(instance_model)
             expect(dns_provider.find_dns_record('0.job-a.network-a.dep.bosh', '1.2.3.4')).to be_nil
           end
         end
@@ -229,7 +222,6 @@ module Bosh::Director
             ns_record = Models::Dns::Record.find(name: 'bosh', type: 'NS')
             a_record = Models::Dns::Record.find(type: 'A')
             soa_record = Models::Dns::Record.find(name: 'bosh', type: 'SOA')
-            domain = Models::Dns::Domain.find(name: 'bosh', type: 'NATIVE')
             expect(ns_record.content).to eq('ns.bosh')
             expect(a_record.content).to eq('1.2.3.4')
             expect(soa_record.content).to eq(PowerDns::SOA)
@@ -278,7 +270,6 @@ module Bosh::Director
           end
 
           it 'does NOT update the DNS record when the IP address is the same' do
-            dns_manager.update_dns_record_for_instance(instance_model, {'fake-dns-name-2' => '5.6.7.8'})
 
             dns_record = Models::Dns::Record.find(name: 'fake-dns-name-2')
             expect(dns_record.content).to eq('5.6.7.8')
@@ -311,7 +302,6 @@ module Bosh::Director
           end
 
           it 'does not migrate' do
-            dns_manager.migrate_legacy_records(instance_model)
             expect(local_dns_repo.find(instance_model)).to match_array(['anything'])
           end
         end
@@ -329,7 +319,6 @@ module Bosh::Director
       end
 
       context 'when LocalDNS is disabled' do
-        let(:dns_publisher) { nil }
 
         describe '#publisher_enabled?' do
           it 'should be false' do
@@ -340,7 +329,6 @@ module Bosh::Director
     end
 
     context 'when PowerDNS is disabled' do
-      let(:instance_model) { Models::Instance.make(uuid: 'fake-uuid', index: 0, job: 'job-a', deployment: deployment_model) }
 
       describe '#dns_enabled?' do
         it 'should be false' do
@@ -350,13 +338,11 @@ module Bosh::Director
 
       describe '#delete_dns_for_instance' do
         it 'returns with no errors' do
-          dns_manager.delete_dns_for_instance(instance_model)
         end
       end
 
       describe '#migrate_legacy_records' do
         it 'does not migrate' do
-          dns_manager.migrate_legacy_records(instance_model)
           expect(local_dns_repo.find(instance_model)).to match_array([])
         end
       end
@@ -369,7 +355,6 @@ module Bosh::Director
 
       describe '#configure_nameserver' do
         it 'creates nothing' do
-          dns_manager.configure_nameserver
           ns_record = Models::Dns::Record.find(name: domain.name, type: 'NS')
           a_record = Models::Dns::Record.find(type: 'A')
           soa_record = Models::Dns::Record.find(name: domain.name, type: 'SOA')
@@ -391,7 +376,6 @@ module Bosh::Director
       end
 
       context 'when LocalDNS is disabled' do
-        let(:dns_publisher) { nil }
 
         describe '#publisher_enabled?' do
           it 'should be false' do

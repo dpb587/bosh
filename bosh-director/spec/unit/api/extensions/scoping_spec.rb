@@ -16,7 +16,6 @@ module Bosh::Director
 
       describe 'scope' do
         context 'when authorization is provided'do
-          context 'as admin'
             before { basic_authorize('admin', 'admin') }
 
             context 'when scope is defined on a route' do
@@ -62,7 +61,6 @@ module Bosh::Director
           end
 
           context 'when identity provider is not UAA' do
-            let(:identity_provider) { Api::LocalIdentityProvider.new({}) }
 
             it 'return generic error message' do
               get '/test_route'
@@ -76,7 +74,6 @@ module Bosh::Director
           context 'when controller does not require authorization' do
             class NonsecureController < Bosh::Director::Api::Controllers::BaseController
               def requires_authentication?
-                false
               end
 
               get '/' do

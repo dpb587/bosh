@@ -57,7 +57,6 @@ module Bosh::Director
 
         context 'when user has readonly permissions' do
           context 'when user has readonly access' do
-            before { authorize 'reader', 'reader' }
 
             it 'returns 401' do
               post '/', Yajl::Encoder.encode('location' => 'http://release_url'), { 'CONTENT_TYPE' => 'application/json' }
@@ -67,7 +66,6 @@ module Bosh::Director
         end
 
         context 'when user has team admin permission' do
-          before { authorize 'dev-team-member', 'dev-team-member' }
 
           it 'returns 401' do
             post '/', Yajl::Encoder.encode('location' => 'http://release_url'), { 'CONTENT_TYPE' => 'application/json' }
@@ -144,10 +142,6 @@ module Bosh::Director
       describe 'POST', '/export' do
         def perform
           params = {
-            release_name: 'release-name-value',
-            release_version: 'release-version-value',
-            stemcell_os:    'bosh-stemcell-os-value',
-            stemcell_version:    'bosh-stemcell-version-value',
           }
           post '/export', JSON.dump(params), { 'CONTENT_TYPE' => 'application/json' }
         end
@@ -163,7 +157,6 @@ module Bosh::Director
 
         context 'when user has readonly permissions' do
           context 'when user has readonly access' do
-            before { authorize 'reader', 'reader' }
 
             it 'returns 401' do
               perform
@@ -173,7 +166,6 @@ module Bosh::Director
         end
 
         context 'when user has team admin permission' do
-          before { authorize 'dev-team-member', 'dev-team-member' }
 
           it 'returns versions' do
             perform
@@ -185,8 +177,6 @@ module Bosh::Director
       describe 'DELETE', '/<id>' do
         before do
           release = Models::Release.create(:name => 'test_release')
-          release.add_version(Models::ReleaseVersion.make(:version => '1'))
-          release.save
         end
 
         context 'when user has admin access' do
@@ -205,7 +195,6 @@ module Bosh::Director
 
         context 'when user has readonly permissions' do
           context 'when user has readonly access' do
-            before { authorize 'reader', 'reader' }
 
             it 'returns 401' do
               delete '/test_release?version=1'
@@ -215,7 +204,6 @@ module Bosh::Director
         end
 
         context 'when user has team admin permission' do
-          before { authorize 'dev-team-member', 'dev-team-member' }
 
           it 'returns 401' do
             delete '/test_release?version=1'
@@ -230,7 +218,6 @@ module Bosh::Director
           (1..10).map do |i|
             release.add_version(Models::ReleaseVersion.make(:version => i))
           end
-          release.save
         end
 
         context 'when user has admin access' do
@@ -248,9 +235,7 @@ module Bosh::Director
             release_version = Models::ReleaseVersion.find(:version => '1')
 
             dummy_template = Models::Template.make(
-                :release_id => 1,
                 :name => 'dummy_template',
-                :version => '2',
                 :blobstore_id => '123',
                 :sha1 => '12a',
                 :consumes => 'link-consumed',

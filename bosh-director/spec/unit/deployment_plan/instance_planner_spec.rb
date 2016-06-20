@@ -9,7 +9,6 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
   let(:index_assigner) { BD::DeploymentPlan::PlacementPlanner::IndexAssigner.new(deployment_model) }
   let(:options) { {} }
   let(:skip_drain_decider) { BD::DeploymentPlan::AlwaysSkipDrain.new }
-  let(:logger) { instance_double(Logger, debug: nil, info: nil) }
   let(:instance_repo) { BD::DeploymentPlan::InstanceRepository.new(network_reservation_repository, logger) }
   let(:deployment) { instance_double(BD::DeploymentPlan::Planner, model: deployment_model) }
   let(:deployment_model) { BD::Models::Deployment.make }
@@ -50,11 +49,9 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
 
   describe 'plan_job_instances' do
     before do
-      allow(job).to receive(:networks).and_return([])
     end
 
     context 'when instance should skip running drain script' do
-      let(:skip_drain_decider) { BD::DeploymentPlan::SkipDrain.new('*') }
 
       it 'should set "skip_drain" on the instance plan' do
         existing_instance_model = BD::Models::Instance.make(job: 'foo-job', index: 0, availability_zone: az.name)
@@ -82,7 +79,6 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
         expect {
           instance_planner.plan_job_instances(job, [desired_instance], [existing_instance_model])
         }.to raise_error(
-          Bosh::Director::JobInstanceIgnored,
           "You are trying to change the state of the ignored instance 'foo-job/#{existing_instance_model.uuid}'. " +
               "This operation is not allowed. You need to unignore it first."
         )
@@ -106,7 +102,6 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
           job,
           deployment,
           nil,
-          0
         )
         expect(existing_instance_plan.new?).to eq(false)
         expect(existing_instance_plan.obsolete?).to eq(false)
@@ -158,7 +153,6 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
         job,
         deployment,
         az,
-        0
       )
       expect(existing_instance_plan.new?).to eq(false)
       expect(existing_instance_plan.obsolete?).to eq(false)
@@ -211,7 +205,6 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
         make_instance(out_of_typical_range_index)
       end
 
-      allow(instance_repo).to receive(:create).with(desired_instances[1], 0) { make_instance(auto_picked_index) }
 
       instance_plans = instance_planner.plan_job_instances(job, desired_instances, existing_instances)
       expect(instance_plans.count).to eq(3)
@@ -260,7 +253,6 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
 
           existing_tracer_instance = make_instance_with_existing_model(existing_instance_model)
           allow(instance_repo).to receive(:fetch_existing).with(another_existing_instance_model, nil, job, another_desired_instance.index, deployment) { existing_tracer_instance }
-          allow(instance_repo).to receive(:create).with(desired_instance, 2) { make_instance(2) }
 
           instance_plans = instance_planner.plan_job_instances(job, [another_desired_instance, desired_instance], [existing_instance_model, another_existing_instance_model])
 
@@ -320,8 +312,6 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
         it 'should not mark any instance as bootstrap instance' do
           existing_instance_model = BD::Models::Instance.make(job: 'foo-job', index: 0, bootstrap: true, availability_zone: undesired_az.name)
 
-          obsolete_instance = instance_double(BD::DeploymentPlan::Instance, update_description: nil)
-          allow(instance_repo).to receive(:fetch_obsolete).with(existing_instance_model) { obsolete_instance }
 
           instance_plans = instance_planner.plan_job_instances(job, [], [existing_instance_model])
 
@@ -334,7 +324,6 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
     end
 
     context 'reconciling network plans' do
-      let(:existing_instance) { make_instance_with_existing_model(existing_instance_model) }
 
       let(:existing_instance_model) { BD::Models::Instance.make(job: 'foo-job', index: 0, bootstrap: true, availability_zone: az.name) }
 
@@ -428,8 +417,6 @@ describe 'BD::DeploymentPlan::InstancePlanner' do
       expect {
         instance_planner.plan_obsolete_jobs([job], existing_instances)
       }.to raise_error(
-         Bosh::Director::DeploymentIgnoredInstancesDeletion,
-         "You are trying to delete instance group 'bar-job', which contains ignored instance(s). Operation not allowed."
       )
     end
 

@@ -23,7 +23,6 @@ module Bosh::Cli
       context 'when the user is logged in' do
         before do
           allow(command).to receive_messages(:logged_in? => true)
-          command.options[:target] = 'http://bosh-target.example.com'
         end
 
         context 'local stemcell' do
@@ -123,7 +122,6 @@ module Bosh::Cli
             end
 
             it 'should raise error when --name and --version also provided' do
-              command.add_option(:name, "ubuntu")
               command.add_option(:version, "1")
               expect {
                 command.upload(stemcell_archive)
@@ -180,7 +178,6 @@ module Bosh::Cli
       end
 
       let(:public_stemcells) do
-        instance_double('Bosh::Cli::PublicStemcells')
       end
 
       before do
@@ -189,7 +186,6 @@ module Bosh::Cli
       end
 
       it 'lists public stemcells in the index' do
-        command.options = double('options')
 
         command.list_public
 
@@ -209,7 +205,6 @@ module Bosh::Cli
       end
 
       let(:public_stemcells) do
-        instance_double('Bosh::Cli::PublicStemcells')
       end
 
       before do
@@ -238,12 +233,10 @@ module Bosh::Cli
 
       before do
         allow(command).to receive_messages(:logged_in? => true)
-        command.options[:target] = 'http://bosh-target.example.com'
 
         allow(director).to receive(:list_stemcells).and_return(stemcells)
         Bosh::Cli::Config.output = buffer
       end
-      
       before { allow(stemcell).to receive(:validate) }
       before { allow(stemcell).to receive_messages(valid?: true) }
       before { allow(stemcell).to receive_messages(stemcell_file: stemcell_archive) }
@@ -305,7 +298,6 @@ module Bosh::Cli
         end
 
         context 'when stemcell does not exist' do
-          before { allow(director).to receive_messages(list_stemcells: []) }
 
           it 'uploads stemcell and returns successfully' do
             expect(director).to receive(:upload_stemcell).with(stemcell_archive, {})
@@ -316,7 +308,6 @@ module Bosh::Cli
             let(:remote_stemcell_location) { 'http://location/stemcell.tgz' }
 
             before do
-              allow(director).to receive(:upload_remote_stemcell)
             end
 
             context 'when a sha1 is provided' do
@@ -341,12 +332,10 @@ module Bosh::Cli
 
               it 'does not upload stemcell' do
                 expect(director).not_to receive(:upload_stemcell)
-                command.upload(stemcell_archive)
               end
 
               it 'returns successfully' do
                 expect {
-                  command.upload(stemcell_archive)
                 }.to_not raise_error
               end
             end
@@ -354,7 +343,6 @@ module Bosh::Cli
             context 'when --skip-if-exists flag is not given' do
               it 'does not upload stemcell' do
                 expect(director).not_to receive(:upload_stemcell)
-                command.upload(stemcell_archive) rescue nil
               end
 
               it 'raises an error' do
@@ -383,12 +371,10 @@ module Bosh::Cli
 
               it 'does not raise an error' do
                 expect {
-                  command.upload(remote_stemcell_location)
                 }.to_not raise_error
               end
 
               it 'has an exit code of 0' do
-                command.upload(remote_stemcell_location)
                 expect(command.exit_code).to eq(0)
               end
             end
@@ -396,7 +382,6 @@ module Bosh::Cli
             context 'when --skip-if-exists flag is not given' do
               before do
                 allow(director).to receive(:upload_remote_stemcell).with(remote_stemcell_location, {}).and_return([:error, 1])
-                allow(director).to receive(:get_task_output).with(1, 0, 'event').and_return [task_events_json, nil]
               end
 
               it 'still uploads stemcell' do
@@ -406,7 +391,6 @@ module Bosh::Cli
 
               it 'does not raise an error' do
                 expect {
-                  command.upload(remote_stemcell_location)
                 }.to_not raise_error
               end
 
@@ -420,8 +404,6 @@ module Bosh::Cli
       end
 
       context 'when director does not return deployments for stemcells' do
-        let(:stemcell1) { { 'name' => 'fake stemcell 1', 'version' => '123', 'cid' => '123456' } }
-        let(:stemcell2) { { 'name' => 'fake stemcell 2', 'version' => '456', 'cid' => '789012' } }
 
         it 'does not raise' do
           expect { command.list }.to_not raise_error

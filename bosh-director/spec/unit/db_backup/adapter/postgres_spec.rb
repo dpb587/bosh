@@ -7,7 +7,6 @@ describe Bosh::Director::DbBackup::Adapter::Postgres do
     let(:db_config) do
       {
         'user' => 'user1',
-        'password' => 'password1',
         'database' => 'database',
         'host' => 'host.com',
         'port' => 5432,
@@ -38,7 +37,6 @@ describe Bosh::Director::DbBackup::Adapter::Postgres do
       end
 
       context 'when the password is not provided' do
-        before { db_config.delete('password') }
 
         it 'exports the database to a file without using password with pg_dump' do
           expect(Open3).to receive(:capture3).with(

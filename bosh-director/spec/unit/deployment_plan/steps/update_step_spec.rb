@@ -1,39 +1,27 @@
 require 'spec_helper'
-require 'bosh/director/deployment_plan/multi_job_updater'
-require 'bosh/director/job_updater'
 
 module Bosh::Director
   describe DeploymentPlan::Steps::UpdateStep do
     subject { DeploymentPlan::Steps::UpdateStep.new(base_job, deployment_plan, multi_job_updater, cloud) }
     let(:base_job) { Jobs::BaseJob.new }
-    let(:event_log) { Bosh::Director::Config.event_log }
     let(:ip_provider) {instance_double('Bosh::Director::DeploymentPlan::IpProvider')}
     let(:skip_drain) {instance_double('Bosh::Director::DeploymentPlan::SkipDrain')}
 
     let(:deployment_plan) do
       instance_double('Bosh::Director::DeploymentPlan::Planner',
         update_stemcell_references!: nil,
-        persist_updates!: nil,
-        jobs_starting_on_deploy: [],
         instance_plans_with_missing_vms: [],
         ip_provider: ip_provider,
-        skip_drain: skip_drain,
         recreate: false
       )
     end
     let(:cloud) { instance_double('Bosh::Cloud', delete_vm: nil) }
-    let(:manifest) { ManifestHelper.default_legacy_manifest }
-    let(:releases) { [] }
     let(:multi_job_updater) { instance_double('Bosh::Director::DeploymentPlan::SerialMultiJobUpdater', run: nil) }
     let(:task) {Bosh::Director::Models::Task.make(:id => 42, :username => 'user')}
     before do
-      allow(base_job).to receive(:logger).and_return(logger)
-      allow(base_job).to receive(:track_and_log).and_yield
-      allow(Bosh::Director::Config).to receive(:dns_enabled?).and_return(true)
       allow(Bosh::Director::Config).to receive(:cloud).and_return(cloud)
       allow(base_job).to receive(:task_id).and_return(task.id)
       allow(Bosh::Director::Config).to receive(:current_job).and_return(base_job)
-      allow(Bosh::Director::Config).to receive(:record_events).and_return(true)
       fake_app
     end
 
@@ -45,7 +33,6 @@ module Bosh::Director
       let(:instance3) { instance_double('Bosh::Director::DeploymentPlan::Instance') }
 
       before do
-        allow(deployment_plan).to receive(:unneeded_instances).and_return([])
       end
 
       def it_deletes_unneeded_instances
@@ -54,8 +41,6 @@ module Bosh::Director
 
         event_log_stage = instance_double('Bosh::Director::EventLog::Stage')
         expect(Config.event_log).to receive(:begin_stage)
-                               .with('Deleting unneeded instances', 1)
-                               .and_return(event_log_stage)
 
         instance_deleter = instance_double('Bosh::Director::InstanceDeleter')
         expect(InstanceDeleter).to receive(:new)
@@ -68,7 +53,6 @@ module Bosh::Director
 
       it 'runs deployment plan update stages in the correct order' do
         event_log_stage = instance_double('Bosh::Director::EventLog::Stage')
-        allow(event_log_stage).to receive(:advance_and_track).and_yield
         allow(deployment_plan).to receive(:jobs_starting_on_deploy).with(no_args).and_return([job1, job2])
 
         it_deletes_unneeded_instances.ordered

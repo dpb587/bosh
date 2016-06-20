@@ -7,9 +7,7 @@ module Bosh::Director
       let(:instances) { [instance] }
       let(:instance_lookup) do
         instance_double('Bosh::Director::Api::InstanceLookup',
-                        by_attributes: instance,
                         by_uuid:       instance,
-                        find_all:      instances
         )
       end
       subject(:ignore_instance_manager) { InstanceIgnoreManager.new }

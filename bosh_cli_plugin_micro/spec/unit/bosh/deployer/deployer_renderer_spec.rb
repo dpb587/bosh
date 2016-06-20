@@ -17,7 +17,6 @@ module Bosh::Deployer
 
     describe '#update' do
       before do
-        @actual_json = nil
         allow(log_renderer).to receive(:add_output) do |output|
           @actual_json = output
         end
@@ -30,10 +29,6 @@ module Bosh::Deployer
         end
 
         expect(JSON.parse(@actual_json)).to include({
-          'time' => time.to_i,
-          'task' => 'fake-task',
-          'tags' => [],
-          'state' => 'fake_state',
         })
       end
 
@@ -50,9 +45,6 @@ module Bosh::Deployer
           renderer.update(:fake_state, 'fake-task')
 
           expect(JSON.parse(@actual_json)).to include({
-            'stage' => 'fake-stage',
-            'index' => 1,
-            'total' => 'fake-total',
           })
         end
       end
@@ -67,9 +59,6 @@ module Bosh::Deployer
           renderer.update(:fake_state, 'fake-task')
 
           expect(JSON.parse(@actual_json)).to include({
-            'stage' => 'fake-stage',
-            'index' => 2,
-            'total' => 'fake-total',
           })
         end
       end
@@ -78,7 +67,6 @@ module Bosh::Deployer
         renderer.update(:finished, 'fake-task')
 
         expect(JSON.parse(@actual_json)).to include({
-          'progress' => 100,
         })
       end
 
@@ -86,7 +74,6 @@ module Bosh::Deployer
         renderer.update(:not_finished, 'fake-task')
 
         expect(JSON.parse(@actual_json)).to include({
-          'progress' => 0,
         })
       end
     end

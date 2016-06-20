@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe Bosh::Director::DeploymentPlan::VipNetwork do
-  before { @deployment_plan = instance_double('Bosh::Director::DeploymentPlan::Planner') }
   let(:instance_model) { BD::Models::Instance.make }
 
   describe :initialize do
@@ -43,7 +42,6 @@ describe Bosh::Director::DeploymentPlan::VipNetwork do
       }.to raise_error(/Can't provide any defaults/)
 
       expect {
-        @network.network_settings(reservation, nil)
       }.not_to raise_error
     end
   end

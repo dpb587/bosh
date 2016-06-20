@@ -10,8 +10,6 @@ module Bosh::Director
     let(:stemcell) { Models::Stemcell.make(name: 'test_stemcell', version: 'test_version', cid: 'stemcell_cid') }
 
     before do
-      fake_locks
-      allow(Config).to receive(:cloud).and_return(cloud)
     end
 
     context 'when stemcell deletion fails' do
@@ -50,10 +48,6 @@ module Bosh::Director
 
       it 'should NOT delete associated compiled packages, but set stemcell_id to nil' do
         associated_package = Models::CompiledPackage.make(
-          package: Models::Package.make,
-          blobstore_id: 'compiled-package-blb-1',
-          stemcell_os: 'Plan 9',
-          stemcell_version: '9'
         )
 
         expect(cloud).to receive(:delete_stemcell).with('stemcell_cid').and_raise('error')
@@ -67,9 +61,6 @@ module Bosh::Director
     end
 
     context 'when stemcell deletion succeeds' do
-      let(:stemcell_stage) { instance_double(Bosh::Director::EventLog::Stage) }
-      let(:stemcell_metadata_stage) { instance_double(Bosh::Director::EventLog::Stage) }
-      let(:compiled_package_stage) { instance_double(Bosh::Director::EventLog::Stage) }
 
       it 'should delete the stemcell models if the CPI deleted the stemcell' do
         expect(cloud).to receive(:delete_stemcell).with('stemcell_cid')
@@ -80,16 +71,8 @@ module Bosh::Director
 
       it 'should NOT delete the associated compiled packages, but set stemcell_id to nil' do
         associated_package = Models::CompiledPackage.make(
-          package: Models::Package.make(name: 'package-name', version: 'version'),
-          blobstore_id: 'compiled-package-blb-1',
-          stemcell_os: 'AIX',
-          stemcell_version: '7.1'
         )
         unassociated_package = Models::CompiledPackage.make(
-          package: Models::Package.make,
-          blobstore_id: 'compiled-package-blb-2',
-          stemcell_os: 'AIX',
-          stemcell_version: '7.2'
         )
 
         expect(cloud).to receive(:delete_stemcell).with('stemcell_cid')

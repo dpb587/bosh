@@ -6,7 +6,6 @@ describe Bosh::Director::ProblemHandlers::MissingDisk do
   before { allow(handler).to receive(:agent_client).with(instance.credentials, instance.agent_id).and_return(agent_client) }
 
   let(:cloud) { instance_double('Bosh::Cloud', detach_disk: nil) }
-  before { allow(Bosh::Director::Config).to receive(:cloud).and_return(cloud) }
 
   let(:agent_client) { instance_double('Bosh::Director::AgentClient', unmount_disk: nil) }
 
@@ -22,7 +21,6 @@ describe Bosh::Director::ProblemHandlers::MissingDisk do
   end
 
   it 'registers under missing_disk type' do
-    handler = Bosh::Director::ProblemHandlers::Base.create_by_type(:missing_disk, disk.id, {})
     expect(handler).to be_kind_of(Bosh::Director::ProblemHandlers::MissingDisk)
   end
 
@@ -37,28 +35,23 @@ describe Bosh::Director::ProblemHandlers::MissingDisk do
 
       before do
         Bosh::Director::Models::Snapshot.make(persistent_disk: disk, snapshot_cid: 'snapshot-cid')
-        allow(agent_client).to receive(:list_disk).and_return({})
         allow(Bosh::Director::Config).to receive(:current_job).and_return(update_job)
       end
 
       def self.it_ignores_cloud_disk_errors
         it 'ignores the error if disk is not attached' do
           allow(cloud).to receive(:detach_disk).with('vm-cid', 'disk-cid') do
-            raise Bosh::Clouds::DiskNotAttached.new(false)
           end
 
           expect {
-            handler.apply_resolution(:delete_disk_reference)
           }.to_not raise_error
         end
 
         it 'ignores the error if disk is not found' do
           allow(cloud).to receive(:detach_disk).with('vm-cid', 'disk-cid') do
-            raise Bosh::Clouds::DiskNotFound.new(false)
           end
 
           expect {
-            handler.apply_resolution(:delete_disk_reference)
           }.to_not raise_error
         end
       end

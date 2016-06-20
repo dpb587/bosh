@@ -26,10 +26,8 @@ module Bosh::AwsCliPlugin
       end
 
       context 'when the environment has 20 or less instances' do
-        before { allow(ec2).to receive_messages(instances_count: 20) }
 
         it 'assumes it is not production and continues' do
-          destroyer.ensure_not_production!
         end
       end
 
@@ -44,10 +42,8 @@ module Bosh::AwsCliPlugin
       end
 
       context 'when the environment has 20 or less volumes' do
-        before { allow(ec2).to receive_messages(volume_count: 20) }
 
         it 'assumes it is not production and continues' do
-          destroyer.ensure_not_production!
         end
       end
     end
@@ -70,7 +66,6 @@ module Bosh::AwsCliPlugin
       before { allow(Bosh::AwsCliPlugin::EC2).to receive(:new).with(fake: 'aws config').and_return(ec2) }
       let(:ec2) { instance_double('Bosh::AwsCliPlugin::EC2') }
 
-      before { allow(ui).to receive_messages(say: nil) }
 
       context 'when there is at least one instance' do
         before { allow(ec2).to receive_messages(instance_names: { 'i1' => 'instance1-name', 'i2' => 'instance2-name' }) }
@@ -80,8 +75,6 @@ module Bosh::AwsCliPlugin
           expect(ui).to receive(:say).with("Instances:\n\tinstance1-name (id: i1)\n\tinstance2-name (id: i2)")
 
           expect(ui).to receive(:confirmed?)
-            .with(/terminate all .* EC2 instances .* non-persistent EBS/)
-            .and_return(false)
 
           destroyer.delete_all_ec2
         end
@@ -100,7 +93,6 @@ module Bosh::AwsCliPlugin
 
           it 'does not terminate any instances' do
             expect(ec2).not_to receive(:terminate_instances)
-            destroyer.delete_all_ec2
           end
         end
       end
@@ -115,7 +107,6 @@ module Bosh::AwsCliPlugin
 
         it 'does not terminate any instances' do
           expect(ec2).not_to receive(:terminate_instances)
-          destroyer.delete_all_ec2
         end
       end
     end
@@ -124,7 +115,6 @@ module Bosh::AwsCliPlugin
       before { allow(Bosh::AwsCliPlugin::EC2).to receive(:new).with(fake: 'aws config').and_return(ec2) }
       let(:ec2) { instance_double('Bosh::AwsCliPlugin::EC2') }
 
-      before { allow(ui).to receive(:say) }
 
       it 'should warn the user that the operation is destructive and list number of volumes to be deleted' do
         allow(ec2).to receive_messages(volume_count: 2)
@@ -133,8 +123,6 @@ module Bosh::AwsCliPlugin
         expect(ui).to receive(:say).with('It will delete 2 EBS volume(s)')
 
         expect(ui).to receive(:confirmed?)
-          .with('Are you sure you want to delete all unattached EBS volumes?')
-          .and_return(false)
 
         destroyer.delete_all_ebs
       end
@@ -156,7 +144,6 @@ module Bosh::AwsCliPlugin
 
           it 'does not terminate any instances' do
             expect(ec2).not_to receive(:delete_volumes)
-            destroyer.delete_all_ebs
           end
         end
       end
@@ -171,7 +158,6 @@ module Bosh::AwsCliPlugin
 
         it 'does not try to terminate any volumes' do
           expect(ec2).not_to receive(:delete_volumes)
-          destroyer.delete_all_ebs
         end
       end
     end
@@ -211,7 +197,6 @@ module Bosh::AwsCliPlugin
 
           it 'does not delete any S3 buckets' do
             expect(s3).not_to receive(:empty)
-            destroyer.delete_all_s3
           end
         end
       end
@@ -226,7 +211,6 @@ module Bosh::AwsCliPlugin
 
         it 'does not delete any S3 buckets' do
           expect(s3).not_to receive(:empty)
-          destroyer.delete_all_s3
         end
       end
     end
@@ -256,7 +240,6 @@ module Bosh::AwsCliPlugin
 
         it 'does not remove any key pairs' do
           expect(ec2).not_to receive(:remove_all_key_pairs)
-          destroyer.delete_all_key_pairs
         end
       end
     end
@@ -279,7 +262,6 @@ module Bosh::AwsCliPlugin
 
         it 'does not remove elastic ips' do
           expect(ec2).not_to receive(:release_all_elastic_ips)
-          destroyer.delete_all_elastic_ips
         end
       end
     end
@@ -293,13 +275,8 @@ module Bosh::AwsCliPlugin
 
         it 'retries if it can not delete security groups due to eventual consistency' do
           expect(ec2).to receive(:delete_all_security_groups)
-            .ordered
-            .exactly(119).times
             .and_raise(::AWS::EC2::Errors::InvalidGroup::InUse)
           expect(ec2).to receive(:delete_all_security_groups)
-            .ordered
-            .once
-            .and_return(true)
           destroyer.delete_all_security_groups(0) # sleep 0
         end
       end
@@ -309,7 +286,6 @@ module Bosh::AwsCliPlugin
 
         it 'should not delete security groups' do
           expect(ec2).not_to receive(:delete_all_security_groups)
-          destroyer.delete_all_security_groups
         end
       end
     end
@@ -335,7 +311,6 @@ module Bosh::AwsCliPlugin
 
           it 'does not remove 53 records' do
             expect(route53).not_to receive(:delete_all_records)
-            destroyer.delete_all_route53_records
           end
         end
       end
@@ -357,7 +332,6 @@ module Bosh::AwsCliPlugin
 
           it 'does not remove 53 records' do
             expect(route53).not_to receive(:delete_all_records)
-            destroyer.delete_all_route53_records
           end
         end
       end

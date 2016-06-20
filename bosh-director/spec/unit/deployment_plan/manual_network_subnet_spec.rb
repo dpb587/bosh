@@ -8,16 +8,11 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
   end
 
   let(:reserved_ranges) { {} }
-  let(:instance) { instance_double(BD::DeploymentPlan::Instance, model: BD::Models::Instance.make) }
 
   def create_static_reservation(ip)
-    BD::StaticNetworkReservation.new(instance, @network, NetAddr::CIDR.create(ip))
   end
 
   def create_dynamic_reservation(ip)
-    reservation = BD::DynamicNetworkReservation.new(instance, @network)
-    reservation.resolve_ip(NetAddr::CIDR.create(ip))
-    reservation
   end
 
   describe :initialize do
@@ -26,13 +21,11 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
         {
           'range' => '192.168.0.0/24',
           'gateway' => '192.168.0.254',
-          'cloud_properties' => {'foo' => 'bar'}
         },
         [],
       )
 
       expect(subnet.range.ip).to eq('192.168.0.0')
-      subnet.range.ip.size == 255
       expect(subnet.netmask).to eq('255.255.255.0')
       expect(subnet.gateway).to eq('192.168.0.254')
       expect(subnet.dns).to eq(nil)
@@ -42,8 +35,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
       expect {
         make_subnet(
           {
-            'cloud_properties' => {'foo' => 'bar'},
-            'gateway' => '192.168.0.254',
           },
           []
         )
@@ -52,7 +43,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
 
     context 'when generating log output' do
       before do
-        allow(Bosh::Director::Config).to receive(:logger).and_return(logger)
       end
       let(:reserved_ranges) {
         Set.new [
@@ -68,11 +58,7 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
                 'range' => '192.168.0.0/24',
                 'gateway' => '192.168.0.254',
                 'reserved' => [
-                    '192.168.0.10 - 192.168.0.20',
-                    '192.168.0.30 - 192.168.0.50',
-                    '192.168.0.100'
                 ],
-                'cloud_properties' => {'foo' => 'bar'}
             },
             [],
         )
@@ -84,8 +70,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
         expect {
           make_subnet(
             {
-              'range' => '192.168.0.0/24',
-              'cloud_properties' => {'foo' => 'bar'},
             }, []
           )
         }.to raise_error(BD::ValidationMissingField)
@@ -99,7 +83,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
             make_subnet(
               {
                 'range' => '192.168.0.0/24',
-                'cloud_properties' => {'foo' => 'bar'},
               },
               []
             )
@@ -125,7 +108,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
         {
           'range' => '192.168.0.0/24',
           'gateway' => '192.168.0.254',
-          'cloud_properties' => {'foo' => 'bar'}
         },
         []
       )
@@ -139,7 +121,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
           {
             'range' => '192.168.0.0/24',
             'gateway' => '192.168.0.254/30',
-            'cloud_properties' => {'foo' => 'bar'}
           },
           []
         )
@@ -153,7 +134,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
           {
             'range' => '192.168.0.0/24',
             'gateway' => '190.168.0.254',
-            'cloud_properties' => {'foo' => 'bar'}
           },
           []
         )
@@ -167,7 +147,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
           {
             'range' => '192.168.0.0/24',
             'gateway' => '192.168.0.0',
-            'cloud_properties' => {'foo' => 'bar'}
           },
           []
         )
@@ -181,7 +160,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
           {
             'range' => '192.168.0.0/24',
             'gateway' => '192.168.0.255',
-            'cloud_properties' => {'foo' => 'bar'}
           },
           []
         )
@@ -195,7 +173,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
           'range' => '192.168.0.0/24',
           'dns' => %w(1.2.3.4 5.6.7.8),
           'gateway' => '192.168.0.254',
-          'cloud_properties' => {'foo' => 'bar'}
         },
         []
       )
@@ -210,7 +187,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
             'range' => '192.168.0.0/24',
             'reserved' => '192.167.0.5 - 192.168.0.10',
             'gateway' => '192.168.0.254',
-            'cloud_properties' => {'foo' => 'bar'}
           },
           []
         )
@@ -224,9 +200,7 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
         make_subnet(
           {
             'range' => '192.168.0.0/24',
-            'reserved' => ['192.168.0.0','192.168.0.1','192.168.0.255'],
             'gateway' => '192.168.0.1',
-            'cloud_properties' => {'foo' => 'bar'}
           },
           []
         )
@@ -240,7 +214,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
             'range' => '192.168.0.0/24',
             'static' => '192.167.0.5 - 192.168.0.10',
             'gateway' => '192.168.0.254',
-            'cloud_properties' => {'foo' => 'bar'}
           },
           []
         )
@@ -257,7 +230,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
             'reserved' => '192.168.0.5 - 192.168.0.10',
             'static' => '192.168.0.5',
             'gateway' => '192.168.0.254',
-            'cloud_properties' => {'foo' => 'bar'}
           },
           []
         )
@@ -273,12 +245,10 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
               {
                 'range' => '192.168.0.0/24',
                 'gateway' => '192.168.0.254',
-                'cloud_properties' => {},
                 'az' => 'foo',
                 'azs' => ['foo']
               },
               [
-                Bosh::Director::DeploymentPlan::AvailabilityZone.new('foo', {}),
               ])
           }.to raise_error(Bosh::Director::NetworkInvalidProperty, "Network 'net_a' contains both 'az' and 'azs'. Choose one.")
         end
@@ -292,7 +262,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
               {
                 'range' => '192.168.0.0/24',
                 'gateway' => '192.168.0.254',
-                'cloud_properties' => {},
                 'azs' => ['foo', 'bar']
               },
               [
@@ -311,11 +280,9 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
                 {
                   'range' => '192.168.0.0/24',
                   'gateway' => '192.168.0.254',
-                  'cloud_properties' => {},
                   'azs' => []
                 },
                 [
-                  Bosh::Director::DeploymentPlan::AvailabilityZone.new('foo', {}),
                 ])
             }.to raise_error(Bosh::Director::NetworkInvalidProperty, "Network 'net_a' refers to an empty 'azs' array")
           end
@@ -328,7 +295,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
               {
                 'range' => '192.168.0.0/24',
                 'gateway' => '192.168.0.254',
-                'cloud_properties' => {},
                 'azs' => ['foo', 'bar']
               },
               [
@@ -348,7 +314,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
                 {
                   'range' => '192.168.0.0/24',
                   'gateway' => '192.168.0.254',
-                  'cloud_properties' => {'foo' => 'bar'},
                 },
                 []
               )
@@ -363,7 +328,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
                 {
                   'range' => '192.168.0.0/24',
                   'gateway' => '192.168.0.254',
-                  'cloud_properties' => {'foo' => 'bar'},
                   'az' => nil
                 },
                 [Bosh::Director::DeploymentPlan::AvailabilityZone.new('foo', {})]
@@ -378,11 +342,9 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
               {
                 'range' => '192.168.0.0/24',
                 'gateway' => '192.168.0.254',
-                'cloud_properties' => {'foo' => 'bar'},
                 'az' => 'foo'
               },
               [
-                Bosh::Director::DeploymentPlan::AvailabilityZone.new('bar', {}),
                 Bosh::Director::DeploymentPlan::AvailabilityZone.new('foo', {})
               ]
             )
@@ -404,11 +366,9 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
                 {
                   'range' => '192.168.0.0/24',
                   'gateway' => '192.168.0.254',
-                  'cloud_properties' => {'foo' => 'bar'},
                   'az' => 'foo'
                 },
                 [
-                  Bosh::Director::DeploymentPlan::AvailabilityZone.new('bar', {}),
                 ]
               )}.to raise_error(Bosh::Director::NetworkSubnetUnknownAvailabilityZone, "Network 'net_a' refers to an unknown availability zone 'foo'")
           end
@@ -424,7 +384,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
         {
           'range' => '192.168.0.0/24',
           'gateway' => '192.168.0.254',
-          'cloud_properties' => {'foo' => 'bar'},
         },
         []
       )
@@ -435,7 +394,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
         {
           'range' => '192.168.1.0/24',
           'gateway' => '192.168.1.254',
-          'cloud_properties' => {'foo' => 'bar'},
         },
         []
       )
@@ -447,7 +405,6 @@ describe 'Bosh::Director::DeploymentPlan::ManualNetworkSubnet' do
         {
           'range' => '192.168.0.128/28',
           'gateway' => '192.168.0.142',
-          'cloud_properties' => {'foo' => 'bar'},
         },
         []
       )

@@ -4,11 +4,8 @@ module Bosh::Director
   describe Jobs::VmState do
     def stub_agent_get_state_to_return_state_with_vitals
       expect(agent).to receive(:get_state).with('full').and_return(
-          'vm_cid' => 'fake-vm-cid',
           'networks' => { 'test' => { 'ip' => '1.1.1.1' } },
-          'agent_id' => 'fake-agent-id',
           'job_state' => 'running',
-          'resource_pool' => {},
           'processes' => [
             {'name' => 'fake-process-1', 'state' => 'running'},
             {'name' => 'fake-process-2', 'state' => 'failing'},
@@ -27,7 +24,6 @@ module Bosh::Director
       @deployment = Models::Deployment.make
       @result_file = double('result_file')
       allow(Config).to receive(:result).and_return(@result_file)
-      allow(Config).to receive(:dns).and_return({'domain_name' => 'microbosh', 'db' => {}})
     end
 
     describe 'DJ job class expectations' do
@@ -44,11 +40,8 @@ module Bosh::Director
       it 'parses agent info into vm_state WITHOUT vitals' do
         instance  #trigger the let
         expect(agent).to receive(:get_state).with('full').and_return(
-          'vm_cid' => 'fake-vm-cid',
           'networks' => { 'test' => { 'ip' => '1.1.1.1' } },
-          'agent_id' => 'fake-agent-id',
           'job_state' => 'running',
-          'resource_pool' => {}
         )
 
         expect(@result_file).to receive(:write) do |agent_status|
@@ -195,7 +188,6 @@ module Bosh::Director
       it 'should return disk cid info when NO active disks found' do
         Models::PersistentDisk.create(
           instance: instance,
-          active: false,
           disk_cid: 'fake-disk-cid',
         )
         stub_agent_get_state_to_return_state_with_vitals
@@ -305,17 +297,12 @@ module Bosh::Director
         instance.update(spec: {'vm_type' => {'name' => 'fake-vm-type', 'cloud_properties' => {}}})
 
         expect(agent).to receive(:get_state).with('full').and_return(
-          'vm_cid' => 'fake-vm-cid',
           'networks' => { 'test' => { 'ip' => '1.1.1.1' } },
-          'agent_id' => 'fake-agent-id',
-          'index' => 0,
-          'job' => { 'name' => 'dea' },
           'job_state' => 'running',
           'processes' => [
             {'name' => 'fake-process-1', 'state' => 'running' },
             {'name' => 'fake-process-2', 'state' => 'failing' },
           ],
-          'resource_pool' => {}
         )
 
         job = Jobs::VmState.new(@deployment.id, 'full')
@@ -338,7 +325,6 @@ module Bosh::Director
       context 'when exclude filter is set and vms without cid exist' do
         before(:each) do
           Models::Instance.make(deployment: @deployment, vm_cid: 'fake-vm-cid')
-          Models::Instance.make(deployment: @deployment, vm_cid: nil)
         end
 
         it 'excludes them' do

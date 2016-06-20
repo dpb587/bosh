@@ -16,7 +16,6 @@ module Bosh::Director
     let(:instance_manager) { instance_double(Api::InstanceManager) }
     let(:problem_register) { ProblemScanner::ProblemRegister.new(deployment, logger) }
     before do
-      allow(problem_register).to receive(:get_disk).and_call_original
     end
     let(:cloud) { instance_double('Bosh::Cloud') }
     let(:deployment) { Models::Deployment.make(name: 'fake-deployment') }
@@ -35,7 +34,6 @@ module Bosh::Director
 
         allow(instance_manager).to receive(:find_by_name).with(deployment, 'job-1', 1).and_return(instances[0])
         allow(instance_manager).to receive(:find_by_name).with(deployment, 'job-2', 2).and_return(instances[1])
-        allow(instance_manager).to receive(:find_by_name).with(deployment, 'job-3', 3).and_return(instances[2])
 
         expect(event_logger).to receive(:track_and_log).with('Checking VM states')
         expect(event_logger).to receive(:track_and_log).with('1 OK, 1 unresponsive, 0 missing, 0 unbound')
@@ -43,9 +41,6 @@ module Bosh::Director
         good_agent_client = instance_double(AgentClient, list_disk: [])
         allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instances[1].credentials, instances[1].agent_id, anything).and_return(good_agent_client)
         good_state = {
-          'deployment' => 'fake-deployment',
-          'job' => {'name' => 'job-2'},
-          'index' => 2
         }
         expect(good_agent_client).to receive(:get_state).and_return(good_state)
 
@@ -89,9 +84,6 @@ module Bosh::Director
 
           # Working agent
           good_state = {
-            'deployment' => 'fake-deployment',
-            'job' => {'name' => 'job-2'},
-            'index' => 2
           }
           allow(responsive_agent).to receive(:get_state).and_return(good_state)
           allow(responsive_agent).to receive(:list_disk).and_return([])
@@ -178,18 +170,10 @@ module Bosh::Director
             agent_options = { timeout: 10, retry_methods: { get_state: 0}}
 
 
-            allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(ignored_unresponsive_vm.credentials, ignored_unresponsive_vm.agent_id, agent_options).and_return(ignored_unresponsive_agent)
-            allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(ignored_responsive_vm.credentials, ignored_responsive_vm.agent_id, agent_options).and_return(ignored_responsive_agent)
-            allow(ignored_unresponsive_agent).to receive(:get_state).and_raise(RpcTimeout)
 
             # Working agent
             good_state = {
-                'deployment' => 'fake-deployment',
-                'job' => {'name' => 'job-gargamel'},
-                'index' => 0
             }
-            allow(ignored_responsive_agent).to receive(:get_state).and_return(good_state)
-            allow(ignored_responsive_agent).to receive(:list_disk).and_return([])
 
             allow(cloud).to receive(:has_vm?).and_return(true)
           end
@@ -217,9 +201,6 @@ module Bosh::Director
 
       before do
         good_state = {
-          'deployment' => 'fake-deployment',
-          'job' => {'name' => 'job-1'},
-          'index' => 0
         }
 
         allow(agent).to receive(:get_state).and_return(good_state)
@@ -244,7 +225,6 @@ module Bosh::Director
 
         it 'returns empty owners' do
           expect(problem_register).to_not receive(:problem_found)
-          vm_scanner.scan
           expect(vm_scanner.agent_disks.size).to eq(0)
         end
       end
@@ -256,7 +236,6 @@ module Bosh::Director
 
         it 'returns empty owners' do
           expect(problem_register).to_not receive(:problem_found)
-          vm_scanner.scan
           expect(vm_scanner.agent_disks.size).to eq(0)
         end
       end
@@ -269,9 +248,6 @@ module Bosh::Director
           allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(second_instance.credentials, second_instance.agent_id, anything).and_return(agent_2)
 
           good_state_2 = {
-            'deployment' => 'fake-deployment',
-            'job' => {'name' => 'job-2'},
-            'index' => 2
           }
           expect(agent_2).to receive(:get_state).and_return(good_state_2)
 

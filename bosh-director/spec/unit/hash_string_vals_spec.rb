@@ -19,7 +19,6 @@ describe 'Bosh::Director.hash_string_vals' do
   end
 
   it 'leaves strings as strings' do
-    Bosh::Director.hash_string_vals(h, :c)
     expect(h[:c]).to eq 'd'
   end
 

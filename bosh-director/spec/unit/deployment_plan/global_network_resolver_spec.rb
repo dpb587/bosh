@@ -8,9 +8,7 @@ module Bosh::Director
     let(:director_ips) { [] }
     let(:current_deployment) do
       deployment_model = Models::Deployment.make(
-        name: 'current-deployment',
         cloud_config: cloud_config,
-        runtime_config: runtime_config
       )
       DeploymentPlan::Planner.new(
         {name: 'current-deployment', properties: {}},
@@ -24,10 +22,6 @@ module Bosh::Director
     describe '#reserved_ranges' do
       it "ignores deployments that don't have a manifest" do
         Models::Deployment.make(
-          name: 'other-deployment',
-          cloud_config: nil,
-          runtime_config: nil,
-          manifest: nil
         )
 
         reserved_ranges = global_network_resolver.reserved_ranges
@@ -48,7 +42,6 @@ module Bosh::Director
         end
 
         describe 'when not using global networking' do
-          let(:cloud_config) { nil }
           it 'returns an empty set' do
             expect(global_network_resolver.reserved_ranges).to be_empty
           end
@@ -60,13 +53,8 @@ module Bosh::Director
           Models::CloudConfig.make({
             manifest: {
               'networks' => [{
-                'name' => 'manual',
-                'type' => 'manual',
                 'subnets' => [
                   {
-                    'range'=> '10.10.0.0/24',
-                    'gateway' => '10.10.0.1',
-                    'reserved' => ['10.10.0.1-10.10.0.10']
                   }
                 ]
               }]
@@ -77,31 +65,19 @@ module Bosh::Director
         context 'when two different legacy deployments reserved ranges overlap' do
           before do
             Models::Deployment.make(
-              name: 'dummy1',
-              cloud_config: nil,
               manifest: Psych.dump({
                 'networks' => [{
-                  'name' => 'defaultA',
-                  'type' => 'manual',
                   'subnets' => [{
                     'range' => '10.10.0.0/24',
-                    'reserved' => ['10.10.0.1-10.10.0.10','10.10.0.20-10.10.0.255'],
-                    'gateway'=> '10.10.0.1'
                   }],
                 }],
               })
             )
             Models::Deployment.make(
-              name: 'dummy2',
-              cloud_config: nil,
               manifest: Psych.dump({
                 'networks' => [{
-                  'name' => 'defaultB',
-                  'type' => 'manual',
                   'subnets' => [{
                     'range' => '10.10.0.0/24',
-                    'reserved' => ['10.10.0.2-10.10.0.20','10.10.0.30-10.10.0.255'],
-                    'gateway'=> '10.10.0.1'
                   }],
                 }],
               })
@@ -116,16 +92,10 @@ module Bosh::Director
         context 'when the legacy deployment reserved range is overlaps with itself' do
           before do
             Models::Deployment.make(
-                name: 'dummy1',
-                cloud_config: nil,
                 manifest: Psych.dump({
                    'networks' => [{
-                        'name' => 'defaultA',
-                        'type' => 'manual',
                         'subnets' => [{
                             'range' => '10.10.0.0/24',
-                            'reserved' => ['10.10.0.1-10.10.0.10','10.10.0.5-10.10.0.255'],
-                            'gateway'=> '10.10.0.1'
                         }],
                     }],
                  })
@@ -140,19 +110,13 @@ module Bosh::Director
 
       context 'when current deployment is using cloud config' do
         let(:cloud_config) { Models::CloudConfig.make }
-        let(:runtime_config) { Models::RuntimeConfig.make }
 
         it 'excludes networks from deployments with cloud config' do
           Models::Deployment.make(
-            name: 'other-deployment-1',
             cloud_config: cloud_config,
-            runtime_config: runtime_config,
             manifest: Psych.dump({
                 'networks' => [{
-                    'name' => 'network-a',
-                    'type' => 'manual',
                     'subnets' => [{
-                        'range' => '192.168.0.0/24',
                       }],
                   }],
               })
@@ -163,14 +127,9 @@ module Bosh::Director
         context 'when have legacy deployments' do
           before do
             Models::Deployment.make(
-              name: 'other-deployment-1',
-              cloud_config: nil,
-              runtime_config: nil,
               manifest: Psych.dump({
                 'networks' => [
                   {
-                    'name' => 'network-a',
-                    'type' => 'manual',
                     'subnets' => [{
                       'range' => '192.168.0.0/28',
                       'reserved' => [
@@ -181,8 +140,6 @@ module Bosh::Director
                     }],
                   },
                   {
-                    'name' => 'network-b',
-                    'type' => 'manual',
                     'subnets' => [{
                       'range' => '192.168.1.0/24',
                     }],
@@ -192,13 +149,8 @@ module Bosh::Director
             )
 
             Models::Deployment.make(
-              name: 'other-deployment-2',
-              cloud_config: nil,
-              runtime_config: nil,
               manifest: Psych.dump({
                 'networks' => [{
-                  'name' => 'network-a',
-                  'type' => 'manual',
                   'subnets' => [{
                     'range' => '192.168.2.0/24',
                   }],
@@ -207,27 +159,18 @@ module Bosh::Director
             )
 
             Models::Deployment.make(
-              name: 'other-deployment-3',
-              cloud_config: nil,
-              runtime_config: nil,
               manifest: Psych.dump({
                 'networks' => [{
-                  'name' => 'network-a',
                   'type' => 'dynamic',
                 }],
               })
             )
 
             Models::Deployment.make(
-              name: 'other-deployment-4',
               cloud_config: cloud_config,
-              runtime_config: nil,
               manifest: Psych.dump({
                 'networks' => [{
-                  'name' => 'network-a',
-                  'type' => 'manual',
                   'subnets' => [{
-                    'range' => '192.168.3.0/24',
                   }],
                 }],
               })
@@ -266,20 +209,12 @@ module Bosh::Director
       end
 
       context 'when current deployment is not using cloud config' do
-        let(:cloud_config) { nil }
-        let(:runtime_config) { nil }
 
         before do
           Models::Deployment.make(
-            name: 'other-deployment',
-            cloud_config: nil,
-            runtime_config: nil,
             manifest: Psych.dump({
                 'networks' => [{
-                    'name' => 'network-a',
-                    'type' => 'manual',
                     'subnets' => [{
-                        'range' => '192.168.2.1/24',
                       }],
                   }],
               })

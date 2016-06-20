@@ -5,7 +5,6 @@ module Bosh::Director
   describe Api::UAAIdentityProvider do
 
     before do
-      Bosh::Director::Models::DirectorAttribute.make(name: 'uuid', value: 'fake-director-uuid')
     end
 
     subject(:identity_provider) { Api::UAAIdentityProvider.new(provider_options) }
@@ -19,7 +18,6 @@ module Bosh::Director
       config
     end
     let(:app) { Support::TestController.new(config) }
-    let(:requested_access) { :read }
     let(:uaa_user) { identity_provider.get_user(request_env, options) }
     let(:options) { {} }
 
@@ -38,22 +36,10 @@ module Bosh::Director
       let(:request_env) { {'HTTP_AUTHORIZATION' => "bearer #{encoded_token}"} }
       let(:token) do
         {
-          'jti' => 'd64209e4-d150-45c9-9569-a352f42149b1',
-          'sub' => 'faf835ea-c582-4a28-b500-6e6ac1515690',
-          'scope' => scope,
-          'client_id' => 'cf',
-          'cid' => 'cf',
-          'azp' => 'cf',
-          'user_id' => 'faf835ea-c582-4a28-b500-6e6ac1515690',
           'user_name' => 'marissa',
-          'email' => 'marissa@test.org',
-          'iat' => Time.now.to_i,
           'exp' => token_expiry_time,
-          'iss' => 'http://localhost:8080/uaa/oauth/token',
-          'aud' => ['bosh_cli']
         }
       end
-      let(:scope) { ['scim.userids', 'password.write', 'openid', 'bosh.admin'] }
 
       let(:token_expiry_time) { (Time.now + 1000).to_i }
 
@@ -61,7 +47,6 @@ module Bosh::Director
         let(:encoded_token) { CF::UAA::TokenCoder.encode(token, skey: 'symmetric-key') }
 
         context 'when director is configured with another symmetric key' do
-          let(:skey) { 'bad-key' }
 
           it 'raises an error' do
             expect{uaa_user}.to raise_error(AuthenticationError)
@@ -69,7 +54,6 @@ module Bosh::Director
         end
 
         context 'when director does not have symmetric key' do
-          let(:skey) { nil }
 
           it 'raises an error' do
             expect{uaa_user}.to raise_error(AuthenticationError)
@@ -77,7 +61,6 @@ module Bosh::Director
         end
 
         context 'when the token has expired' do
-          let(:token_expiry_time) { (Time.now - 1000).to_i }
 
           it 'raises an error' do
             expect{uaa_user}.to raise_error(AuthenticationError)
@@ -99,7 +82,6 @@ module Bosh::Director
 
         context 'when director is configured with another public key' do
           let(:another_rsa_key) { OpenSSL::PKey::RSA.new(2048) }
-          let(:pkey) { another_rsa_key.public_key }
 
           it 'raises an error' do
             expect { uaa_user }.to raise_error(AuthenticationError)
@@ -107,7 +89,6 @@ module Bosh::Director
         end
 
         context 'when director does not have public key' do
-          let(:pkey) { nil }
 
           it 'raises an error' do
             expect { uaa_user }.to raise_error(AuthenticationError)
@@ -115,7 +96,6 @@ module Bosh::Director
         end
 
         context 'when the token has expired' do
-          let(:token_expiry_time) { (Time.now - 1000).to_i }
 
           it 'raises' do
             expect {  uaa_user }.to raise_error(AuthenticationError)
@@ -159,7 +139,6 @@ module Bosh::Director
 
         context 'given valid HTTP basic authentication credentials' do
           it 'is rejected' do
-            basic_authorize 'admin', 'admin'
             get '/test_route'
             expect(last_response.status).to eq(401)
           end
@@ -167,7 +146,6 @@ module Bosh::Director
 
         context 'given bogus HTTP basic authentication credentials' do
           it 'is rejected' do
-            basic_authorize 'admin', 'bogus'
             get '/test_route'
             expect(last_response.status).to eq(401)
           end

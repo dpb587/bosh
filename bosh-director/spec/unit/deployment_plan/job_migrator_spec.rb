@@ -35,17 +35,11 @@ module Bosh::Director
         {
           'range' => '192.168.1.0/24',
           'gateway' => '192.168.1.1',
-          'dns' => ['192.168.1.1', '192.168.1.2'],
-          'reserved' => [],
-          'cloud_properties' => {},
           'az' => 'z1'
         },
         {
           'range' => '192.168.2.0/24',
           'gateway' => '192.168.2.1',
-          'dns' => ['192.168.2.1', '192.168.2.2'],
-          'reserved' => [],
-          'cloud_properties' => {},
           'az' => 'z2'
         }
       ]
@@ -55,9 +49,6 @@ module Bosh::Director
           {
             'range' => '192.168.1.0/24',
             'gateway' => '192.168.1.1',
-            'dns' => ['192.168.1.1', '192.168.1.2'],
-            'reserved' => [],
-            'cloud_properties' => {},
           }
         ]
       }
@@ -76,11 +67,9 @@ module Bosh::Director
     let(:deployment_plan) do
       planner_factory = DeploymentPlan::PlannerFactory.create(logger)
       plan = planner_factory.create_from_model(deployment_model)
-      plan
     end
 
     before do
-      fake_locks
       prepare_deploy(deployment_manifest, cloud_config_manifest)
       allow(logger).to receive(:debug)
     end
@@ -106,7 +95,6 @@ module Bosh::Director
               instances << Models::Instance.make(job: 'etcd_z1', index: 2, deployment: deployment_model, uuid: 'uuid-3')
               instances << Models::Instance.make(job: 'etcd_z2', index: 0, deployment: deployment_model, uuid: 'uuid-4')
               instances << Models::Instance.make(job: 'etcd_z2', index: 1, deployment: deployment_model, uuid: 'uuid-5')
-              instances
             end
 
             it 'returns existing instances of the migrated_from instance groups' do
@@ -135,7 +123,6 @@ module Bosh::Director
               job_instances = []
               job_instances << Models::Instance.make(job: 'etcd', deployment: deployment_model, index: 0, bootstrap: true, uuid: 'uuid-7')
               job_instances << Models::Instance.make(job: 'etcd', deployment: deployment_model, index: 1, uuid: 'uuid-8')
-              job_instances
             end
 
             let!(:migrated_job_instances) do
@@ -147,7 +134,6 @@ module Bosh::Director
               instances << Models::Instance.make(job: 'etcd_z2', index: 1, deployment: deployment_model, uuid: 'uuid-5')
               instances << Models::Instance.make(job: 'etcd_z2', index: 2, deployment: deployment_model, uuid: 'uuid-6')
 
-              instances
             end
 
             it 'return all existing instances from migrating_to instance group PLUS extra instances from migrated_from instance groups' do
@@ -182,7 +168,6 @@ module Bosh::Director
             manifest['jobs'] = [
               etcd_job_spec,
               Bosh::Spec::Deployments.simple_job(name: 'etcd_z1').merge({'azs' => ['z1']}),
-              Bosh::Spec::Deployments.simple_job(name: 'etcd_z2').merge({'azs' => ['z2']}),
             ]
             manifest
           end
@@ -191,8 +176,6 @@ module Bosh::Director
             expect {
               job_migrator.find_existing_instances(etcd_job)
             }.to raise_error(
-                DeploymentInvalidMigratedFromJob,
-                "Failed to migrate instance group 'etcd_z1' to 'etcd'. A deployment can not migrate an instance group and also specify it. Please remove instance group 'etcd_z1'."
               )
           end
         end
@@ -202,14 +185,12 @@ module Bosh::Director
             job = Bosh::Spec::Deployments.simple_job(name: 'etcd', instances: 4)
             job['azs'] = ['z1']
             job['migrated_from'] = [
-              {'name' => 'etcd', 'az' => 'z1'},
             ]
             job
           end
 
           it 'does not raise an error' do
             expect {
-              job_migrator.find_existing_instances(etcd_job)
             }.not_to raise_error
           end
 
@@ -236,8 +217,6 @@ module Bosh::Director
             expect {
               job_migrator.find_existing_instances(etcd_job)
             }.to raise_error(
-                DeploymentInvalidMigratedFromJob,
-                "Failed to migrate instance group 'etcd_z1' to 'etcd'. An instance group may be migrated to only one instance group."
               )
           end
         end
@@ -251,8 +230,6 @@ module Bosh::Director
             expect {
               job_migrator.find_existing_instances(etcd_job)
             }.to raise_error(
-                DeploymentInvalidMigratedFromJob,
-                "Failed to migrate instance group 'etcd_z1' to 'etcd', 'etcd_z1' belongs to availability zone 'z10' and manifest specifies 'z1'"
               )
           end
         end
@@ -288,8 +265,6 @@ module Bosh::Director
               expect {
                 job_migrator.find_existing_instances(etcd_job)
               }.to raise_error(
-                  DeploymentInvalidMigratedFromJob,
-                  "Failed to migrate instance group 'etcd_z1' to 'etcd', availability zone of 'etcd_z1' is not specified"
                 )
             end
           end
@@ -297,18 +272,15 @@ module Bosh::Director
           context 'and the desired instance group does not have azs' do
             let(:etcd_job_spec) do
               job = Bosh::Spec::Deployments.simple_job(name: 'etcd', instances: 4)
-              job['migrated_from'] = [{'name' => 'etcd_z1'}]
               job['networks'] = [{'name' => 'no-az'}]
               job
             end
 
             before do
-              Models::Instance.make(job: 'etcd_z1', index: 0, deployment: deployment_model, availability_zone: nil)
             end
 
             it 'succeeds' do
               expect {
-                job_migrator.find_existing_instances(etcd_job)
               }.to_not raise_error
             end
           end
@@ -320,7 +292,6 @@ module Bosh::Director
           job_instances = []
           job_instances << Models::Instance.make(job: 'etcd', deployment: deployment_model)
           job_instances << Models::Instance.make(job: 'etcd', deployment: deployment_model)
-          job_instances
         end
 
         it 'returns the list of existing instance group instances' do

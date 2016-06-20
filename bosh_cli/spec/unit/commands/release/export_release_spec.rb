@@ -8,7 +8,6 @@ module Bosh::Cli::Command::Release
       with_director
 
       context 'when director is targeted' do
-        with_target
 
         context 'when the user is logged in' do
           with_logged_in_user
@@ -16,12 +15,9 @@ module Bosh::Cli::Command::Release
           let(:some_task_id) { '1' }
           before {
             allow(Bosh::Cli::Client::ExportReleaseClient).to receive(:new).with(director).and_return(client)
-            allow(director).to receive(:list_releases)
-            allow(director).to receive(:get_task_result_log).and_return("{\"blobstore_id\":\"57e2a69d-1f06-4f72-9560-f8f9b38cbbb1","sha1\":\"2ef40de3ee067e434fd582503e50e11741006b3e\"}")
           }
 
           context 'when user did not choose deployment' do
-            before { allow(command).to receive(:deployment).and_return(nil) }
 
             it 'raises an error with choose deployment message' do
               expect {
@@ -34,14 +30,10 @@ module Bosh::Cli::Command::Release
             before do
               allow(command).to receive(:deployment).and_return(spec_asset('manifests/manifest_for_export_release.yml'))
               allow(command).to receive(:file_checksum).and_return("ae58f89c93073e0c455028a1c8216b3fc55fe672")
-              allow(director).to receive(:uuid).and_return('123456-789abcdef')
-              allow(director).to receive(:get_task_result_log).and_return('{"blobstore_id":"5619c1c7-da61-470c-b791-51cac0bf9935","sha1":"ae58f89c93073e0c455028a1c8216b3fc55fe672"}')
-              allow(director).to receive(:download_resource).and_return(spec_asset('test_release-dev_version.tgz'))
             end
 
             context 'when export release command args are not following required format (string with slash in the middle)' do
               before {
-                allow(client).to receive(:export).with('export_support', 'release', '1', 'centos-7', '0000')
               }
 
               it 'should raise an ArgumentError exception' do
@@ -78,16 +70,13 @@ module Bosh::Cli::Command::Release
                 }
 
                 after {
-                  FileUtils.remove_file("#{Dir.pwd}/release-release-1-on-centos-7-stemcell-0000.tgz", true)
                 }
 
                 it 'returns exit status 0' do
-                  command.export('release/1', 'centos-7/0000')
                   expect(command.exit_code).to eq(0)
                 end
 
                 it 'downloads the tarball' do
-                  allow(command).to receive(:file_checksum).and_return("ae58f89c93073e0c455028a1c8216b3fc55fe672")
                   command.export('release/1', 'centos-7/0000')
                   out = Bosh::Cli::Config.output.string
                   expect(out).to match /downloaded/

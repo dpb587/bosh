@@ -11,16 +11,10 @@ module Bosh::Director
       let(:test_config) do
         config = Psych.load(spec_asset('test-director-config.yml'))
         config['db'].merge!({
-          'user' => 'fake-user',
-          'password' => 'fake-password',
-          'host' => 'fake-host',
-          'adapter' => 'sqlite',
-          'database' => '/:memory:'
         })
         config
       end
 
-      before { App.new(config) }
 
       it 'requires auth' do
         post '/', 'fake-data', { 'CONTENT_TYPE' => 'multipart/form-data' }

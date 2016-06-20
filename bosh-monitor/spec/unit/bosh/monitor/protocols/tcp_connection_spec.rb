@@ -15,7 +15,6 @@ describe Bosh::Monitor::TcpConnection do
       it "doesn't log on the first unbind" do
         allow(EM).to receive(:add_timer)
         expect(logger).to_not receive(:info)
-        tcp_connection.unbind
       end
 
       it "logs on subsequent unbinds" do

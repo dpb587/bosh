@@ -8,7 +8,6 @@ describe Bosh::Director::ProblemHandlers::InvalidProblem do
     register_as :err
 
     def initialize(resource_id, data)
-      super
       handler_error("foobar")
     end
   end

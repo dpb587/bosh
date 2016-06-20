@@ -43,14 +43,10 @@ module Bosh::Director
             'blobstore' => {
               'provider' => 's3',
               'options' => {
-                'bucket_name' => 'foo',
-                'access_key_id' => 'asdf',
-                'secret_access_key' => 'zxcv'
               }
             }
           }
         end
-        let(:config) { Config.load_hash(config_hash) }
 
         it 'raises an exception' do
           expect {

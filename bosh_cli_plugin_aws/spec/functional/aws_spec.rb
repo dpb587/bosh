@@ -8,7 +8,6 @@ describe Bosh::Cli::Command::AWS do
     ))
   end
 
-  before { allow(aws).to receive(:sleep) }
 
   describe 'command line tools' do
     describe 'aws generate micro_bosh' do
@@ -20,7 +19,6 @@ describe Bosh::Cli::Command::AWS do
         Dir.mktmpdir do |dir|
           Dir.chdir(dir) do
             aws.create_micro_bosh_manifest(create_vpc_output_yml, route53_receipt_yml)
-            test.run
           end
         end
       end
@@ -96,22 +94,18 @@ describe Bosh::Cli::Command::AWS do
         ENV['BOSH_VPC_PRIMARY_AZ'] = 'fake az'
         ENV['BOSH_VPC_SECONDARY_AZ'] = 'fake secondary az'
 
-        example.run
 
-        previous_env.each { |k, v| ENV[k] = v }
       end
 
       it 'should run the migrations' do
         expect(Bosh::AwsCliPlugin::Migrator).to receive(:new).with(YAML.load_yaml_file(config_file)).and_return(migrator)
         expect(migrator).to receive(:migrate)
-        aws.create config_file
       end
 
       it 'should default the configuration file when not passed in' do
         expect(File.exist?(default_config_filename)).to eq(true)
         expect(Bosh::AwsCliPlugin::Migrator).to receive(:new).and_return(migrator)
         expect(migrator).to receive(:migrate)
-        aws.create
       end
     end
 
@@ -165,11 +159,9 @@ describe Bosh::Cli::Command::AWS do
     end
 
     describe 'aws bootstrap micro' do
-      subject(:aws) { described_class.new }
       let(:fake_bootstrap) { double('micro bosh bootstrap') }
       context 'interative' do
         before(:each) do
-          aws.options[:non_interactive] = false
         end
 
         it 'prompts the user for admin password' do

@@ -24,8 +24,6 @@ describe Bosh::Blobstore::BaseClient do
         Errno::ECONNRESET, 'Could not create object')
 
       expect { subject.create('contents') }.to raise_error(
-        Bosh::Blobstore::BlobstoreError,
-        /Errno::ECONNRESET: Connection reset by peer - Could not create object/,
       )
     end
   end
@@ -54,8 +52,6 @@ describe Bosh::Blobstore::BaseClient do
         Errno::ECONNRESET, 'Could not fetch object')
 
       expect { subject.get('id', 'file') }.to raise_error(
-        Bosh::Blobstore::BlobstoreError,
-        /Errno::ECONNRESET: Connection reset by peer - Could not fetch object/,
       )
     end
   end

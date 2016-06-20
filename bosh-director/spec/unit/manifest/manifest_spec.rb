@@ -9,17 +9,13 @@ module Bosh::Director
 
     before do
       release_1 = Models::Release.make(name: 'simple')
-      Models::ReleaseVersion.make(version: 6, release: release_1)
       Models::ReleaseVersion.make(version: 9, release: release_1)
 
       release_1 = Models::Release.make(name: 'hard')
-      Models::ReleaseVersion.make(version: '1+dev.5', release: release_1)
       Models::ReleaseVersion.make(version: '1+dev.7', release: release_1)
 
-      Models::Stemcell.make(name: 'simple', version: '3163')
       Models::Stemcell.make(name: 'simple', version: '3169')
 
-      Models::Stemcell.make(name: 'hard', version: '3146')
       Models::Stemcell.make(name: 'hard', version: '3146.1')
     end
 
@@ -171,7 +167,6 @@ module Bosh::Director
             {
               'resource_pools' => [
                 {
-                  'name' => 'rp1',
                   'stemcell' => { 'name' => 'simple', 'version' => 'latest'}
                 }
               ]
@@ -191,7 +186,6 @@ module Bosh::Director
             {
               'resource_pools' => [
                 {
-                  'name' => 'rp1',
                   'stemcell' => { 'name' => 'simple', 'version' => '3169.latest'}
                 }
               ]
@@ -214,9 +208,7 @@ module Bosh::Director
         {
           'jobs' => [
             {
-              'name' => 'useful',
               'properties' => {
-                'inner' => 'secrets',
               },
             },
           ],
@@ -262,7 +254,6 @@ module Bosh::Director
         let(:runtime_config_hash) do
           {
               'releases' => [
-                  {'name' => 'simple', 'version' => '2'}
               ]
           }
         end

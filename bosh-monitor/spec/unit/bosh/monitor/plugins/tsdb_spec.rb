@@ -20,7 +20,6 @@ describe Bhm::Plugins::Tsdb do
     }
 
     invalid_options = {
-      "host" => "localhost"
     }
 
     expect(Bhm::Plugins::Tsdb.new(valid_options).validate_options).to be(true)
@@ -35,11 +34,9 @@ describe Bhm::Plugins::Tsdb do
     alert = make_alert(timestamp: Time.now.to_i)
 
     EM.run do
-      plugin.run
 
       expect(connection).not_to receive(:send_metric)
 
-      plugin.process(alert)
 
       EM.stop
     end

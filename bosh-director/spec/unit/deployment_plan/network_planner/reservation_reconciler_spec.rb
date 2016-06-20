@@ -77,7 +77,6 @@ module Bosh::Director::DeploymentPlan
           }
 
           before do
-            existing_reservations[0].resolve_type(:static)
             existing_reservations[1].resolve_type(:static)
           end
 
@@ -100,7 +99,6 @@ module Bosh::Director::DeploymentPlan
       context 'when existing reservation availability zones do not match job availability zones' do
         let(:desired_az) { AvailabilityZone.new('zone_2', {}) }
         let(:existing_reservations) { [BD::ExistingNetworkReservation.new(instance_model, network, '192.168.1.2', 'manual')] }
-        before { existing_reservations[0].resolve_type(:dynamic) }
         let(:desired_reservations) { [BD::DesiredNetworkReservation.new_dynamic(instance_model, network)] }
 
         it 'not reusing existing reservations' do
@@ -183,12 +181,9 @@ module Bosh::Director::DeploymentPlan
       end
 
       context 'when there is no desired reservations' do
-        let(:dynamic_network_reservation) { BD::DesiredNetworkReservation.new_dynamic(instance_model, network) }
         let(:desired_reservations) { [] }
 
         before do
-          existing_reservations[0].resolve_type(:static)
-          existing_reservations[1].resolve_type(:dynamic)
         end
 
         it 'should return desired network plans for the new reservations' do

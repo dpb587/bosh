@@ -2,8 +2,6 @@ require 'spec_helper'
 
 describe Bosh::Director::DeploymentPlan::DynamicNetwork do
 
-  let(:logger) { Logging::Logger.new('TestLogger') }
-  let(:instance) { instance_double(Bosh::Director::DeploymentPlan::Instance, model: instance_model) }
   let(:instance_model) { Bosh::Director::Models::Instance.make }
 
   describe '.parse' do
@@ -43,7 +41,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
           {
             'name' => 'foo',
             'cloud_properties' => {
-              'foz' => 'baz'
             }
           },
           [],
@@ -58,7 +55,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
           {
             'name' => 'foo',
             'cloud_properties' => {
-              'foz' => 'baz'
             }
           },
           [],
@@ -138,7 +134,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
             'name' => 'foo',
             'subnets' => [
               {
-                'dns' => %w[1.2.3.4 5.6.7.8],
               }
             ]
           },
@@ -157,7 +152,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
             'subnets' => [
               {
                 'cloud_properties' => {
-                  'foz' => 'baz'
                 }
               },
             ]
@@ -177,7 +171,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
             'subnets' => [
               {
                 'cloud_properties' => {
-                  'foz' => 'baz'
                 }
               },
             ]
@@ -197,7 +190,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
               'subnets' => [
                 {
                   'cloud_properties' => {
-                    'foz' => 'baz'
                   },
                   'az' => nil
                 },
@@ -216,9 +208,7 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
               'dns' => %w[1.2.3.4 5.6.7.8],
               'subnets' => [
                 {
-                  'dns' => %w[9.8.7.6 5.4.3.2],
                   'cloud_properties' => {
-                    'foz' => 'baz'
                   }
                 },
               ]
@@ -236,12 +226,10 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
           BD::DeploymentPlan::DynamicNetwork.parse({
               'name' => 'foo',
               'cloud_properties' => {
-                'foz' => 'baz'
               },
               'subnets' => [
                 {
                   'cloud_properties' => {
-                    'foz' => 'baz',
                   }
                 },
               ]
@@ -260,9 +248,7 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
             {
               'name' => 'foo',
               'subnets' => [
-                'dns' => %w[1.2.3.4 5.6.7.8],
                 'cloud_properties' => {
-                  'foz' => 'baz'
                 },
                 'az' => 'foo-zone',
               ],
@@ -288,7 +274,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
 
     it 'should provide dynamic network settings' do
       reservation = BD::DesiredNetworkReservation.new_dynamic(instance_model, @network)
-      reservation.resolve_ip(4294967295)
       expect(@network.network_settings(reservation,[])).to eq({
             'type' => 'dynamic',
             'cloud_properties' => {'foz' => 'baz'},
@@ -298,7 +283,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
 
     it 'should set the defaults' do
       reservation = BD::DesiredNetworkReservation.new_dynamic(instance_model, @network)
-      reservation.resolve_ip(4294967295)
       expect(@network.network_settings(reservation)).to eq({
             'type' => 'dynamic',
             'cloud_properties' => {'foz' => 'baz'},
@@ -326,7 +310,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
               'subnets' => [{
                   'az' => 'fake-az',
                   'azs' => ['fake-az', 'fake-az2'],
-                  'cloud_properties' => {'subnet_key' => 'subnet_value'}
                 }]
             }, azs, logger)
         end
@@ -369,7 +352,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
                 'name' => 'foo',
                 'subnets' => [{
                     'azs' => [],
-                    'cloud_properties' => {'subnet_key' => 'subnet_value'}
                   }]
               }, azs, logger)
           }.to raise_error Bosh::Director::NetworkInvalidProperty, "Network 'foo' refers to an empty 'azs' array"
@@ -381,7 +363,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
                 'name' => 'foo',
                 'subnets' => [{
                     'azs' => ['fake-az', 'say-what'],
-                    'cloud_properties' => {'subnet_key' => 'subnet_value'}
                   }]
               }, azs, logger)
           }.to raise_error Bosh::Director::NetworkSubnetUnknownAvailabilityZone, "Network 'foo' refers to an unknown availability zone 'say-what'"
@@ -435,16 +416,11 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
         end
 
         it 'raises an error when there is no subnet in requested az' do
-          network =
             BD::DeploymentPlan::DynamicNetwork.parse({
                 'name' => 'foo',
                 'subnets' => [{
-                    'az' => 'fake-az',
-                    'cloud_properties' => {'subnet_key' => 'subnet_value'}
                   },
                   {
-                    'az' => 'fake-az',
-                    'cloud_properties' => {'subnet_key' => 'subnet_value2'}
                   }]
               }, azs, logger)
 
@@ -462,7 +438,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
   describe 'validate_has_job' do
     let(:network_spec) do
       Bosh::Spec::Deployments.network.merge(
-        'type' => 'dynamic',
         'subnets' => [
           {
             'az' => 'zone_1',
@@ -507,7 +482,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
       job_network_spec = {'name' => 'dynamic'}
 
       expect {
-        dynamic_network.validate_reference_from_job!(job_network_spec, 'job-name')
       }.to_not raise_error
     end
 
@@ -515,7 +489,6 @@ describe Bosh::Director::DeploymentPlan::DynamicNetwork do
       it 'raises StaticIPNotSupportedOnDynamicNetwork' do
         dynamic_network = BD::DeploymentPlan::DynamicNetwork.new('dynamic', [], logger)
         job_network_spec = {
-          'name' => 'dynamic',
           'static_ips' => ['192.168.1.10']
         }
 

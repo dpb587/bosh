@@ -1,12 +1,10 @@
 require 'spec_helper'
-require 'logger'
 require 'timecop'
 
 describe Bosh::Director::VmMetadataUpdater do
   describe '.build' do
     it 'returns metadata updater' do
       cloud = instance_double('Bosh::Cloud')
-      logger = double('logger')
       allow(Bosh::Director::Config).to receive_messages(
           cloud: cloud, name: 'fake-director-name', logger: logger)
 
@@ -49,22 +47,16 @@ describe Bosh::Director::VmMetadataUpdater do
 
       it 'does not mutate passed metadata' do
         passed_in_metadata = {}
-        vm_metadata_updater.update(instance, passed_in_metadata)
         expect(passed_in_metadata).to eq({})
       end
 
       it 'updates vm metadata with deployment specific metadata' do
         expect(cloud).to receive(:set_vm_metadata)
-                           .with('fake-vm-cid', hash_including(deployment: 'deployment-value'))
         vm_metadata_updater.update(instance, {})
       end
 
       it 'updates vm metadata with instance specific metadata' do
         expected_vm_metadata = {
-          id: 'some_instance_id',
-          job: 'job-value',
-          index: '12345',
-          name: 'job-value/some_instance_id',
         }
         expect(cloud).to receive(:set_vm_metadata).with('fake-vm-cid', hash_including(expected_vm_metadata))
         vm_metadata_updater.update(instance, {})
@@ -81,12 +73,10 @@ describe Bosh::Director::VmMetadataUpdater do
 
       it 'does not set vm metadata' do
         expect(cloud).not_to receive(:set_vm_metadata)
-        vm_metadata_updater.update(instance, {})
       end
     end
 
     context 'when set_vm_metadata raises not implemented error' do
-      before { allow(cloud).to receive(:set_vm_metadata).and_raise(Bosh::Clouds::NotImplemented) }
 
       it 'does not propagate raised error' do
         expect { vm_metadata_updater.update(instance, {}) }.to_not raise_error

@@ -6,8 +6,6 @@ module Bosh::Director
     let(:users) do
       [
         {'name' => 'fake-user', 'password' => 'fake-pass'},
-        {'name' => '', 'password' => 'no-user'},
-        {'name' => 'no-pass', 'password' => ''},
       ]
     end
 

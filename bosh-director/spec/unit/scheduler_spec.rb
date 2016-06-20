@@ -16,11 +16,9 @@ module Bosh::Director
     let(:opts) do
       {
         scheduler: fake_scheduler,
-        cloud: cloud,
         queue: queue
       }
     end
-    let(:cloud) { double(:Cloud) }
     let(:uuid) { 'deadbeef' }
     let(:job_name) { 'FakeJob' }
     let(:queue) { double('JobQueue') }
@@ -28,9 +26,6 @@ module Bosh::Director
     let(:fake_scheduler) { instance_double('Rufus::Scheduler::PlainScheduler') }
     let(:params) {
       [
-        'foo',
-        'bar',
-        {'named' => 'named_value'}
       ]
     }
 
@@ -38,9 +33,6 @@ module Bosh::Director
       allow(fake_scheduler).to receive(:start)
       allow(fake_scheduler).to receive(:join)
 
-      allow(Config).to receive(:uuid).and_return(uuid)
-      allow(Config).to receive(:name).and_return(director_name)
-      allow(Config).to receive(:enable_snapshots).and_return(true)
     end
 
     module Jobs
@@ -59,7 +51,6 @@ module Bosh::Director
     module Jobs
       class FakeJobNoWork
         def self.has_work(params)
-          false
         end
       end
     end
@@ -85,7 +76,6 @@ module Bosh::Director
         let(:scheduled_jobs) { nil }
         it 'does not schedule jobs' do
           expect(fake_scheduler).not_to receive(:cron)
-          scheduler.start!
         end
       end
 
@@ -93,7 +83,6 @@ module Bosh::Director
         let(:scheduled_jobs) { [] }
         it 'does not schedule jobs' do
           expect(fake_scheduler).not_to receive(:cron)
-          scheduler.start!
         end
       end
 
@@ -120,7 +109,6 @@ module Bosh::Director
         before { allow(fake_scheduler).to receive(:cron).and_yield(double('Job')) }
 
         describe 'when the job class does not respond to #has_work' do
-          let(:job_name) { 'FakeJobWithScheduleMessage' }
           it 'should enqueue' do
             expect(queue).to receive(:enqueue)
             scheduler.start!
@@ -131,7 +119,6 @@ module Bosh::Director
           let(:job_name) { 'FakeJobHasWork' }
 
           it 'sends the job params to the job #has_work method' do
-            allow(queue).to receive(:enqueue)
             expect(Jobs::FakeJobHasWork).to receive(:has_work).with(params).twice
             scheduler.start!
           end
@@ -147,7 +134,6 @@ module Bosh::Director
             let(:job_name) { 'FakeJobNoWork' }
             it 'does not enqueue' do
               expect(queue).to_not receive(:enqueue)
-              scheduler.start!
             end
           end
         end

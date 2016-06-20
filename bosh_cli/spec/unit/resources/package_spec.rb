@@ -23,12 +23,10 @@ describe Bosh::Cli::Resources::Package, 'dev build' do
   end
 
   after do
-    release_source.cleanup
   end
 
   describe '.discover' do
     before do
-      release_source.add_dir(base)
       release_source.add_dir('packages/package_two')
     end
 
@@ -40,7 +38,6 @@ describe Bosh::Cli::Resources::Package, 'dev build' do
     end
 
     it 'ignores non-directories' do
-      release_source.add_file('packages', 'ignore-me')
       expect { Bosh::Cli::Resources::Package.discover(release_source.path) }.to_not raise_error
     end
   end
@@ -109,7 +106,6 @@ describe Bosh::Cli::Resources::Package, 'dev build' do
       let(:spec) do
         spec = {
           'name' => name,
-          'files' => []
         }
       end
 
@@ -136,7 +132,6 @@ describe Bosh::Cli::Resources::Package, 'dev build' do
 
   describe '#files' do
     context 'when matching files are found in src' do
-      let(:spec_files) { ['**/*.rb'] }
       let(:src_files) { ['lib/one.rb', 'lib/two.rb'] }
 
       before do
@@ -148,7 +143,6 @@ describe Bosh::Cli::Resources::Package, 'dev build' do
       end
 
       it 'ignores unmatched files' do
-        release_source.add_file('src', 'an-unmatched-file.txt')
         expect(package.files.map { |entry| entry[1] }).to contain_exactly(*src_files)
       end
     end
@@ -171,7 +165,6 @@ describe Bosh::Cli::Resources::Package, 'dev build' do
     context 'when the spec excludes matching files' do
       let(:spec_files) { ['**/*.rb', '**/*.tgz'] }
       let(:src_files) { ['lib/one.rb', 'lib/archive.tgz', 'lib/excluded.tgz'] }
-      let(:spec_excluded_files) { ['lib/excluded.tgz'] }
 
       before do
         src_files.each { |f| release_source.add_file('src', f) }

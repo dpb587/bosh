@@ -3,7 +3,6 @@
 require 'spec_helper'
 
 describe Bosh::Cli::Command::Misc do
-  include FakeFS::SpecHelpers
 
   let(:command) { described_class.new }
   let(:director) { instance_double(Bosh::Cli::Client::Director) }
@@ -15,12 +14,9 @@ describe Bosh::Cli::Command::Misc do
 
   before do
     allow(Bosh::Cli::Client::Director).to receive(:new).and_return(director)
-    allow(Bosh::Cli::Versions::VersionsIndex).to receive(:new).and_return(versions_index)
-    allow(Bosh::Cli::Release).to receive(:new).and_return(release)
   end
 
   before { @config = Support::TestConfig.new(command) }
-  after { @config.clean }
 
   describe 'status' do
     it 'should show current status' do
@@ -58,14 +54,8 @@ describe Bosh::Cli::Command::Misc do
     context 'when user is not provided in response' do
       it 'prints not logged in' do
         allow(command).to receive(:target).and_return(target)
-        allow(command).to receive(:target_url).and_return(target)
-        allow(command).to receive(:deployment).and_return('deployment-file')
 
         allow(director).to receive(:get_status).and_return({
-              'name' => target_name,
-              'version' => 'v.m (release:rrrrrrrr bosh:bbbbbbbb)',
-              'uuid' => uuid,
-              'cpi' => 'dummy'
             })
 
         allow(command).to receive(:say)
@@ -75,7 +65,6 @@ describe Bosh::Cli::Command::Misc do
     end
 
     it 'should not show director data when target is not set' do
-      allow(command).to receive(:target).and_return(nil)
       expect(director).not_to receive(:get_status)
 
       expect(command).to receive(:say).with('Config')
@@ -132,7 +121,6 @@ describe Bosh::Cli::Command::Misc do
       context 'can get status from director' do
         it 'prints only the director uuid' do
           command.add_option(:uuid, true)
-          allow(command).to receive(:target).and_return(target)
 
           allow(director).to receive(:get_status).and_return({ 'uuid' => uuid })
 
@@ -145,7 +133,6 @@ describe Bosh::Cli::Command::Misc do
       context 'fails to get director status' do
         it 'returns non-zero status' do
           command.add_option(:uuid, true)
-          allow(command).to receive(:target).and_return(target)
 
           allow(director).to receive(:get_status).and_raise(Timeout::Error)
 
@@ -163,10 +150,8 @@ describe Bosh::Cli::Command::Misc do
         before do
           File.open(@config.path, 'w+') do |f|
             f.write(<<EOS)
----
 target: #{target}
 target_name: #{target_name}
-target_uuid: #{uuid}
 EOS
           end
         end
@@ -240,7 +225,6 @@ EOS
 
         context 'when new certificate is different from old certificate' do
           it 'prints update message' do
-            command.add_option(:ca_cert, '/fake-ca-cert')
             allow(command).to receive(:say)
             expect(command).to receive(:say).with(/Updating certificate file path to '\/fake-ca-cert'/)
             command.set_target 'https://fake-target:1234'
@@ -249,11 +233,9 @@ EOS
 
         context 'when new certificate is the same as old certificate' do
           it 'prints update message' do
-            command.add_option(:ca_cert, '/fake-ca-cert')
             command.set_target 'https://fake-target:1234'
 
             expect(command).to_not receive(:say).with(/Updating certificate file path to '\/fake-ca-cert'/)
-            command.set_target 'https://fake-target:1234'
           end
         end
       end

@@ -61,7 +61,6 @@ module Bosh::Director
       let(:cidr_ranges) do
         [
           NetAddr::CIDR.create('192.168.0.0/24'), # 0-255
-          NetAddr::CIDR.create('192.168.0.10/30'), # 8-11
         ]
       end
 

@@ -10,7 +10,6 @@ module Bosh::Director
 
       let(:director_app) { App.new(config) }
 
-      after { FileUtils.rm_rf(temp_dir) }
 
       let(:existing_resource_id) { director_app.blobstores.blobstore.create('some data') }
       let(:resource_manager) { ResourceManager.new(director_app.blobstores.blobstore) }
@@ -19,8 +18,6 @@ module Bosh::Director
       let(:config) {
         config = SpecHelper.spec_get_director_config
         blobstore_dir = File.join(temp_dir, 'blobstore')
-        FileUtils.mkdir_p(blobstore_dir)
-        config['dir'] = temp_dir
         config['blobstore'] = {
           'provider' => 'local',
           'options' => {'blobstore_path' => blobstore_dir}
@@ -54,19 +51,15 @@ module Bosh::Director
         end
 
         context 'when serving resources from temp' do
-          let(:resource_manager) { instance_double('Bosh::Director::Api::ResourceManager') }
           let(:tmp_file) { File.join(Dir.tmpdir, "resource-#{SecureRandom.uuid}") }
 
           before do
             File.open(tmp_file, 'w') do |f|
-              f.write('some data')
             end
 
-            FileUtils.touch(tmp_file)
           end
 
           it 'cleans up old temp files before serving the new one' do
-            basic_authorize 'admin', 'admin'
             expect(resource_manager).to receive(:clean_old_tmpfiles).ordered
             expect(resource_manager).to receive(:get_resource_path).ordered.with('deadbeef').and_return(tmp_file)
 

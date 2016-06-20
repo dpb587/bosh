@@ -4,22 +4,15 @@ describe Bosh::Cli::Command::CloudConfig do
   let(:director) { double(Bosh::Cli::Client::Director) }
   let(:runner) { instance_double('Bosh::Cli::Runner') }
   subject(:cloud_config_command) { described_class.new(nil, director) }
-  let(:actual) { Bosh::Cli::Config.output.string }
-  let(:valid_cloud_manifest) { Psych.dump(Bosh::Spec::Deployments.simple_cloud_config) }
 
   before { @config = Support::TestConfig.new(cloud_config_command) }
-  after { @config.clean }
 
   before :each do
     target = 'https://127.0.0.1:8080'
 
     config = @config.load
-    config.target = target
-    config.set_alias('target', 'alpha', 'http://127.0.0.1:8080')
 
-    config.save
 
-    cloud_config_command.add_option(:non_interactive, true)
     cloud_config_command.add_option(:target, target)
     cloud_config_command.add_option(:username, 'user')
     cloud_config_command.add_option(:password, 'pass')
@@ -28,8 +21,6 @@ describe Bosh::Cli::Command::CloudConfig do
   end
 
   before(:each) do
-    allow(cloud_config_command).to receive(:runner).and_return(runner)
-    allow(runner).to receive(:usage).and_return('fake runner usage')
   end
 
   it "show outputs latest cloud config" do

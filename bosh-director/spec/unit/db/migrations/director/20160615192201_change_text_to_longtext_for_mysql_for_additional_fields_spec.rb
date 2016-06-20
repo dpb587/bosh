@@ -18,13 +18,10 @@ module Bosh::Director
         context_json: '{"error"=>"boo"}'
       }
       db[:delayed_jobs] << {
-        priority: 1,
-        attempts: 2,
         handler: 'handler',
         last_error: 'last_error'
       }
 
-      DBSpecHelper.migrate(migration_file)
 
       expect(db[:events].map{|cp| cp[:error]}).to eq([error.to_s])
       expect(db[:events].map{|cp| cp[:context_json]}).to eq(['{"error"=>"boo"}'])

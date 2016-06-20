@@ -17,9 +17,7 @@ module Bosh::Cli::Command::Release
       let(:question) { instance_double('HighLine::Question') }
       let(:configured_dev_name) { 'a-release' }
       let(:configured_final_name) { 'b-release' }
-      let(:release_builder) { instance_double('Bosh::Cli::ReleaseBuilder') }
       let(:next_dev_version) { '0+dev.1' }
-      let(:previous_manifest_path) { nil }
       let(:next_manifest_path) do
         release_source.join(
           'dev_releases',
@@ -32,15 +30,12 @@ module Bosh::Cli::Command::Release
         release_source.join(
           'dev_releases',
           configured_dev_name,
-          "#{configured_dev_name}-#{next_dev_version}.tgz"
         )
       end
 
       let(:release_source) { Support::FileHelpers::ReleaseDirectory.new }
       let(:release_options) do
         {
-          dry_run: false,
-          final: false
         }
       end
       let(:archive_dir) { release_source.path }
@@ -59,8 +54,6 @@ module Bosh::Cli::Command::Release
         {
           'name' => 'package_name',
           'files' => ['lib/*.rb', 'README.*'],
-          'dependencies' => [],
-          'excluded_files' => [],
         }
       end
       let(:matched_files) { ['lib/1.rb', 'lib/2.rb', 'README.2', 'README.md'] }
@@ -69,7 +62,6 @@ module Bosh::Cli::Command::Release
       let(:job_spec) do
         {
           'name' => 'job_name',
-          'packages' => ['package_name'],
           'templates' => { 'a.conf' => 'a.conf' },
         }
       end
@@ -80,14 +72,10 @@ module Bosh::Cli::Command::Release
         release_source.add_file('jobs/job_name', 'monit')
         release_source.add_files('jobs/job_name/templates', job_templates)
 
-        release_source.add_dir('src')
         release_source.add_file('packages/package_name', 'spec', package_spec.to_yaml)
 
         matched_files.each { |f| release_source.add_file('src', f, "contents of #{f}") }
 
-        allow(Bosh::Cli::Resources::Package).to receive(:discover).and_return([package])
-        allow(Bosh::Cli::Resources::License).to receive(:discover).and_return([license])
-        allow(Bosh::Cli::Resources::Job).to receive(:discover).and_return([job])
         allow(Bosh::Cli::ArchiveBuilder).to receive(:new).and_return(archive_builder)
 
         allow(release).to receive(:latest_release_filename=)
@@ -95,7 +83,6 @@ module Bosh::Cli::Command::Release
       end
 
       after do
-        release_source.cleanup
       end
 
       it 'is a command with the correct options' do
@@ -119,14 +106,10 @@ module Bosh::Cli::Command::Release
           Dir.chdir(release_source.path)
 
           allow(command).to receive(:cache_dir) { cache_dir }
-          allow(command).to receive(:dirty_blob_check)
-          allow(command).to receive(:dirty_state?).and_return(false)
           allow(command).to receive(:release).and_return(release)
-          command.options[:dry_run] = true
         end
 
         after do
-          Dir.chdir(@original_directory)
         end
 
         context 'when the release has NO license' do
@@ -139,12 +122,10 @@ module Bosh::Cli::Command::Release
 
           context 'given --with-tarball' do
             before do
-              command.options[:dry_run] = false
               command.options[:with_tarball] = true
             end
 
             it 'prints status' do
-              allow(command).to receive(:cache_dir).and_return('fake-cache-dir')
               command.create
 
               output = Bosh::Cli::Config.output.string
@@ -159,7 +140,6 @@ module Bosh::Cli::Command::Release
           before { release_source.add_file(nil, 'LICENSE', 'fake-license') }
 
           it 'prints status' do
-            allow(command).to receive(:cache_dir).and_return('fake-cache-dir')
             command.create
 
             output = Bosh::Cli::Config.output.string
@@ -177,13 +157,10 @@ module Bosh::Cli::Command::Release
 
           context 'given --with-tarball' do
             before do
-              command.options[:dry_run] = false
               command.options[:with_tarball] = true
-              release_source.add_file(nil, 'LICENSE', 'fake-license')
             end
 
             it 'prints status' do
-              allow(command).to receive(:cache_dir).and_return('fake-cache-dir')
               command.create
 
 
@@ -196,12 +173,10 @@ module Bosh::Cli::Command::Release
         end
 
         context 'when a final name is configured' do
-          let(:configured_final_name) { 'd-release' }
 
           it 'attempts to migrate the releases to the latest format' do
             multi_release_support = instance_double('Bosh::Cli::Versions::MultiReleaseSupport')
             expect(Bosh::Cli::Versions::MultiReleaseSupport).to receive(:new).
-                with(release_source.path, configured_final_name, command).
                 and_return(multi_release_support)
             expect(multi_release_support).to receive(:migrate)
 
@@ -215,7 +190,6 @@ module Bosh::Cli::Command::Release
           it 'attempts to migrate the releases to the latest format' do
             expect(Bosh::Cli::Versions::MultiReleaseSupport).to_not receive(:new)
 
-            command.create
           end
         end
 
@@ -232,7 +206,6 @@ module Bosh::Cli::Command::Release
             job_artifact = archive_builder.build(job)
             expect(archive_builder).to receive(:build).and_return(nil, package_artifact, job_artifact)
             expect(command).to receive(:build_release)
-                                 .with([job_artifact], true, [package_artifact], [], provided_name, nil)
                                  .and_call_original
 
             command.create
@@ -252,12 +225,8 @@ module Bosh::Cli::Command::Release
             job_artifact = archive_builder.build(job)
             expect(archive_builder).to receive(:build).and_return(nil, package_artifact, job_artifact)
             expect(command).to receive(:build_release)
-                                 .with([job_artifact], true, [package_artifact], [], configured_final_name, '1.0.1')
                                  .and_call_original
 
-            command.options[:version] = '1.0.1'
-            command.options[:final] = true
-            command.options[:non_interactive] = true
             command.create
           end
         end
@@ -273,7 +242,6 @@ module Bosh::Cli::Command::Release
               .and_call_original
 
             command.options[:'timestamp_version'] = true
-            command.options[:non_interactive] = true
             command.create
           end
         end
@@ -289,7 +257,6 @@ module Bosh::Cli::Command::Release
 
         context 'dev release' do
           context 'interactive' do
-            before { command.options[:non_interactive] = false }
 
             context 'when final release name is not set' do
               it 'development release name prompt should not have any default' do
@@ -319,7 +286,6 @@ module Bosh::Cli::Command::Release
 
             context 'when building a release raises an error' do
               it 'prints the error message' do
-                allow(release).to receive(:dev_name).and_return('test-release')
 
                 allow(command).to receive(:build_release).and_raise(Bosh::Cli::ReleaseVersionError.new('the message'))
 
@@ -375,18 +341,14 @@ module Bosh::Cli::Command::Release
 
         context 'final release' do
           before do
-            command.options[:final] = true
-            command.options[:non_interactive] = true
           end
 
           context 'when a release version is provided' do
             context 'and is valid' do
-              before { command.options[:version] = '1' }
 
               it 'does not print error message' do
                 expect(command).to_not receive(:err)
 
-                command.create
               end
             end
 
@@ -451,7 +413,6 @@ module Bosh::Cli::Command::Release
           Dir.chdir(tmp_dir)
 
           allow(command).to receive(:cache_dir) { cache_dir }
-          allow(command).to receive(:dirty_blob_check)
           allow(command).to receive(:dirty_state?).and_return(false)
           allow(command).to receive(:release).and_return(release)
 
@@ -460,7 +421,6 @@ module Bosh::Cli::Command::Release
 
         after do
           Dir.chdir(@original_directory)
-          FileUtils.rm_rf(tmp_dir)
         end
 
         context 'when the --dir is not passed in' do
@@ -474,7 +434,6 @@ module Bosh::Cli::Command::Release
         context 'when --dir is passed in' do
           before do
             command.options[:dir] = release_source.path
-            command.options[:dry_run] = false
           end
 
           context 'when creating without manifest file' do
@@ -495,13 +454,9 @@ module Bosh::Cli::Command::Release
 
           context 'when creating from manifest file' do
             let!(:manifest_path) do
-              command.create
-              next_manifest_path
             end
 
             it 'builds release' do
-            package_path = File.join(release_source.path, '.dev_builds', 'packages', 'package_name')
-              command.options[:with_tarball] = true
 
               expect {
                 command.create(manifest_path)

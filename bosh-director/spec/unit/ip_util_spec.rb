@@ -1,10 +1,8 @@
 require 'spec_helper'
 
 describe Bosh::Director::IpUtil do
-  include Bosh::Director::IpUtil
 
   before(:each) do
-    @obj = Object.new
     @obj.extend(Bosh::Director::IpUtil)
   end
 
@@ -44,7 +42,6 @@ describe Bosh::Director::IpUtil do
       counter = 0
       @obj.each_ip(nil) do |ip|
         expect(ip).to eql(NetAddr::CIDR.create("1.2.3.4").to_i)
-        counter += 1
       end
       expect(counter).to eq(0)
     end

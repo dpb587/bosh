@@ -12,7 +12,6 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
   let(:resource_spec) do
     {
       'name' => 'package_one',
-      'files' => ['**/*.rb'],
     }
   end
   let(:tarball_path) { 'path/to/archive.tgz' }
@@ -24,7 +23,6 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
   end
 
   after do
-    release_dir.cleanup
   end
 
   describe '#name' do
@@ -36,7 +34,6 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
   describe '.make_fingerprint' do
     let(:resource_spec) do
       {
-        'name' => 'package_one',
         'files' => ['lib/*.rb', 'README.*'],
         'dependencies' => ['foo', 'bar'],
       }
@@ -51,7 +48,6 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
     end
 
     it 'ignores unmatched files' do
-      release_dir.add_file('src', 'an-unmatched-file.txt')
       expect(fingerprint).to eq(reference_fingerprint)
     end
 
@@ -68,9 +64,7 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
     context 'when a file pattern matches empty directories' do
       let(:resource_spec) do
         {
-          'name' => 'package_one',
           'files' => ['lib/*.rb', 'README.*', 'tmp'],
-          'dependencies' => ['foo', 'bar'],
         }
       end
 
@@ -91,7 +85,6 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
     context 'when dependencies vary in order' do
       let(:resource_spec) do
         {
-          'name' => 'package_one',
           'files' => ['lib/*.rb', 'README.*'],
           'dependencies' => ['bar', 'foo'],
         }
@@ -105,9 +98,7 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
     context 'when dependencies vary' do
       let(:resource_spec) do
         {
-          'name' => 'package_one',
           'files' => ['lib/*.rb', 'README.*'],
-          'dependencies' => ['foo', 'bar', 'baz'],
         }
       end
 
@@ -119,9 +110,7 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
     context 'when dependencies are not defined' do
       let(:resource_spec) do
         {
-          'name' => 'package_one',
           'files' => ['lib/*.rb', 'README.*'],
-          'dependencies' => nil,
         }
       end
 
@@ -133,9 +122,7 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
     context 'when blobs are present' do
       let(:resource_spec) do
         {
-          'name' => 'package_one',
           'files' => ['lib/*.rb', 'README.*', '*.tgz'],
-          'dependencies' => ['foo', 'bar'],
         }
       end
 
@@ -149,7 +136,6 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
     context 'when a file comes from blobs instead of src' do
       before do
         release_dir.add_dir('blobs')
-        FileUtils.mv(release_dir.join('src', 'README.md'), release_dir.join('blobs', 'README.md'))
       end
 
       it 'does not vary' do
@@ -165,7 +151,6 @@ describe Bosh::Cli::BuildArtifact, 'dev build' do
   end
 
   describe '#promote_to_final' do
-    let(:is_dev_artifact) { true }
 
     it 'marks artifact as final' do
       expect(artifact.dev_artifact?).to eq(true)

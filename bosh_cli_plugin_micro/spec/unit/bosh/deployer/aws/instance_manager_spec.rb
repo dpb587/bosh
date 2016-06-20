@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'logger'
 
 BOSH_STEMCELL_TGZ ||= 'bosh-instance-1.0.tgz'
 
@@ -9,14 +8,10 @@ module Bosh::Deployer
       @dir = Dir.mktmpdir('bdim_spec')
       @config = Psych.load_file(spec_asset('test-bootstrap-config-aws.yml'))
       @config['dir'] = @dir
-      @config['name'] = "spec-#{SecureRandom.uuid}"
       @config['logging'] = { 'file' => "#{@dir}/bmim.log" }
       @deployer = Bosh::Deployer::InstanceManager.create(@config)
-      @cloud = double('cloud')
-      @ec2 = double('ec2')
       allow(@cloud).to receive(:ec2).and_return(@ec2)
       allow(Bosh::Deployer::Config).to receive(:cloud).and_return(@cloud)
-      @agent = double('agent')
       allow(@deployer).to receive(:agent).and_return(@agent)
 
       allow(MicroboshJobInstance).to receive(:new).and_return(FakeMicroboshJobInstance.new)
@@ -30,7 +25,6 @@ module Bosh::Deployer
 
     after(:each) do
       @deployer.state.destroy
-      FileUtils.remove_entry_secure @dir
     end
 
     let(:logger) { instance_double('Logger', debug: nil, info: nil) }
@@ -51,14 +45,12 @@ module Bosh::Deployer
     end
 
     it 'should create a Bosh instance' do
-      allow(@deployer.infrastructure).to receive(:service_ip).and_return('10.0.0.10')
       spec = Psych.load_file(spec_asset('apply_spec_aws.yml'))
       expect(Bosh::Deployer::Specification).to receive(:load_apply_spec).and_return(spec)
 
       allow(@deployer).to receive(:run_command)
       allow(@deployer).to receive(:wait_until_agent_ready)
       allow(@deployer).to receive(:wait_until_director_ready)
-      allow(@deployer).to receive(:load_apply_spec).and_return(spec)
       allow(@deployer).to receive(:load_stemcell_manifest).and_return('cloud_properties' => {})
 
       expect(@deployer.state.uuid).not_to be_nil
@@ -114,7 +106,6 @@ module Bosh::Deployer
     end
 
     it 'should update a Bosh instance' do
-      allow(@deployer.infrastructure).to receive(:service_ip).and_return('10.0.0.10')
       spec = Psych.load_file(spec_asset('apply_spec_aws.yml'))
       expect(Bosh::Deployer::Specification).to receive(:load_apply_spec).and_return(spec)
 
@@ -122,7 +113,6 @@ module Bosh::Deployer
       allow(@deployer).to receive(:run_command)
       allow(@deployer).to receive(:wait_until_agent_ready)
       allow(@deployer).to receive(:wait_until_director_ready)
-      allow(@deployer).to receive(:load_apply_spec).and_return(spec)
       allow(@deployer).to receive(:load_stemcell_manifest).and_return('cloud_properties' => {})
       allow(@deployer.infrastructure).to receive(:persistent_disk_changed?).and_return(false)
 
@@ -156,7 +146,6 @@ module Bosh::Deployer
 
     context 'with vm_cid missing but disk_cid present' do
       before do
-        @config['name'] = 'test-micro'
         # fake out the nil vm_cid
         File.write(File.join(@dir, 'bosh-deployments.yml'),
                    YAML.dump(
@@ -164,16 +153,8 @@ module Bosh::Deployer
                        'instances' => [
                          {
                            name: 'test-micro',
-                           uuid: 'bm-sdfaskd-asdfh',
-                           stemcell_cid: 'ami-5df5d934',
-                           stemcell_sha1: 'ami-5df5d934',
-                           stemcell_name: 'ami-5df5d934',
-                           config_sha1: 'ac4a8b34d2f9894a2aa7bd3e1bcd5803b99cf5ce',
-                           vm_cid: nil,
-                           disk_cid: 'vol-b84fd9f5',
                          }
                        ],
-                       'disks' => [],
                      }
                    )
         )
@@ -181,13 +162,11 @@ module Bosh::Deployer
 
       it 'should update a Bosh instance ' do
         expect {
-          Bosh::Deployer::InstanceManager.create(@config)
         }.not_to raise_error
       end
     end
 
     it 'should fail to create a Bosh instance if stemcell CID exists' do
-      @deployer.state.stemcell_cid = 'SC-CID'
 
       expect {
         @deployer.create(BOSH_STEMCELL_TGZ, nil)
@@ -195,7 +174,6 @@ module Bosh::Deployer
     end
 
     it 'should fail to create a Bosh instance if VM CID exists' do
-      @deployer.state.vm_cid = 'VM-CID'
 
       expect {
         @deployer.create(BOSH_STEMCELL_TGZ, nil)
@@ -212,7 +190,6 @@ module Bosh::Deployer
     end
 
     it 'should fail to destroy a Bosh instance unless VM CID exists' do
-      @deployer.state.stemcell_cid = 'SC-CID'
       expect(@agent).to receive(:run_task).with(:stop)
       expect {
         @deployer.destroy

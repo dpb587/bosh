@@ -7,13 +7,10 @@ module Bosh::Director
     end
 
     describe "#filter_instances" do
-      let(:ip_addresses) { ["10.0.0.1"] }
 
       it "excludes the VM being created" do
         3.times do |i|
-          Bosh::Director::Models::Instance.make(uuid: SecureRandom.uuid, index: i, job: "fake-job-#{i}", vm_cid: nil)
         end
-        Bosh::Director::Models::Instance.make(uuid: SecureRandom.uuid, index: 0, job: "fake-job-0", vm_cid: "fake-cid-0")
         vm_being_created_cid = "fake-cid-0"
 
         arp_flusher = ArpFlusher.new
@@ -24,7 +21,6 @@ module Bosh::Director
 
       it "excludes VMs where the cid is nil" do
         3.times do |i|
-          Bosh::Director::Models::Instance.make(uuid: SecureRandom.uuid, index: i, job: "fake-job-#{i}", vm_cid: nil)
         end
         vm_being_created_cid = "fake-cid-99"
 
@@ -35,7 +31,6 @@ module Bosh::Director
       end
 
       it "excludes compilation VMs" do
-        Bosh::Director::Models::Instance.make(uuid: SecureRandom.uuid, index: 0, job: "fake-job-0", vm_cid: "fake-cid-0", compilation: true)
         vm_being_created_cid = "fake-cid-99"
 
         arp_flusher = ArpFlusher.new
@@ -59,13 +54,10 @@ module Bosh::Director
       let(:vm_being_created_cid) { "fake-cid-99" }
       let(:ip_addresses) { ["10.0.0.1"] }
       let(:agent) { instance_double(AgentClient, wait_until_ready: nil, delete_arp_entries: nil)}
-      let(:agent2) { instance_double(AgentClient, wait_until_ready: nil, delete_arp_entries: nil)}
       let(:instance) { Bosh::Director::Models::Instance.make(uuid: SecureRandom.uuid, index: 1, job: "fake-job-1", vm_cid: "id") }
-      let(:instance2) { Bosh::Director::Models::Instance.make(uuid: SecureRandom.uuid, index: 2, job: "fake-job-1", vm_cid: "id") }
       let(:arp_flusher) { ArpFlusher.new }
 
       before do
-        Config.max_threads = 5
 
         allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).
           with(instance.credentials, instance.agent_id).and_return(agent)

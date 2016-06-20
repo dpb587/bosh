@@ -25,27 +25,23 @@ describe String do
   end
 
   it "has colorization helpers (but only if tty)" do
-    Bosh::Cli::Config.colorize = false
     expect("string".make_red).to eq("string")
     expect("string".make_green).to eq("string")
     expect("string".make_color("a")).to eq("string")
     expect("string".make_color(:green)).to eq("string")
 
     Bosh::Cli::Config.colorize = true
-    allow(Bosh::Cli::Config.output).to receive(:tty?).and_return(true)
     expect("string".make_red).to eq("\e[0m\e[31mstring\e[0m")
     expect("string".make_green).to eq("\e[0m\e[32mstring\e[0m")
     expect("string".make_color("a")).to eq("string")
     expect("string".make_color(:green)).to eq("\e[0m\e[32mstring\e[0m")
 
-    allow(Bosh::Cli::Config.output).to receive(:tty?).and_return(false)
 
     expect("string".make_green).to eq("\e[0m\e[32mstring\e[0m")
 
     Bosh::Cli::Config.colorize = nil
     expect("string".make_green).to eq("string")
 
-    Bosh::Cli::Config.colorize = false
     expect("string".make_green).to eq("string")
   end
 
@@ -56,7 +52,6 @@ describe String do
 
       line_wrap = double(Bosh::Cli::LineWrap)
       expect(line_wrap).to receive(:wrap)
-        .with(message)
         .and_return(formatted_message)
       expect(Bosh::Cli::LineWrap).to receive(:new).with(20, 0).and_return(line_wrap)
       expect(message.columnize(20)).to eq formatted_message

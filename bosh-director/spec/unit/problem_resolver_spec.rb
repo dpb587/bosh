@@ -9,7 +9,6 @@ module Bosh::Director
       @deployment = Models::Deployment.make(name: 'mycloud')
       @other_deployment = Models::Deployment.make(name: 'othercloud')
 
-      @cloud = instance_double('Bosh::Cloud')
       allow(Config).to receive(:cloud).and_return(@cloud)
       allow(Bosh::Director::Config).to receive(:current_job).and_return(job)
     end
@@ -21,7 +20,6 @@ module Bosh::Director
     def inactive_disk(id, deployment_id = nil)
       Models::DeploymentProblem.make(deployment_id: deployment_id || @deployment.id,
                                      resource_id: id,
-                                     type: 'inactive_disk',
                                      state: 'open')
     end
 
@@ -75,8 +73,6 @@ module Bosh::Director
                                           problems[0].id.to_s => 'ignore',
                                           problems[1].id.to_s => 'ignore',
                                           problems[2].id.to_s => 'ignore',
-                                          '9999999' => 'ignore',
-                                          '318' => 'do_stuff'
                                       })
 
           expect(messages).to match_array([

@@ -29,7 +29,6 @@ describe 'Bhm::Director' do
 
     it 'can fetch deployments from BOSH director' do
       stub_request(:get, 'http://localhost:8080/director/deployments').
-        with(:headers => {'Authorization' => ['admin', 'admin']}).
         to_return(:body => json_dump(deployments), :status => 200)
 
       with_fiber do
@@ -39,7 +38,6 @@ describe 'Bhm::Director' do
 
     it 'raises an error if deployments cannot be fetched' do
       stub_request(:get, 'http://localhost:8080/director/deployments').
-        with(:headers => {'Authorization' => ['admin', 'admin']}).
         to_return(:body => 'foo', :status => 500)
 
       with_fiber do
@@ -51,7 +49,6 @@ describe 'Bhm::Director' do
 
     it 'can fetch deployment by name from BOSH director' do
       stub_request(:get, 'http://localhost:8080/director/deployments/foo/vms').
-        with(:headers => {'Authorization' => ['admin', 'admin']}).
         to_return(:body => json_dump(deployments), :status => 200)
 
       with_fiber do
@@ -89,7 +86,6 @@ describe 'Bhm::Director' do
         to_return(:body => json_dump(uaa_status), :status => 200)
 
       stub_request(:get, 'http://localhost:8080/director/deployments').
-        with(:headers => {'Authorization' => token.auth_header}).
         to_return(:body => json_dump(deployments), :status => 200)
     end
 
@@ -103,13 +99,11 @@ describe 'Bhm::Director' do
   def with_fiber
     EM.run do
       Fiber.new do
-        yield
         EM.stop
       end.resume
     end
   end
 
   def json_dump(data)
-    JSON.dump(data)
   end
 end

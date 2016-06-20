@@ -52,7 +52,6 @@ describe Bosh::Director::Jobs::SnapshotSelf do
         expect(cloud).not_to receive(:current_vm_id)
         expect(cloud).not_to receive(:get_disks)
         expect(cloud).not_to receive(:snapshot_disk)
-        subject.perform
       end
     end
 

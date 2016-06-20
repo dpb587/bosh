@@ -30,13 +30,10 @@ describe Bosh::Cli::Release do
 
   it "has attributes persisted in bosh user config" do
     r = new_release(@release_source)
-    r.dev_name = "dev-release"
     r.final_name = "prod-release"
     r.save_config
 
-    FileUtils.rm_rf(File.join(@release_source, "config", "dev.yml"))
 
-    r = new_release(@release_source)
     expect(r.dev_name).to be_nil
     expect(r.final_name).to eq("prod-release")
   end
@@ -44,12 +41,9 @@ describe Bosh::Cli::Release do
   it "has attributes persisted in public release config" do
     r = new_release(@release_source)
     r.dev_name = "dev-release"
-    r.final_name = "prod-release"
     r.save_config
 
-    FileUtils.rm_rf(File.join(@release_source, "config", "final.yml"))
 
-    r = new_release(@release_source)
     expect(r.dev_name).to eq("dev-release")
     expect(r.final_name).to be_nil
   end
@@ -85,11 +79,9 @@ describe Bosh::Cli::Release do
 
     context "when creating a final release" do
       let(:final) { true }
-      let(:config_dir) { nil }
       let(:release) { Bosh::Cli::Release.new(config_dir, final) }
 
       context "when a blobstore is not configured" do
-        let(:config_dir) { spec_asset("config/no-blobstore") }
 
         it "raises an error" do
           release = Bosh::Cli::Release.new(spec_asset("config/no-blobstore"), final)
@@ -123,7 +115,6 @@ describe Bosh::Cli::Release do
 
     context "when creating a dev release" do
       let(:final) { false }
-      let(:config_dir) { nil }
       let(:release) { Bosh::Cli::Release.new(config_dir, final) }
 
       context "when a blobstore is not configured" do

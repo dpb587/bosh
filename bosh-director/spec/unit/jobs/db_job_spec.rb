@@ -7,7 +7,6 @@ module Bosh::Director
     let(:job_class) do
       Class.new(Jobs::BaseJob) do
         define_method :perform do
-          'foo'
         end
         @queue = :normal
       end
@@ -29,7 +28,6 @@ module Bosh::Director
 
     it "doesn't accept job class that does not have \perform' method" do
       job_class_without_perform = Class.new(Jobs::BaseJob) do
-        @queue = :normal
       end
 
       expect {
@@ -40,7 +38,6 @@ module Bosh::Director
     it "doesn't accept job class without queue value" do
       job_class_without_queue = Class.new(Jobs::BaseJob) do
         define_method :perform do
-          'foo'
         end
       end
 

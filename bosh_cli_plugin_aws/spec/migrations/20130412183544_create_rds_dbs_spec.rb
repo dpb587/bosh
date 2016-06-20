@@ -45,7 +45,6 @@ describe CreateRdsDbs do
     allow(rds).to receive(:database).with("ccdb").and_return(fake_ccdb_rds)
     allow(rds).to receive(:database).with("uaadb").and_return(fake_uaadb_rds)
 
-    rds
   end
 
   it "should create all rds databases" do
@@ -54,7 +53,6 @@ describe CreateRdsDbs do
   end
 
   context "when the config file has option overrides" do
-    let(:config_file) { asset "config_with_override.yml" }
 
     it "should create all rds databases with option overrides" do
       ccdb_opts = Psych.load_file(config_file)["rds"].find { |db_opts| db_opts["instance"] == "ccdb" }
@@ -121,7 +119,6 @@ describe CreateRdsDbs do
     end
 
     it "should fail after 540 attempts when not available" do
-      make_rds!(retries_needed: 541)
       expect { subject.execute }.to raise_error
     end
   end

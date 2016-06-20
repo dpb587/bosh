@@ -4,7 +4,6 @@ module Bosh::Director
   describe Api::TaskHelper do
     describe '#create_task' do
       let(:tmpdir) { Dir.mktmpdir }
-      after { FileUtils.rm_rf tmpdir }
 
       let(:type) { 'type' }
       let(:description) { 'description' }
@@ -17,11 +16,7 @@ module Bosh::Director
       let(:deployment) { Models::Deployment.create_with_teams(name: deployment_name, teams: teams) }
 
       before do
-        Config.configure(config)
         Config.base_dir = tmpdir
-        Config.max_tasks = 2
-        allow(Api::TaskRemover).to receive(:new).and_return(task_remover)
-        allow(task_remover).to receive(:remove)
       end
 
       it 'should create the task debug output file' do

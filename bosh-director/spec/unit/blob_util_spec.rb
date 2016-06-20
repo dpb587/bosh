@@ -9,12 +9,9 @@ module Bosh::Director
     let(:stemcell) { instance_double('Bosh::Director::Models::Stemcell', sha1: stemcell_sha1, operating_system: 'chrome-os', version: 'latest') }
     let(:package) { instance_double('Bosh::Director::Models::Package', name: package_name, fingerprint: package_fingerprint) }
     let(:compiled_package) { instance_double('Bosh::Director::Models::CompiledPackage', package: package, stemcell_os: stemcell.operating_system, stemcell_version: stemcell.version, blobstore_id: blob_id) }
-    let(:dep_pkg2) { instance_double('Bosh::Director::Models::Package', fingerprint: 'dp_fingerprint2', version: '9.2-dev') }
-    let(:dep_pkg1) { instance_double('Bosh::Director::Models::Package', fingerprint: 'dp_fingerprint1', version: '10.1-dev') }
     let(:compiled_package_cache_blobstore) { instance_double('Bosh::Blobstore::BaseClient') }
     let(:cache_key) { 'cache_sha1' }
     let(:dep_key) { '[]' }
-    let(:blobstore) { instance_double('Bosh::Blobstore::BaseClient') }
 
     before do
       allow(Config).to receive(:compiled_package_cache_blobstore).and_return(compiled_package_cache_blobstore)

@@ -2,7 +2,6 @@ require 'spec_helper'
 require 'fog'
 require 'fog/openstack/models/compute/servers'
 require 'bosh/deployer/instance_manager/openstack'
-require 'bosh/deployer/registry'
 
 module Bosh::Deployer
   describe InstanceManager::Openstack do
@@ -16,7 +15,6 @@ module Bosh::Deployer
         cloud_options: {
           'properties' => {
             'registry' => {
-              'endpoint' => 'fake-registry-endpoint',
             },
             'openstack' => {
               'private_key' => 'fake-private-key',

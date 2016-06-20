@@ -4,9 +4,6 @@ describe Bhm::Plugins::Nats do
 
   before do
     @nats_options = {
-      "endpoint" => "localhost",
-      "user" => "zb",
-      "password" => "zb"
     }
 
     @plugin = Bhm::Plugins::Nats.new(@nats_options)

@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/models/instance'
 
 module Bosh::Director::Models
   describe Instance do
@@ -29,7 +28,6 @@ module Bosh::Director::Models
 
         context 'when the vm_type has no cloud properties' do
           it 'does not error' do
-            subject.spec = {'vm_type' => {'cloud_properties' => nil}}
             expect(subject.cloud_properties_hash).to eq({})
           end
         end
@@ -50,17 +48,12 @@ module Bosh::Director::Models
       context 'when instance model has multiple associated rendered templates archives' do
         let!(:latest) do
           RenderedTemplatesArchive.make(
-            blobstore_id: 'fake-latest-blob-id',
             instance: subject,
-            created_at: Time.new(2013, 02, 01),
           )
         end
 
         let!(:not_latest) do
           RenderedTemplatesArchive.make(
-            blobstore_id: 'fake-stale-blob-id',
-            instance: subject,
-            created_at: Time.new(2013, 01, 01),
           )
         end
 
@@ -70,9 +63,6 @@ module Bosh::Director::Models
 
         it 'does not account for archives for other instances' do
           RenderedTemplatesArchive.make(
-            blobstore_id: 'fake-non-associated-latest-blob-id',
-            instance: described_class.make,
-            created_at: latest.created_at + 10_000,
           )
 
           expect(perform).to eq(latest)
@@ -94,15 +84,12 @@ module Bosh::Director::Models
       context 'when instance model has multiple associated rendered templates archives' do
         let!(:latest) do
           RenderedTemplatesArchive.make(
-            blobstore_id: 'fake-latest-blob-id',
             instance: subject,
-            created_at: Time.new(2013, 02, 01),
           )
         end
 
         let!(:not_latest) do
           RenderedTemplatesArchive.make(
-            blobstore_id: 'fake-stale-blob-id',
             instance: subject,
             created_at: Time.new(2013, 01, 01),
           )
@@ -114,9 +101,6 @@ module Bosh::Director::Models
 
         it 'does not include archives for other instances' do
           RenderedTemplatesArchive.make(
-            blobstore_id: 'fake-non-associated-latest-blob-id',
-            instance: described_class.make,
-            created_at: not_latest.created_at - 10_000,
           )
 
           expect(perform.to_a).to eq([not_latest])
@@ -165,7 +149,6 @@ module Bosh::Director::Models
 
       context 'when the spec is nil' do
         it 'returns nil' do
-          subject.spec_json = nil
           expect(subject.spec_json).to eq(nil)
           expect(subject.spec_p('foo')).to eq(nil)
           expect(subject.spec_p('foo.bar')).to eq(nil)
@@ -174,21 +157,18 @@ module Bosh::Director::Models
 
       context 'when the path does not exist' do
         it 'returns nil' do
-          subject.spec=({'foo' => 'bar'})
           expect(subject.spec_p('nothing')).to eq(nil)
         end
       end
 
       context 'when none of the path exists' do
         it 'returns nil' do
-          subject.spec=({'foo' => 'bar'})
           expect(subject.spec_p('nothing.anywhere')).to eq(nil)
         end
       end
 
       context 'when the path refers to a value that is not a hash' do
         it 'returns nil' do
-          subject.spec=({'foo' => 'bar'})
           expect(subject.spec_p('foo.bar')).to eq(nil)
         end
       end

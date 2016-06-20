@@ -27,13 +27,11 @@ describe Bosh::Cli::Resources::Job, 'dev build' do
   end
 
   after do
-    release_source.cleanup
   end
 
   describe '.discover' do
     context('when jobs folder contains only folders') do
       before do
-        release_source.add_dir(base)
         release_source.add_dir('jobs/job_two')
       end
 
@@ -48,9 +46,7 @@ describe Bosh::Cli::Resources::Job, 'dev build' do
 
     context('when jobs folder contains a file') do
       before do
-        release_source.add_dir(base)
         release_source.add_dir('jobs/job_two')
-        release_source.add_file('jobs', 'stray-file', 'Really don\'t know what this file does here.')
       end
 
       let(:jobs) { Bosh::Cli::Resources::Job.discover(release_source.path, made_packages) }
@@ -81,7 +77,6 @@ describe Bosh::Cli::Resources::Job, 'dev build' do
 
     context 'when the spec file is invalid' do
       before do
-        release_source.remove_file(base, 'spec')
         invalid_spec = <<-SPEC
 ---
 name: foo-job
@@ -150,7 +145,6 @@ SPEC
       let(:spec) do
         {
           'name' => name,
-          'packages' => spec_packages
         }
       end
 
@@ -195,7 +189,6 @@ SPEC
       let(:spec) do
         {
           'name' => name,
-          'packages' => spec_packages,
           'templates' => spec_templates
         }
       end
@@ -209,7 +202,6 @@ SPEC
       let(:spec) do
         {
           'name' => name,
-          'packages' => spec_packages,
           'templates' => spec_templates,
           'properties' => 'bogus'
         }
@@ -225,9 +217,6 @@ SPEC
       let(:properties) { {'foo' => 'bar'} }
       let(:spec) do
         {
-          'name' => name,
-          'packages' => spec_packages,
-          'templates' => spec_templates,
           'properties' => properties
         }
       end
@@ -250,9 +239,6 @@ SPEC
   end
 
   describe '#files' do
-    let(:archive_dir) { release_source.path }
-    let(:blobstore) { double('blobstore') }
-    let(:release_options) { {dry_run: false, final: false } }
 
     it 'includes a spec entry' do
       expect(job.files).to include([release_source.join(base, 'spec'), 'job.MF'])

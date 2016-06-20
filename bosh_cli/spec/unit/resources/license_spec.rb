@@ -8,13 +8,11 @@ describe Bosh::Cli::Resources::License, 'dev build' do
   let(:release_source) { Support::FileHelpers::ReleaseDirectory.new }
 
   before do
-    release_source.add_file('jobs', 'fake-job')
     release_source.add_file(nil, 'LICENSE')
     release_source.add_file(nil, 'NOTICE')
   end
 
   after do
-    release_source.cleanup
   end
 
   describe '.discover' do
@@ -35,12 +33,9 @@ describe Bosh::Cli::Resources::License, 'dev build' do
         expect { license.validate! }.to_not raise_error
       end
     end
-  
     context 'when a LICENSE file is found' do
       before do
-        release_source.remove_file(nil, 'NOTICE')
       end
-  
       it 'does not raise an exception' do
         expect { license.validate! }.to_not raise_error
       end
@@ -48,20 +43,16 @@ describe Bosh::Cli::Resources::License, 'dev build' do
 
     context 'when a NOTICE file is found' do
       before do
-        release_source.remove_file(nil, 'LICENSE')
       end
-  
       it 'does not raise an exception' do
         expect { license.validate! }.to_not raise_error
       end
     end
-  
     context 'when no LICENSE or NOTICE file is found' do
       before do
         release_source.remove_file(nil, 'LICENSE')
         release_source.remove_file(nil, 'NOTICE')
       end
-  
       it 'raises an exception' do
         expect { license.validate! }.to raise_error(Bosh::Cli::MissingLicense,
           "Missing LICENSE or NOTICE in #{release_source.path}")
@@ -70,9 +61,6 @@ describe Bosh::Cli::Resources::License, 'dev build' do
   end
 
   describe '#files' do
-    let(:archive_dir) { release_source.path }
-    let(:blobstore) { double('blobstore') }
-    let(:release_options) { {dry_run: false, final: false } }
 
     context 'when LICENSE and NOTICE files are found' do
       it 'includes the LICENSE file' do

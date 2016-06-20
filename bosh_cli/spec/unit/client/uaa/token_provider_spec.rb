@@ -54,7 +54,6 @@ describe Bosh::Cli::Client::Uaa::TokenProvider do
 
       context 'when previously logged in with password credentials' do
         before do
-          simulate_password_login
         end
 
         it 'logs in with the client credentials' do
@@ -67,9 +66,7 @@ describe Bosh::Cli::Client::Uaa::TokenProvider do
         let(:second_client_token) { uaa_token_info(encoded_client_id, expiration_time, 'second-refresh-token') }
 
         before do
-          Timecop.freeze
           allow(token_issuer).to receive(:client_credentials_grant).once.and_return(client_token, second_client_token)
-          token_provider.token
         end
 
         it 'reuses the token if it is not expired' do
@@ -78,7 +75,6 @@ describe Bosh::Cli::Client::Uaa::TokenProvider do
 
         context 'when token is expired' do
           before do
-            Timecop.travel(expiration_time + 1)
           end
 
           it 'logs in again' do

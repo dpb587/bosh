@@ -13,11 +13,8 @@ module Bosh::Deployer
         cloud_options: {
           'properties' => {
             'registry' => {
-              'endpoint' => 'fake-registry-endpoint',
             },
             'aws' => {
-              'ssh_user' => 'fake-ssh-user',
-              'ec2_private_key' => 'fake-private-key',
             },
           },
         },
@@ -27,7 +24,6 @@ module Bosh::Deployer
     let(:registry) { instance_double('Bosh::Deployer::Registry') }
 
     before do
-      allow(Registry).to receive(:new).and_return(registry)
     end
 
     %w(internal_services_ip agent_services_ip client_services_ip).each do |method|

@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/job_queue'
 
 module Bosh::Director
   describe JobQueue do
@@ -8,12 +7,10 @@ module Bosh::Director
         :snow
       end
       define_method :perform do
-        'foo'
       end
       @queue = :sample
     end
 
-    let(:config) { Config.load_file(asset('test-director-config.yml')) }
     let(:job_class) { FakeJob }
     let(:db_job) {Jobs::DBJob.new(job_class, task.id,  ['foo', 'bar'])}
     let(:task) {double(id: '123')}

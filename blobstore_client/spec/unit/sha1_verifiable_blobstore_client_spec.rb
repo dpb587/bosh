@@ -20,7 +20,6 @@ module Bosh::Blobstore
       it 'returns downloaded file if no file is given' do
         expect(wrapped_client)
           .to receive(:get)
-          .with('fake-id', nil, {})
           .and_return(file)
         expect(subject.get('fake-id', nil, {})).to eq(file)
       end
@@ -51,7 +50,6 @@ module Bosh::Blobstore
           context 'when expected sha1 is not given in the options' do
             it 'does not raise an error' do
               expect {
-                subject.get('fake-id', file)
               }.to_not raise_error
             end
           end
@@ -66,7 +64,6 @@ module Bosh::Blobstore
               expect {
                 subject.get('fake-id', file, sha1: 'expected-sha1')
               }.to raise_error(
-                BlobstoreError,
                 /sha1 mismatch expected=expected-sha1 actual=actual-sha1/,
               )
             end
@@ -75,7 +72,6 @@ module Bosh::Blobstore
           context 'when expected sha1 is not given in the options' do
             it 'raises BlobstoreError' do
               expect {
-                subject.get('fake-id', file)
               }.to_not raise_error
             end
           end

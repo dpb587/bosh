@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe Bosh::Director::DeploymentPlan::LinkPath do
-  let(:logger) { Logging::Logger.new('TestLogger') }
   let(:template) {
     instance_double(
         'Bosh::Director::DeploymentPlan::Template',
@@ -44,9 +43,7 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
   before do
     release_model = Bosh::Director::Models::Release.make(name: 'fake-release')
     version = Bosh::Director::Models::ReleaseVersion.make(version: '1.0.0')
-    release_model.add_version(version)
     previous_deployment = Bosh::Director::Models::Deployment.make(name: 'previous_deployment', link_spec_json: '{"provider_job":{"provider_template":{"link_name":{"link_name":{"instances":[]}}}}}')
-    version.add_deployment(previous_deployment)
   end
 
   context 'given a link name' do
@@ -60,7 +57,6 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
     end
 
     context 'when the link is optional and path is provided' do
-      let(:path) { {"from" => 'link_name', "optional" => true} }
       it 'also gets full link path' do
         link_path.parse(path)
         expect(link_path.deployment).to eq('deployment_name')
@@ -82,7 +78,6 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
     end
 
     context 'when the link is optional and path is provided' do
-      let(:path) { {"from" => 'link_name', "deployment" => "deployment_name", "optional" => true} }
       it 'also gets full link path' do
         link_path.parse(path)
         expect(link_path.deployment).to eq('deployment_name')
@@ -104,7 +99,6 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
     end
 
     context 'when the link is optional and path is provided' do
-      let(:path) {{'from' => 'link_name', "deployment" => "previous_deployment", "optional" => true}}
       it 'also gets full link path' do
         link_path.parse(path)
         expect(link_path.deployment).to eq('previous_deployment')
@@ -127,7 +121,6 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
     end
 
     context 'when the link is optional and path is provided' do
-      let(:path) { {"name" => "link_name", "type" => "link_type", "optional" => true} }
       it 'also gets full link path' do
         link_path.parse(path)
         expect(link_path.deployment).to eq('deployment_name')
@@ -174,7 +167,6 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
     end
 
     context "when link is optional and the 'from' is explicitly set" do
-      let(:path) { {"from" => 'unprovided_link_name', "deployment" => "deployment_name", "optional" => true} }
       it 'should throw an error' do
         expect{link_path.parse(path)}.to raise_error("Can't resolve link 'unprovided_link_name' in instance group 'consumer_job' on job 'consumer_job_template' in deployment 'deployment_name'.")
       end
@@ -188,7 +180,6 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
     end
 
     context "when link is optional and 'from' is explicitly set" do
-      let(:path) { {"from" => 'unprovided_link_name', "deployment" => "previous_deployment", "optional" => true} }
       it 'should not throw an error' do
         expect{link_path.parse(path)}.to raise_error("Can't resolve link 'unprovided_link_name' in instance group 'consumer_job' on job 'consumer_job_template' in deployment 'deployment_name'. Please make sure the link was provided and shared.")
       end
@@ -202,7 +193,6 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
     end
 
     context 'when link is optional' do
-      let(:path) { {"from" => 'unprovided_link_name', "optional" => true} }
       it 'should still throw an error because the user intent has not been met' do
         expect{link_path.parse(path)}.to raise_error("Can't resolve link 'unprovided_link_name' in instance group 'consumer_job' on job 'consumer_job_template' in deployment 'deployment_name'.")
       end
@@ -216,7 +206,6 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
       expect{link_path.parse(path)}.to raise_error("Can't find deployment non_deployment")
     end
     context 'when link is optional' do
-      let(:path) { {"from" => 'link_name', "deployment" => "non_deployment", "optional" => true} }
       it 'should still throw an error because the user intent has not been met' do
         expect{link_path.parse(path)}.to raise_error("Can't find deployment non_deployment")
       end
@@ -269,7 +258,6 @@ describe Bosh::Director::DeploymentPlan::LinkPath do
     end
 
     context 'when link is optional' do
-      let(:path) { {"name" => 'link_name', 'type' => 'link_type', 'optional' => true} }
       it 'should still throw an error' do
         expect{link_path.parse(path)}.to raise_error("Multiple instance groups provide links of type 'link_type'. Cannot decide which one to use for instance group 'consumer_job'.
    deployment_name.provider_job.provider_template.link_name

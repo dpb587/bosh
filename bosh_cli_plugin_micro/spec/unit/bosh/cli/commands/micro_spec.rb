@@ -1,6 +1,4 @@
 require 'spec_helper'
-require 'bosh/deployer/instance_manager'
-require 'bosh/cli/commands/micro'
 
 module Bosh::Cli::Command
   describe Micro do
@@ -24,7 +22,6 @@ module Bosh::Cli::Command
       allow(deployer).to receive(:client_services_ip).and_return('5')
       allow(deployer).to receive(:check_dependencies).and_return(nil)
       allow(deployer).to receive(:exists?).and_return(false)
-      allow(deployer).to receive(:renderer).and_return(nil)
       allow(deployer).to receive(:create_deployment).and_return(nil)
       allow(Bosh::Deployer::InstanceManager).to receive_messages(create: deployer)
     end
@@ -109,15 +106,11 @@ module Bosh::Cli::Command
               File.open(deployer_config_file, 'w') do |file|
                 YAML.dump({
                             'target' => 'https://5:25555',
-                            'target_name' => nil,
-                            'target_version' => nil,
-                            'target_uuid' => nil,
                             'deployment' => { 'https://5:25555' => '/tmp/foo/micro_bosh.yml' },
                           }, file)
               end
 
               expect {
-                micro_command.micro_deployment('foo')
               }.to_not change { YAML.load_file(deployer_config_file) }
             end
           end
@@ -127,11 +120,6 @@ module Bosh::Cli::Command
               deployer_config_file = File.expand_path('~/.bosh_deployer_config')
               File.open(deployer_config_file, 'w') do |file|
                 YAML.dump({
-                            'target' => 'https://10:25555',
-                            'target_name' => nil,
-                            'target_version' => nil,
-                            'target_uuid' => nil,
-                            'deployment' => { 'https://10:25555' => '/tmp/foo/micro_bosh.yml' },
                           }, file)
               end
 
@@ -150,9 +138,6 @@ module Bosh::Cli::Command
             File.open(deployer_config_file, 'w') do |file|
               YAML.dump({
                           'target' => 'https://5:25555',
-                          'target_name' => nil,
-                          'target_version' => nil,
-                          'target_uuid' => nil,
                           'deployment' => { 'https://5:25555' => '/tmp/foo/micro_bosh.yml' },
                         }, file)
             end
@@ -181,17 +166,11 @@ module Bosh::Cli::Command
       let(:config) { double('config', target: 'target', resolve_alias: nil, set_deployment: nil) }
 
       before do
-        allow(BoshExtensions).to receive(:err)
         allow(micro_command).to receive(:confirmed?).and_return(true)
         allow(micro_command).to receive(:dig_hash).and_return(true)
 
         File.open(File.expand_path('~/.bosh_deployer_config'), 'w') do |file|
           YAML.dump({
-                      'target' => 'https://5:25555',
-                      'target_name' => nil,
-                      'target_version' => nil,
-                      'target_uuid' => nil,
-                      'deployment' => { 'https://5:25555' => '/tmp/foo/micro_bosh.yml' },
                     }, file)
         end
 
@@ -216,11 +195,9 @@ module Bosh::Cli::Command
         end
 
         context 'not in directory one level up from `micro_bosh.yml`' do
-          before { FileUtils.touch('/tmp/bosh-deployments.yml') }
 
           it 'does not add confirmation that current directory is valid to save state' do
             expect(micro_command).not_to receive(:confirmed?).with(confirmation)
-            micro_command.perform('stemcell')
           end
         end
       end
@@ -246,7 +223,6 @@ module Bosh::Cli::Command
           before do
             micro_command.add_option(:director_checks, true)
 
-            class_double('Bosh::Cli::Client::Director').as_stubbed_const
             allow(Bosh::Cli::Client::Director).to receive(:new).and_return(director)
           end
 
@@ -274,7 +250,6 @@ module Bosh::Cli::Command
 
       context 'when microbosh is not successfully deployed' do
         before do
-          allow(deployer).to receive(:exists?).and_return(false)
         end
 
         it 'updates the bosh target to the deployment' do
@@ -292,24 +267,17 @@ module Bosh::Cli::Command
 
   describe 'older tests' do
     before do
-      @original_bosh_config = ENV['BOSH_CONFIG']
-      ENV['BOSH_CONFIG'] = "/tmp/bosh_cli_micro_spec.bosh_config"
     end
 
     after do
-      ENV['BOSH_CONFIG'] = @original_bosh_config
     end
 
     before do
       @cmd = Bosh::Cli::Command::Micro.new(nil)
       @cmd.add_option(:non_interactive, true)
-      @cmd.add_option(:config, nil)
 
       @manifest_path = spec_asset('deployment.MF')
       @manifest_yaml = {
-        'name' => 'foo',
-        'network' => {},
-        'cloud' => {},
         'resources' => {
           'persistent_disk' => 16384,
           'cloud_properties' => {}
@@ -333,9 +301,7 @@ module Bosh::Cli::Command
       expect(mock_deployer).to receive(:create_deployment).with('stemcell.tgz', stemcell_archive)
       allow(@cmd).to receive(:deployer).and_return(mock_deployer)
 
-      allow(@cmd).to receive(:deployment).and_return(@manifest_path)
       allow(@cmd).to receive(:load_yaml_file).and_return(@manifest_yaml)
-      allow(@cmd).to receive(:target_name).and_return('micro-test')
 
       @cmd.perform('stemcell.tgz')
     end
@@ -347,8 +313,6 @@ module Bosh::Cli::Command
       expect(mock_deployer).to receive(:check_dependencies)
       expect(mock_deployer).to receive(:create_deployment).with('sc-id', nil)
 
-      allow(@cmd).to receive(:deployment).and_return(@manifest_path)
-      allow(@cmd).to receive(:target_name).and_return('micro-test')
       allow(@cmd).to receive(:load_yaml_file).and_return(@manifest_yaml)
       @manifest_yaml['resources']['cloud_properties']['image_id'] = 'sc-id'
       allow(@cmd).to receive(:deployer).and_return(mock_deployer)
@@ -357,8 +321,6 @@ module Bosh::Cli::Command
 
     it 'should not allow deploying a micro BOSH instance if no stemcell is provided' do
       expect {
-        allow(@cmd).to receive(:deployment).and_return(@manifest_path)
-        @manifest_yaml = { 'name' => 'foo' }
         allow(@cmd).to receive(:load_yaml_file).and_return(@manifest_yaml)
         @cmd.perform
       }.to raise_error(Bosh::Cli::CliError, 'No stemcell provided')
@@ -372,8 +334,6 @@ module Bosh::Cli::Command
         expect(mock_deployer).to receive(:check_dependencies)
         expect(mock_deployer).to receive(:exists?).exactly(1).times
 
-        allow(@cmd).to receive(:deployment).and_return(@manifest_path)
-        allow(@cmd).to receive(:target_name).and_return('micro-test')
         allow(@cmd).to receive(:load_yaml_file).and_return(@manifest_yaml)
         @manifest_yaml['resources']['cloud_properties']['image_id'] = 'sc-id'
         @manifest_yaml['resources']['persistent_disk'] = nil
@@ -414,7 +374,6 @@ module Bosh::Cli::Command
     describe 'deploying/updating with --update-if-exists flag' do
       let(:deployer) do
         double(
-          Bosh::Deployer::InstanceManager,
           :renderer= => nil,
           :client_services_ip => 'client_ip'
         )
@@ -423,10 +382,7 @@ module Bosh::Cli::Command
       before do
         allow(deployer).to receive_messages(check_dependencies: true)
         allow(@cmd).to receive_messages(deployer: deployer)
-        allow(@cmd).to receive_messages(deployment: @manifest_path)
-        allow(@cmd).to receive_messages(target_name: 'micro-test')
         allow(@cmd).to receive_messages(load_yaml_file: @manifest_yaml)
-        allow(@cmd.config).to receive(:save)
       end
 
       let(:tarball_path) { 'some-stemcell-path' }
@@ -435,7 +391,6 @@ module Bosh::Cli::Command
         before { allow(deployer).to receive(:exists?).and_return(false) }
 
         context 'when --update-if-exists flag is given' do
-          before { @cmd.add_option(:update_if_exists, true) }
 
           it 'creates microbosh and returns successfully' do
             expect(deployer).to receive(:create_deployment)

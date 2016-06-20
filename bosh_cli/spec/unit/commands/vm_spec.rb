@@ -8,11 +8,8 @@ module Bosh::Cli
     let(:target) { 'http://example.org' }
     let(:deployment_manifest) do
       {
-        'name' => deployment,
         'jobs' => [
           {
-            'name' => 'dea',
-            'instances' => 50
           }
         ]
       }
@@ -20,8 +17,6 @@ module Bosh::Cli
 
     before do
       allow(command).to receive(:director).and_return(director)
-      allow(command).to receive(:nl)
-      command.options[:target] = target
       allow(command).to receive(:prepare_deployment_manifest).and_return(double(:manifest, hash: deployment_manifest, name: 'dep1'))
       allow(command).to receive(:show_current_state)
     end
@@ -53,11 +48,8 @@ module Bosh::Cli
         context 'and there is only one job of the specified type in the deployment' do
           let(:deployment_manifest) do
             {
-              'name' => deployment,
               'jobs' => [
                 {
-                  'name'      => 'job1',
-                  'instances' => 1
                 }
               ]
             }

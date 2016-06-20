@@ -40,7 +40,6 @@ module Bosh::Director
     describe Planner do
       subject(:planner) { described_class.new(planner_attributes, minimal_manifest, cloud_config, runtime_config, deployment_model) }
 
-      let(:event_log) { instance_double('Bosh::Director::EventLog::Log') }
       let(:cloud_config) { nil }
       let(:runtime_config) { nil }
       let(:manifest_text) { generate_manifest_text }
@@ -53,31 +52,18 @@ module Bosh::Director
 
       let(:minimal_manifest) do
         {
-          'name' => 'minimal',
 
           'releases' => [{
-              'name' => 'appcloud',
-              'version' => '0.1' # It's our dummy valid release from spec/assets/valid_release.tgz
             }],
 
           'networks' => [{
-              'name' => 'a',
-              'subnets' => [],
             }],
 
           'compilation' => {
-            'workers' => 1,
-            'network' => 'a',
-            'cloud_properties' => {},
           },
 
-          'resource_pools' => [],
 
           'update' => {
-            'canaries' => 2,
-            'canary_watch_time' => 4000,
-            'max_in_flight' => 1,
-            'update_watch_time' => 20
           }
         }
       end
@@ -99,8 +85,6 @@ module Bosh::Director
         let(:resource_pool_spec) do
           {
             'name' => 'default',
-            'cloud_properties' => {},
-            'network' => 'default',
             'stemcell' => {
               'name' => 'default',
               'version' => '1'
@@ -118,13 +102,11 @@ module Bosh::Director
               ip_provider_factory: IpProviderFactory.new(true, logger),
               disk_types: [],
               availability_zones_list: [],
-              vm_type: vm_type,
               resource_pools: resource_pools,
               compilation: nil,
               logger: logger,
             })
           planner.cloud_planner = cloud_planner
-          allow(Config).to receive(:dns_enabled?).and_return(false)
         end
 
         it 'should parse recreate' do
@@ -141,7 +123,6 @@ module Bosh::Director
                 name: 'fake-job1-name',
                 canonical_name: 'fake-job1-cname',
                 is_service?: true,
-                is_errand?: false,
               })
           end
 
@@ -150,7 +131,6 @@ module Bosh::Director
             instance_double('Bosh::Director::DeploymentPlan::InstanceGroup', {
                 name: 'fake-job2-name',
                 canonical_name: 'fake-job2-cname',
-                lifecycle: 'errand',
                 is_service?: false,
                 is_errand?: true,
               })
@@ -240,7 +220,6 @@ module Bosh::Director
               stale_release_version_124 = Bosh::Director::Models::ReleaseVersion.create(
                 release: Bosh::Director::Models::Release.find(name: 'stale'),
                 version: '124')
-              deployment_model.add_release_version stale_release_version_124
 
               expect(subject).to receive(:with_release_locks).with(['stale','another_stale'])
               subject.persist_updates!
@@ -249,7 +228,6 @@ module Bosh::Director
 
           it 'saves original manifest' do
             original_manifest = generate_manifest_text
-            minimal_manifest['update']['canaries'] = 10
             planner.persist_updates!
             expect(deployment_model.manifest).to eq(original_manifest)
           end
@@ -280,10 +258,8 @@ module Bosh::Director
           end
 
           context 'when using vm types and stemcells' do
-            let(:resource_pools) { [] }
             before do
               planner.add_stemcell(Stemcell.parse({
-                    'alias' => 'default',
                     'name' => 'default',
                     'version' => '1',
                   }))
@@ -305,7 +281,6 @@ module Bosh::Director
         end
 
         def setup_global_config_and_stubbing
-          Bosh::Director::App.new(Bosh::Director::Config.load_hash(SpecHelper.spec_get_director_config))
           allow(Bosh::Director::Config).to receive(:cloud) { instance_double(Bosh::Cloud) }
         end
       end

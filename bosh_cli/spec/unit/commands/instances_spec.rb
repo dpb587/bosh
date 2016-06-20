@@ -11,7 +11,6 @@ describe Bosh::Cli::Command::Instances do
   let(:director) { double(Bosh::Cli::Client::Director) }
 
   after do
-    FileUtils.rm_rf(command.options[:config])
   end
 
   describe 'list' do
@@ -86,7 +85,6 @@ describe Bosh::Cli::Command::Instances do
         'index' => 0,
         'ips' => %w{192.168.0.1 192.168.0.2},
         'dns' => %w{index.job1.network1.deployment.microbosh index.job1.network2.deployment.microbosh},
-        'vitals' => 'vitals',
         'job_state' => 'running',
         'vm_type' => 'rp1',
         'vm_cid' => 'vm-cid1',
@@ -154,7 +152,6 @@ describe Bosh::Cli::Command::Instances do
         'index' => 0,
         'ips' => %w{192.168.0.3 192.168.0.4},
         'dns' => %w{index.job2.network1.deployment.microbosh index.job2.network2.deployment.microbosh},
-        'vitals' => 'vitals',
         'job_state' => 'running',
         'resource_pool' => 'rp1',
         'vm_cid' => 'vm-cid2',
@@ -235,7 +232,6 @@ describe Bosh::Cli::Command::Instances do
       it 'display when second instance has a disk cid' do
         vm_state2 = vm1_state.clone
 
-        vm1_state.delete('disk_cid')
         allow(director).to receive(:fetch_vm_state).with(deployment) { [vm1_state, vm_state2] }
 
         expect(command).to receive(:say) do |display_output|
@@ -259,14 +255,6 @@ describe Bosh::Cli::Command::Instances do
       it 'should include the instance id in the output' do
         expect(command).to receive(:say) do |display_output|
           expect(display_output.to_s).to match_output '
-          +-----------------------------------------------+---------+-----+---------+-------------+
-          | Instance                                      | State   | AZ  | VM Type | IPs         |
-          +-----------------------------------------------+---------+-----+---------+-------------+
-          | job1/0 (abcdefgh-xxxx-xxxx-xxxx-xxxxxxxxxxxx) | running | az1 | rp1     | 192.168.0.1 |
-          |                                               |         |     |         | 192.168.0.2 |
-          | job1/1 (stuvwxyz-xxxx-xxxx-xxxx-xxxxxxxxxxxx) | running | az1 | rp1     | 192.168.0.1 |
-          |                                               |         |     |         | 192.168.0.2 |
-          +-----------------------------------------------+---------+-----+---------+-------------+
           '
         end
         perform
@@ -285,15 +273,6 @@ describe Bosh::Cli::Command::Instances do
 
         expect(command).to receive(:say) do |display_output|
           expect(display_output.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+
-              | Instance | State   | AZ  | VM Type | IPs         |
-              +----------+---------+-----+---------+-------------+
-              | job0/0   | running | az2 | rp1     | 192.168.0.1 |
-              |          |         |     |         | 192.168.0.2 |
-              +----------+---------+-----+---------+-------------+
-              | job1/0   | running | n/a | rp1     | 192.168.0.1 |
-              |          |         |     |         | 192.168.0.2 |
-              +----------+---------+-----+---------+-------------+
               '
         end
         perform
@@ -315,25 +294,12 @@ describe Bosh::Cli::Command::Instances do
 
         expect(command).to receive(:say) do |display_output|
           expect(display_output.to_s).to match_output '
-              +----------+---------+-------+---------+-------------+
-              | Instance | State   | AZ    | VM Type | IPs         |
-              +----------+---------+-------+---------+-------------+
-              | job1/0   | running | n/a   | rp1     | 192.168.0.1 |
-              |          |         |       |         | 192.168.0.2 |
-              | job1/0   | running | az1   | rp1     | 192.168.0.1 |
-              |          |         |       |         | 192.168.0.2 |
-              | job1/0   | running | az2   | rp1     | 192.168.0.1 |
-              |          |         |       |         | 192.168.0.2 |
-              | job1/0   | running | zone1 | rp1     | 192.168.0.1 |
-              |          |         |       |         | 192.168.0.2 |
-              +----------+---------+-------+---------+-------------+
               '
         end
         perform
       end
 
       it 'if name and AZ are the same, sort by vm type' do
-        vm1_state['az'] = 'az1'
 
         vm_state2 = vm1_state.clone
         vm_state2['index'] = '1'
@@ -348,18 +314,6 @@ describe Bosh::Cli::Command::Instances do
 
         expect(command).to receive(:say) do |display_output|
           expect(display_output.to_s).to match_output '
-          +----------+---------+-----+---------+-------------+
-          | Instance | State   | AZ  | VM Type | IPs         |
-          +----------+---------+-----+---------+-------------+
-          | job1/0   | running | az1 | rp1     | 192.168.0.1 |
-          |          |         |     |         | 192.168.0.2 |
-          | job1/1   | running | az1 | rp1     | 192.168.0.1 |
-          |          |         |     |         | 192.168.0.2 |
-          | job1/2   | running | az1 | rp1     | 192.168.0.1 |
-          |          |         |     |         | 192.168.0.2 |
-          | job1/3   | running | az1 | rp1     | 192.168.0.1 |
-          |          |         |     |         | 192.168.0.2 |
-          +----------+---------+-----+---------+-------------+
           '
         end
         perform
@@ -373,15 +327,6 @@ describe Bosh::Cli::Command::Instances do
         it 'show basic vms information' do
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+
-              | Instance | State   | AZ  | VM Type | IPs         |
-              +----------+---------+-----+---------+-------------+
-              | job1/0   | running | az1 | rp1     | 192.168.0.1 |
-              |          |         |     |         | 192.168.0.2 |
-              +----------+---------+-----+---------+-------------+
-              | job2/0   | running | az2 | rp1     | 192.168.0.3 |
-              |          |         |     |         | 192.168.0.4 |
-              +----------+---------+-----+---------+-------------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -394,12 +339,6 @@ describe Bosh::Cli::Command::Instances do
 
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+
-              | Instance | State   | AZ  | VM Type | IPs         |
-              +----------+---------+-----+---------+-------------+
-              | job2/0   | failing | az2 | rp1     | 192.168.0.3 |
-              |          |         |     |         | 192.168.0.4 |
-              +----------+---------+-----+---------+-------------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 1')
@@ -407,7 +346,6 @@ describe Bosh::Cli::Command::Instances do
         end
 
         it 'show AZ in basic vms information' do
-          vm1_state['az'] = 'az1'
           expect(command).to receive(:say) do |display_output|
             expect(display_output.to_s).to include 'AZ'
             expect(display_output.to_s).to include 'az1'
@@ -427,7 +365,6 @@ describe Bosh::Cli::Command::Instances do
 
         it 'show all instances when --failing option is specified and no instance failing' do
           options[:failing] = true
-          vm2_state['processes'][0]['state'] = 'failing'
 
           expect(command).to receive(:say).with('No failing instances')
           perform
@@ -440,15 +377,6 @@ describe Bosh::Cli::Command::Instances do
         it 'shows vm details with active disk' do
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | Instance | State   | AZ  | VM Type | IPs         | VM CID  | Disk CID  | Agent ID | Resurrection | Ignore |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | job1/0   | running | az1 | rp1     | 192.168.0.1 | vm-cid1 | disk-cid1 | agent1   | paused       | false  |
-              |          |         |     |         | 192.168.0.2 |         |           |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | job2/0   | running | az2 | rp1     | 192.168.0.3 | vm-cid2 | disk-cid2 | agent2   | paused       | false  |
-              |          |         |     |         | 192.168.0.4 |         |           |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -459,15 +387,6 @@ describe Bosh::Cli::Command::Instances do
           vm1_state['disk_cid'] = nil
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | Instance | State   | AZ  | VM Type | IPs         | VM CID  | Disk CID  | Agent ID | Resurrection | Ignore |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | job1/0   | running | az1 | rp1     | 192.168.0.1 | vm-cid1 | n/a       | agent1   | paused       | false  |
-              |          |         |     |         | 192.168.0.2 |         |           |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | job2/0   | running | az2 | rp1     | 192.168.0.3 | vm-cid2 | disk-cid2 | agent2   | paused       | false  |
-              |          |         |     |         | 192.168.0.4 |         |           |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -479,15 +398,6 @@ describe Bosh::Cli::Command::Instances do
           vm2_state.delete('disk_cid')
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+---------+----------+--------------+--------+
-              | Instance | State   | AZ  | VM Type | IPs         | VM CID  | Agent ID | Resurrection | Ignore |
-              +----------+---------+-----+---------+-------------+---------+----------+--------------+--------+
-              | job1/0   | running | az1 | rp1     | 192.168.0.1 | vm-cid1 | agent1   | paused       | false  |
-              |          |         |     |         | 192.168.0.2 |         |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+----------+--------------+--------+
-              | job2/0   | running | az2 | rp1     | 192.168.0.3 | vm-cid2 | agent2   | paused       | false  |
-              |          |         |     |         | 192.168.0.4 |         |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+----------+--------------+--------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -500,12 +410,6 @@ describe Bosh::Cli::Command::Instances do
 
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | Instance | State   | AZ  | VM Type | IPs         | VM CID  | Disk CID  | Agent ID | Resurrection | Ignore |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | job2/0   | failing | az2 | rp1     | 192.168.0.3 | vm-cid2 | disk-cid2 | agent2   | paused       | false  |
-              |          |         |     |         | 192.168.0.4 |         |           |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
             '
           end
 
@@ -517,15 +421,6 @@ describe Bosh::Cli::Command::Instances do
           vm1_state['ignore'] = true
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | Instance | State   | AZ  | VM Type | IPs         | VM CID  | Disk CID  | Agent ID | Resurrection | Ignore |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | job1/0   | running | az1 | rp1     | 192.168.0.1 | vm-cid1 | disk-cid1 | agent1   | paused       | true   |
-              |          |         |     |         | 192.168.0.2 |         |           |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | job2/0   | running | az2 | rp1     | 192.168.0.3 | vm-cid2 | disk-cid2 | agent2   | paused       | false  |
-              |          |         |     |         | 192.168.0.4 |         |           |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -536,15 +431,6 @@ describe Bosh::Cli::Command::Instances do
           vm1_state.delete('ignore')
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | Instance | State   | AZ  | VM Type | IPs         | VM CID  | Disk CID  | Agent ID | Resurrection | Ignore |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | job1/0   | running | az1 | rp1     | 192.168.0.1 | vm-cid1 | disk-cid1 | agent1   | paused       | n/a    |
-              |          |         |     |         | 192.168.0.2 |         |           |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
-              | job2/0   | running | az2 | rp1     | 192.168.0.3 | vm-cid2 | disk-cid2 | agent2   | paused       | false  |
-              |          |         |     |         | 192.168.0.4 |         |           |          |              |        |
-              +----------+---------+-----+---------+-------------+---------+-----------+----------+--------------+--------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -558,15 +444,6 @@ describe Bosh::Cli::Command::Instances do
         it 'shows DNS A records' do
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+------------------------------------------+
-              | Instance | State   | AZ  | VM Type | IPs         | DNS A records                            |
-              +----------+---------+-----+---------+-------------+------------------------------------------+
-              | job1/0   | running | az1 | rp1     | 192.168.0.1 | index.job1.network1.deployment.microbosh |
-              |          |         |     |         | 192.168.0.2 | index.job1.network2.deployment.microbosh |
-              +----------+---------+-----+---------+-------------+------------------------------------------+
-              | job2/0   | running | az2 | rp1     | 192.168.0.3 | index.job2.network1.deployment.microbosh |
-              |          |         |     |         | 192.168.0.4 | index.job2.network2.deployment.microbosh |
-              +----------+---------+-----+---------+-------------+------------------------------------------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -580,16 +457,6 @@ describe Bosh::Cli::Command::Instances do
         it 'shows the instance vitals' do
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-              | Instance | State   | AZ  | VM Type | IPs         |         Load          |       CPU %       | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-              |          |         |     |         |             | (avg01, avg05, avg15) | (User, Sys, Wait) |              |            | Disk Usage | Disk Usage | Disk Usage |
-              +----------+---------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-              | job1/0   | running | az1 | rp1     | 192.168.0.1 | 1, 2, 3               | 4%, 5%, 6%        | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-              |          |         |     |         | 192.168.0.2 |                       |                   |              |            |            |            |            |
-              +----------+---------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-              | job2/0   | running | az2 | rp1     | 192.168.0.3 | 1, 2, 3               | 4%, 5%, 6%        | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-              |          |         |     |         | 192.168.0.4 |                       |                   |              |            |            |            |            |
-              +----------+---------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -604,13 +471,6 @@ describe Bosh::Cli::Command::Instances do
 
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +----------+---------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-              | Instance | State   | AZ  | VM Type | IPs         |         Load          |       CPU %       | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-              |          |         |     |         |             | (avg01, avg05, avg15) | (User, Sys, Wait) |              |            | Disk Usage | Disk Usage | Disk Usage |
-              +----------+---------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-              | job1/0   | running | az1 | rp1     | 192.168.0.1 | 1, 2, 3               | 4%, 5%, 6%        | 7% (8.0K)    | 9% (10.0K) | 11%        | n/a        | n/a        |
-              |          |         |     |         | 192.168.0.2 |                       |                   |              |            |            |            |            |
-              +----------+---------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 1')
@@ -624,19 +484,6 @@ describe Bosh::Cli::Command::Instances do
         it 'shows the details of each instance\'s processes' do
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-                +-------------+---------+-----+---------+-------------+
-                | Instance    | State   | AZ  | VM Type | IPs         |
-                +-------------+---------+-----+---------+-------------+
-                | job1/0      | running | az1 | rp1     | 192.168.0.1 |
-                |             |         |     |         | 192.168.0.2 |
-                |   process-1 | running |     |         |             |
-                |   process-2 | running |     |         |             |
-                +-------------+---------+-----+---------+-------------+
-                | job2/0      | running | az2 | rp1     | 192.168.0.3 |
-                |             |         |     |         | 192.168.0.4 |
-                |   process-3 | running |     |         |             |
-                |   process-4 | running |     |         |             |
-                +-------------+---------+-----+---------+-------------+
               '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -649,19 +496,6 @@ describe Bosh::Cli::Command::Instances do
 
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +-------------+---------+-----+---------+-------------+
-              | Instance    | State   | AZ  | VM Type | IPs         |
-              +-------------+---------+-----+---------+-------------+
-              | job1/0      | running | az1 | rp1     | 192.168.0.1 |
-              |             |         |     |         | 192.168.0.2 |
-              |   process-1 | running |     |         |             |
-              |   process-2 | running |     |         |             |
-              +-------------+---------+-----+---------+-------------+
-              | job1/1      | running | az2 | rp1     | 192.168.0.3 |
-              |             |         |     |         | 192.168.0.4 |
-              |   process-3 | running |     |         |             |
-              |   process-4 | running |     |         |             |
-              +-------------+---------+-----+---------+-------------+
             '
           end
           expect(command).to receive(:say).with('Instances total: 2')
@@ -681,12 +515,6 @@ describe Bosh::Cli::Command::Instances do
 
             expect(command).to receive(:say) do |table|
               expect(table.to_s).to match_output '
-                +----------+---------+-----+---------+-------------+
-                | Instance | State   | AZ  | VM Type | IPs         |
-                +----------+---------+-----+---------+-------------+
-                | job2/0   | failing | az2 | rp1     | 192.168.0.3 |
-                |          |         |     |         | 192.168.0.4 |
-                +----------+---------+-----+---------+-------------+
               '
             end
             expect(command).to receive(:say).with('Instances total: 1')
@@ -698,12 +526,6 @@ describe Bosh::Cli::Command::Instances do
 
             expect(command).to receive(:say) do |table|
               expect(table.to_s).to match_output '
-                +----------+-----------+-----+---------+-------------+
-                | Instance | State     | AZ  | VM Type | IPs         |
-                +----------+-----------+-----+---------+-------------+
-                | job2/0   | vaporized | az2 | rp1     | 192.168.0.3 |
-                |          |           |     |         | 192.168.0.4 |
-                +----------+-----------+-----+---------+-------------+
               '
             end
             expect(command).to receive(:say).with('Instances total: 1')
@@ -715,13 +537,6 @@ describe Bosh::Cli::Command::Instances do
 
             expect(command).to receive(:say) do |table|
               expect(table.to_s).to match_output '
-                +-------------+---------+-----+---------+-------------+
-                | Instance    | State   | AZ  | VM Type | IPs         |
-                +-------------+---------+-----+---------+-------------+
-                | job2/0      | running | az2 | rp1     | 192.168.0.3 |
-                |             |         |     |         | 192.168.0.4 |
-                |   process-3 | failing |     |         |             |
-                +-------------+---------+-----+---------+-------------+
               '
             end
             expect(command).to receive(:say).with('Instances total: 1')
@@ -731,17 +546,9 @@ describe Bosh::Cli::Command::Instances do
           it 'shows instance and its processes when instance and one of the processes are failing' do
             vm2_state['job_state'] = 'failing'
             vm2_state['processes'][0]['state'] = 'failing'
-            vm2_state['processes'][0]['monitored'] = true
 
             expect(command).to receive(:say) do |table|
               expect(table.to_s).to match_output '
-                +-------------+---------+-----+---------+-------------+
-                | Instance    | State   | AZ  | VM Type | IPs         |
-                +-------------+---------+-----+---------+-------------+
-                | job2/0      | failing | az2 | rp1     | 192.168.0.3 |
-                |             |         |     |         | 192.168.0.4 |
-                |   process-3 | failing |     |         |             |
-                +-------------+---------+-----+---------+-------------+
               '
             end
             expect(command).to receive(:say).with('Instances total: 1')
@@ -753,13 +560,6 @@ describe Bosh::Cli::Command::Instances do
 
             expect(command).to receive(:say) do |table|
               expect(table.to_s).to match_output '
-                +-------------+----------+-----+---------+-------------+
-                | Instance    | State    | AZ  | VM Type | IPs         |
-                +-------------+----------+-----+---------+-------------+
-                | job2/0      | running  | az2 | rp1     | 192.168.0.3 |
-                |             |          |     |         | 192.168.0.4 |
-                |   process-3 | exploded |     |         |             |
-                +-------------+----------+-----+---------+-------------+
               '
             end
             expect(command).to receive(:say).with('Instances total: 1')
@@ -774,20 +574,6 @@ describe Bosh::Cli::Command::Instances do
             it 'shows full detail of the instances and processes' do
               expect(command).to receive(:say) do |table|
                 expect(table.to_s).to match_output '
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | Instance    | State   | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |             |         |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job1/0      | running | az1 | rp1     | 192.168.0.1 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.2 |                |                       |                   |       |              |            |            |            |            |
-                  |   process-1 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  |   process-2 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job2/0      | running | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.4 |                |                       |                   |       |              |            |            |            |            |
-                  |   process-3 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  |   process-4 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
                 '
               end
               expect(command).to receive(:say).with('Instances total: 2')
@@ -799,20 +585,6 @@ describe Bosh::Cli::Command::Instances do
 
               expect(command).to receive(:say) do |table|
                 expect(table.to_s).to match_output '
-                  +-------------+---------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | Instance    | State   | AZ  | VM Type | IPs         |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |             |         |     |         |             | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +-------------+---------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job1/0      | running | az1 | rp1     | 192.168.0.1 | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.2 |                       |                   |       |              |            |            |            |            |
-                  |   process-1 | running |     |         |             |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  |   process-2 | running |     |         |             |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  +-------------+---------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job2/0      | running | az2 | rp1     | 192.168.0.3 | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.4 |                       |                   |       |              |            |            |            |            |
-                  |   process-3 | running |     |         |             |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  |   process-4 | running |     |         |             |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  +-------------+---------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
                 '
               end
               expect(command).to receive(:say).with('Instances total: 2')
@@ -824,19 +596,6 @@ describe Bosh::Cli::Command::Instances do
 
               expect(command).to receive(:say) do |table|
                 expect(table.to_s).to match_output '
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | Instance    | State   | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |             |         |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job1/0      | running | az1 | rp1     | 192.168.0.1 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.2 |                |                       |                   |       |              |            |            |            |            |
-                  |   process-1 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  |   process-2 | running |     |         |             |                |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job2/0      | running | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.4 |                |                       |                   |       |              |            |            |            |            |
-                  |   process-3 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  |   process-4 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
                   +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+              '
               end
               expect(command).to receive(:say).with('Instances total: 2')
@@ -848,19 +607,6 @@ describe Bosh::Cli::Command::Instances do
 
               expect(command).to receive(:say) do |table|
                 expect(table.to_s).to match_output '
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-                  | Instance    | State   | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |             |         |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-                  | job1/0      | running | az1 | rp1     | 192.168.0.1 |                | 1, 2, 3               | 4%, 5%, 6%        | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.2 |                |                       |                   |              |            |            |            |            |
-                  |   process-1 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 7% (8.0K)    |            |            |            |            |
-                  |   process-2 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 7% (8.0K)    |            |            |            |            |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-                  | job2/0      | running | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.4 |                |                       |                   |              |            |            |            |            |
-                  |   process-3 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 7% (8.0K)    |            |            |            |            |
-                  |   process-4 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 7% (8.0K)    |            |            |            |            |
                   +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+              '
               end
               expect(command).to receive(:say).with('Instances total: 2')
@@ -872,19 +618,6 @@ describe Bosh::Cli::Command::Instances do
 
               expect(command).to receive(:say) do |table|
                 expect(table.to_s).to match_output '
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | Instance    | State   | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |             |         |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job1/0      | running | az1 | rp1     | 192.168.0.1 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.2 |                |                       |                   |       |              |            |            |            |            |
-                  |   process-1 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  |   process-2 | running |     |         |             | 1d 16h 16m 27s |                       |                   |       | 7% (8.0K)    |            |            |            |            |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job2/0      | running | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.4 |                |                       |                   |       |              |            |            |            |            |
-                  |   process-3 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  |   process-4 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
                   +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+              '
               end
               expect(command).to receive(:say).with('Instances total: 2')
@@ -896,19 +629,6 @@ describe Bosh::Cli::Command::Instances do
 
               expect(command).to receive(:say) do |table|
                 expect(table.to_s).to match_output '
-                +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                | Instance    | State   | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                |             |         |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                | job1/0      | running | az1 | rp1     | 192.168.0.1 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                |             |         |     |         | 192.168.0.2 |                |                       |                   |       |              |            |            |            |            |
-                |   process-1 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  |              |            |            |            |            |
-                |   process-2 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                | job2/0      | running | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                |             |         |     |         | 192.168.0.4 |                |                       |                   |       |              |            |            |            |            |
-                |   process-3 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                |   process-4 | running |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
                 +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+              '
               end
               expect(command).to receive(:say).with('Instances total: 2')
@@ -924,13 +644,6 @@ describe Bosh::Cli::Command::Instances do
 
               expect(command).to receive(:say) do |table|
                 expect(table.to_s).to match_output '
-                  +----------+-----------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-                  | Instance | State     | AZ  | VM Type | IPs         |         Load          |       CPU %       | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |          |           |     |         |             | (avg01, avg05, avg15) | (User, Sys, Wait) |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +----------+-----------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-                  | job2/0   | vaporized | az2 | rp1     | 192.168.0.3 | 1, 2, 3               | 4%, 5%, 6%        | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |          |           |     |         | 192.168.0.4 |                       |                   |              |            |            |            |            |
-                  +----------+-----------+-----+---------+-------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
                 '
               end
               expect(command).to receive(:say).with('Instances total: 1')
@@ -943,13 +656,6 @@ describe Bosh::Cli::Command::Instances do
               it 'shows full details of instance and its processes' do
                 expect(command).to receive(:say) do |table|
                   expect(table.to_s).to match_output '
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | Instance    | State   | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |             |         |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job2/0      | running | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |         |     |         | 192.168.0.4 |                |                       |                   |       |              |            |            |            |            |
-                  |   process-3 | failing |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
                   +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+                '
                 end
                 expect(command).to receive(:say).with('Instances total: 1')
@@ -961,14 +667,6 @@ describe Bosh::Cli::Command::Instances do
 
                 expect(command).to receive(:say) do |table|
                   expect(table.to_s).to match_output '
-                    +-------------+---------+-----+---------+-------------+--------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                    | Instance    | State   | AZ  | VM Type | IPs         | Uptime |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                    |             |         |     |         |             |        | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                    +-------------+---------+-----+---------+-------------+--------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                    | job2/0      | running | az2 | rp1     | 192.168.0.3 |        | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                    |             |         |     |         | 192.168.0.4 |        |                       |                   |       |              |            |            |            |            |
-                    |   process-3 | failing |     |         |             |        |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                    +-------------+---------+-----+---------+-------------+--------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
                   '
                 end
                 expect(command).to receive(:say).with('Instances total: 1')
@@ -980,14 +678,6 @@ describe Bosh::Cli::Command::Instances do
 
                 expect(command).to receive(:say) do |table|
                   expect(table.to_s).to match_output '
-                    +-------------+---------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                    | Instance    | State   | AZ  | VM Type | IPs         |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                    |             |         |     |         |             | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                    +-------------+---------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                    | job2/0      | running | az2 | rp1     | 192.168.0.3 | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                    |             |         |     |         | 192.168.0.4 |                       |                   |       |              |            |            |            |            |
-                    |   process-3 | failing |     |         |             |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                    +-------------+---------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
                   '
                 end
                 expect(command).to receive(:say).with('Instances total: 1')
@@ -999,14 +689,6 @@ describe Bosh::Cli::Command::Instances do
 
                 expect(command).to receive(:say) do |table|
                   expect(table.to_s).to match_output '
-                    +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-                    | Instance    | State   | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                    |             |         |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |              |            | Disk Usage | Disk Usage | Disk Usage |
-                    +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-                    | job2/0      | running | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                    |             |         |     |         | 192.168.0.4 |                |                       |                   |              |            |            |            |            |
-                    |   process-3 | failing |     |         |             | 1d 16h 16m 27s |                       |                   | 7% (8.0K)    |            |            |            |            |
-                    +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
                   '
                 end
                 expect(command).to receive(:say).with('Instances total: 1')
@@ -1018,14 +700,6 @@ describe Bosh::Cli::Command::Instances do
 
                 expect(command).to receive(:say) do |table|
                   expect(table.to_s).to match_output '
-                    +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                    | Instance    | State   | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                    |             |         |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                    +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                    | job2/0      | running | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                    |             |         |     |         | 192.168.0.4 |                |                       |                   |       |              |            |            |            |            |
-                    |   process-3 | failing |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  |              |            |            |            |            |
-                    +-------------+---------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
                   '
                 end
                 expect(command).to receive(:say).with('Instances total: 1')
@@ -1042,14 +716,6 @@ describe Bosh::Cli::Command::Instances do
               it 'shows full details of instance and its processes' do
                 expect(command).to receive(:say) do |table|
                   expect(table.to_s).to match_output '
-                    +-------------+-----------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                    | Instance    | State     | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                    |             |           |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                    +-------------+-----------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                    | job2/0      | vaporized | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                    |             |           |     |         | 192.168.0.4 |                |                       |                   |       |              |            |            |            |            |
-                    |   process-3 | failing   |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                    +-------------+-----------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
                   '
                 end
                 expect(command).to receive(:say).with('Instances total: 1')
@@ -1061,14 +727,6 @@ describe Bosh::Cli::Command::Instances do
 
                 expect(command).to receive(:say) do |table|
                   expect(table.to_s).to match_output '
-                  +-------------+-----------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | Instance    | State     | AZ  | VM Type | IPs         |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |             |           |     |         |             | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +-------------+-----------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job2/0      | vaporized | az2 | rp1     | 192.168.0.3 | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |           |     |         | 192.168.0.4 |                       |                   |       |              |            |            |            |            |
-                  |   process-3 | failing   |     |         |             |                       |                   | 0.4%  | 7% (8.0K)    |            |            |            |            |
-                  +-------------+-----------+-----+---------+-------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
                 '
                 end
                 expect(command).to receive(:say).with('Instances total: 1')
@@ -1080,14 +738,6 @@ describe Bosh::Cli::Command::Instances do
 
                 expect(command).to receive(:say) do |table|
                   expect(table.to_s).to match_output '
-                  +-------------+-----------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-                  | Instance    | State     | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |             |           |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +-------------+-----------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
-                  | job2/0      | vaporized | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |           |     |         | 192.168.0.4 |                |                       |                   |              |            |            |            |            |
-                  |   process-3 | failing   |     |         |             | 1d 16h 16m 27s |                       |                   | 7% (8.0K)    |            |            |            |            |
-                  +-------------+-----------+-----+---------+-------------+----------------+-----------------------+-------------------+--------------+------------+------------+------------+------------+
                 '
                 end
                 expect(command).to receive(:say).with('Instances total: 1')
@@ -1099,14 +749,6 @@ describe Bosh::Cli::Command::Instances do
 
                 expect(command).to receive(:say) do |table|
                   expect(table.to_s).to match_output '
-                  +-------------+-----------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | Instance    | State     | AZ  | VM Type | IPs         |     Uptime     |         Load          |       CPU %       | CPU % | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-                  |             |           |     |         |             |                | (avg01, avg05, avg15) | (User, Sys, Wait) |       |              |            | Disk Usage | Disk Usage | Disk Usage |
-                  +-------------+-----------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
-                  | job2/0      | vaporized | az2 | rp1     | 192.168.0.3 |                | 1, 2, 3               | 4%, 5%, 6%        |       | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-                  |             |           |     |         | 192.168.0.4 |                |                       |                   |       |              |            |            |            |            |
-                  |   process-3 | failing   |     |         |             | 1d 16h 16m 27s |                       |                   | 0.4%  |              |            |            |            |            |
-                  +-------------+-----------+-----+---------+-------------+----------------+-----------------------+-------------------+-------+--------------+------------+------------+------------+------------+
                 '
                 end
                 expect(command).to receive(:say).with('Instances total: 1')

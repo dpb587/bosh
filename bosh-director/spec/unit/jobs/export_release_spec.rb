@@ -1,16 +1,10 @@
-require 'rubygems'
-require 'rubygems/package'
 require 'spec_helper'
 
 module Bosh::Director
   describe Jobs::ExportRelease do
-    include Support::FakeLocks
     before do
-      fake_locks
       Bosh::Director::Config.current_job = job
-      allow(Bosh::Director::Config).to receive(:dns_enabled?) { false }
       Bosh::Director::Config.current_job.task_id = 'fake-task-id'
-      allow(job).to receive(:task_cancelled?) { false }
       allow(Config).to receive(:cloud)
       blobstore = double(:blobstore)
       blobstores = instance_double(Bosh::Director::Blobstores, blobstore: blobstore)
@@ -34,7 +28,6 @@ module Bosh::Director
     let(:deployment_manifest) { Bosh::Spec::Deployments.simple_manifest }
 
     it 'raises an error when the targeted deployment is not found' do
-      create_stemcell
       expect {
         job.perform
       }.to raise_error(Bosh::Director::DeploymentNotFound)
@@ -53,14 +46,12 @@ module Bosh::Director
       end
 
       it 'raises an error when the requested release does not exist' do
-        create_stemcell
         expect {
           job.perform
         }.to raise_error(Bosh::Director::ReleaseNotFound)
       end
 
       before do
-        allow(job).to receive(:with_deployment_lock).and_yield
         allow(job).to receive(:with_release_lock).and_yield
         allow(job).to receive(:with_stemcell_lock).and_yield
       end
@@ -201,7 +192,6 @@ module Bosh::Director
             context 'when dealing with links' do
               let(:planner_factory) { instance_double(Bosh::Director::DeploymentPlan::PlannerFactory)}
               let(:planner) { instance_double(Bosh::Director::DeploymentPlan::Planner)}
-              let(:deployment_job) { instance_double(DeploymentPlan::InstanceGroup)}
 
               before {
                 allow(DeploymentPlan::PlannerFactory).to receive(:create).and_return(planner_factory)
@@ -289,7 +279,6 @@ module Bosh::Director
           result_file = double('result file')
           allow(App).to receive_message_chain(:instance, :blobstores, :blobstore).and_return(blobstore_client)
           allow(Bosh::Director::Core::TarGzipper).to receive(:new).and_return(archiver)
-          allow(Config).to receive(:event_log).and_return(EventLog::Log.new)
           allow(planner).to receive(:instance_groups) { ['fake-job'] }
           allow(planner).to receive(:compilation) { 'fake-compilation-config' }
           allow(DeploymentPlan::Steps::PackageCompileStep).to receive(:new).and_return(package_compile_step)
@@ -366,7 +355,6 @@ version: 0.1-dev
           allow(blobstore_client).to receive(:get)
           allow(blobstore_client).to receive(:create).and_return('blobstore_id')
 
-          job.perform
         end
 
         it 'should put a tarball in the blobstore' do

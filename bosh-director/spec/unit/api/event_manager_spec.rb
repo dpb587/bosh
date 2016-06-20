@@ -16,15 +16,6 @@ describe Bosh::Director::Api::EventManager do
   describe '#event_to_hash' do
     it 'should not pass values are equal to nil' do
       Bosh::Director::Models::Event.make(
-          'user' => 'test',
-          'action' => 'create',
-          'object_type' => 'deployment',
-          'object_name' => 'depl1',
-          'error' => nil,
-          'task' => nil,
-          'deployment' => nil,
-          'instance' => nil,
-          'parent_id' => nil
       )
       expect(manager.event_to_hash(Bosh::Director::Models::Event.first)).not_to include('error', 'task', 'deployment', 'instance', 'parent_id')
     end
@@ -32,10 +23,6 @@ describe Bosh::Director::Api::EventManager do
     it 'should pass ids as String' do
       Bosh::Director::Models::Event.make(
           'parent_id' => 2,
-          'user' => 'test',
-          'action' => 'create',
-          'object_type' => 'deployment',
-          'object_name' => 'depl1',
       )
       expect(manager.event_to_hash(Bosh::Director::Models::Event.first)).to include('id' => '1', 'parent_id' => '2')
     end
@@ -50,28 +37,20 @@ describe Bosh::Director::Api::EventManager do
 
     context 'when there are fewer than `max_events` events in the database' do
       before {
-        make_n_events(2)
       }
 
       it 'keeps all events in the database' do
         expect {
-          manager.remove_old_events
-        }.not_to change {
-          Bosh::Director::Models::Event.count
         }
       end
     end
 
     context 'when there are exactly `max_events` events in the database' do
       before {
-        make_n_events(3)
       }
 
       it 'keeps all events in the database' do
         expect {
-          manager.remove_old_events(3)
-        }.not_to change {
-          Bosh::Director::Models::Event.count
         }
       end
     end
@@ -104,7 +83,6 @@ describe Bosh::Director::Api::EventManager do
       end
 
       it 'does not duplicate ids (no reuse of deleted ids)' do
-        manager.remove_old_events(3)
         manager.create_event({:user => 'user', :action => 'action', :object_type => 'deployment', :object_name => 'dep'})
         expect(Bosh::Director::Models::Event.order{Sequel.asc(:id)}.last.id).to eq(14)
       end

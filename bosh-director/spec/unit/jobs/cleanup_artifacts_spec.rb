@@ -39,7 +39,6 @@ module Bosh::Director
       end
 
       before do
-        fake_locks
         allow(cloud).to receive(:delete_stemcell)
 
         stemcell_1 = Models::Stemcell.make(name: 'stemcell-a', operating_system: 'gentoo_linux', version: '1')
@@ -60,7 +59,6 @@ module Bosh::Director
         allow(Config).to receive(:cloud).and_return(cloud)
         allow(App).to receive_message_chain(:instance, :blobstores, :blobstore).and_return(blobstore)
 
-        allow(blobstore).to receive(:delete).with('blobstore-id-1')
       end
 
       context 'when cleaning up ALL artifacts (stemcells, releases AND orphaned disks)' do
@@ -76,7 +74,6 @@ module Bosh::Director
             Bosh::Director::Models::EphemeralBlob.new(blobstore_id: 'ephemeral_blob_id_2', sha1: 'smurf2').save
             expect(blobstore).to receive(:delete).with('ephemeral_blob_id_1')
             expect(blobstore).to receive(:delete).with('ephemeral_blob_id_2')
-            allow(event_log).to receive(:begin_stage).and_return(stage)
           end
 
           it 'deletes them from blobstore and database' do
@@ -95,7 +92,6 @@ module Bosh::Director
             Models::OrphanDisk.make(disk_cid: 'fake-cid-1')
             Models::OrphanDisk.make(disk_cid: 'fake-cid-2')
             allow(blobstore).to receive(:delete).with('package_blob_id_1')
-            allow(event_log).to receive(:begin_stage).and_return(stage)
           end
 
           it 'logs and returns the result' do
@@ -130,7 +126,6 @@ module Bosh::Director
               expect(event_log).to receive(:begin_stage).with('Deleting stemcells', 4)
               expect(event_log).to receive(:begin_stage).with('Deleting releases', 4)
 
-              allow(cloud).to receive(:delete_disk)
               allow(blobstore).to receive(:delete).with('package_blob_id_1')
               delete_artifacts = Jobs::CleanupArtifacts.new(config)
               result = delete_artifacts.perform
@@ -150,7 +145,6 @@ module Bosh::Director
           expect(event_log).to receive(:begin_stage).with('Deleting stemcells', 0)
           expect(event_log).to receive(:begin_stage).with('Deleting releases', 0)
 
-          allow(cloud).to receive(:delete_disk)
 
           delete_artifacts = Jobs::CleanupArtifacts.new({})
           expect(thread_pool).not_to receive(:process)
@@ -174,7 +168,6 @@ module Bosh::Director
             expect(event_log).to receive(:begin_stage).with('Deleting stemcells', 2)
             expect(event_log).to receive(:begin_stage).with('Deleting releases', 0)
 
-            allow(cloud).to receive(:delete_disk)
 
             delete_artifacts = Jobs::CleanupArtifacts.new({})
             expect(thread_pool).to receive(:process).exactly(2).times.and_yield
@@ -198,7 +191,6 @@ module Bosh::Director
             expect(event_log).to receive(:begin_stage).with('Deleting stemcells', 0)
             expect(event_log).to receive(:begin_stage).with('Deleting releases', 2)
 
-            allow(cloud).to receive(:delete_disk)
 
             delete_artifacts = Jobs::CleanupArtifacts.new({})
             expect(thread_pool).to receive(:process).exactly(2).times.and_yield
@@ -218,25 +210,20 @@ module Bosh::Director
             deployment_2 = Models::Deployment.make(name: 'second')
 
             stemcell_with_deployment_1 = Models::Stemcell.make(name: 'stemcell-c')
-            stemcell_with_deployment_1.add_deployment(deployment_1)
 
             stemcell_with_deployment_2 = Models::Stemcell.make(name: 'stemcell-d')
-            stemcell_with_deployment_2.add_deployment(deployment_2)
 
             release_1 = Models::Release.make(name: 'release-c')
             release_2 = Models::Release.make(name: 'release-d')
             version_1 = Models::ReleaseVersion.make(version: 1, release: release_1)
             version_2 = Models::ReleaseVersion.make(version: 2, release: release_2)
 
-            version_1.add_deployment(deployment_1)
-            version_2.add_deployment(deployment_2)
           end
 
           it 'does not delete any stemcells and releases currently in use' do
             expect(event_log).to receive(:begin_stage).with('Deleting stemcells', 0)
             expect(event_log).to receive(:begin_stage).with('Deleting releases', 0)
 
-            allow(cloud).to receive(:delete_disk)
 
             delete_artifacts = Jobs::CleanupArtifacts.new({})
             expect(thread_pool).not_to receive(:process)
@@ -255,7 +242,6 @@ module Bosh::Director
             Bosh::Director::Models::EphemeralBlob.new(blobstore_id: 'ephemeral_blob_id_2', sha1: 'smurf2').save
             expect(blobstore).to receive(:delete).with('ephemeral_blob_id_1')
             expect(blobstore).to receive(:delete).with('ephemeral_blob_id_2')
-            allow(event_log).to receive(:begin_stage).and_return(stage)
           end
 
           it 'deletes them from blobstore and database' do
@@ -272,7 +258,6 @@ module Bosh::Director
 
       context 'when director was unable to delete a disk' do
         before do
-          Models::OrphanDisk.make(disk_cid: 'fake-cid-1')
           Models::OrphanDisk.make(disk_cid: 'fake-cid-2')
           expect(blobstore).to receive(:delete).with('compiled-package-1')
         end

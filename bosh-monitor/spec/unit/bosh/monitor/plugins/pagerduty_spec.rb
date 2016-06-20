@@ -14,11 +14,9 @@ describe Bhm::Plugins::Pagerduty do
   it "validates options" do
     valid_options = {
       "service_key" => "zb512",
-      "http_proxy"  => "http://nowhere.com:3128"
     }
 
     invalid_options = { # no service key
-      "http_proxy"  => "http://nowhere.com:3128"
     }
 
     expect(Bhm::Plugins::Pagerduty.new(valid_options).validate_options).to be(true)
@@ -58,7 +56,6 @@ describe Bhm::Plugins::Pagerduty do
     }
 
     EM.run do
-      @plugin.run
 
       expect(@plugin).to receive(:send_http_post_request).with(uri, alert_request)
       expect(@plugin).to receive(:send_http_post_request).with(uri, heartbeat_request)

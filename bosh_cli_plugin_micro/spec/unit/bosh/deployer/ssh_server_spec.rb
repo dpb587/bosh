@@ -1,7 +1,5 @@
-require 'spec_helper'
 
 require 'bosh/deployer/ssh_server'
-require 'logger'
 
 module Bosh::Deployer
   describe SshServer do

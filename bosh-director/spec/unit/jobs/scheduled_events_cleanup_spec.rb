@@ -32,7 +32,6 @@ module Bosh::Director
 
       describe 'when there is no work to do' do
         it 'should return false' do
-          make_n_events(2)
           expect(described_class.has_work(params)).to eq(false)
         end
       end
@@ -46,7 +45,6 @@ module Bosh::Director
       end
 
       it 'should log' do
-        make_n_events(3)
         expect(subject.perform).to eq("Old events were deleted")
       end
     end

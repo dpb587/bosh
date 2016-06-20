@@ -47,7 +47,6 @@ module Bosh::Director
 
       it 'should support deleting a particular release version' do
         rv1 = Models::ReleaseVersion.make(release: release, version: '1')
-        Models::ReleaseVersion.make(release: release, version: '2')
 
         job = Jobs::DeleteRelease.new('test_release', 'version' => rv1.version, blobstore: blobstore)
         expect(job).to receive(:with_release_lock).
@@ -97,19 +96,13 @@ module Bosh::Director
         @cpkg2 = Models::CompiledPackage.make(package: @pkg2, blobstore_id: 'badcafe', stemcell_os: @stemcell.operating_system, stemcell_version: @stemcell.version)
         @cpkg3 = Models::CompiledPackage.make(package: @pkg3, blobstore_id: 'feeddead', stemcell_os: @stemcell.operating_system, stemcell_version: @stemcell.version)
 
-        @rv1.add_package(@pkg1)
-        @rv1.add_package(@pkg2)
         @rv1.add_package(@pkg3)
 
         @rv2.add_package(@pkg1)
         @rv2.add_package(@pkg2)
 
-        @rv1.add_template(@tmpl1)
-        @rv1.add_template(@tmpl2)
         @rv1.add_template(@tmpl3)
 
-        @rv2.add_template(@tmpl1)
-        @rv2.add_template(@tmpl2)
       end
 
       it 'should delete release version without touching any shared packages/templates' do

@@ -9,7 +9,6 @@ module Bosh::Director
         instance_double('Bosh::Director::Api::InstanceLookup',
                         by_attributes: instance,
                         by_uuid:       instance,
-                        find_all:      instances
         )
       end
       subject(:resurrection_manager) { ResurrectorManager.new }

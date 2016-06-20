@@ -7,19 +7,13 @@ module Bosh::Director
     let(:skip_drain) {instance_double('Bosh::Director::DeploymentPlan::SkipDrain')}
     let(:deployment) { instance_double('Bosh::Director::DeploymentPlan::Planner', {
         ip_provider: ip_provider,
-        skip_drain: skip_drain
       }) }
     let(:job) { instance_double('Bosh::Director::DeploymentPlan::InstanceGroup', name: 'job_name') }
-    let(:blobstore) { instance_double('Bosh::Blobstore::Client') }
 
     let(:cloud) { instance_double('Bosh::Clouds') }
-    let(:event_log) { instance_double('Bosh::Director::EventLog::Log') }
     before { fake_app }
 
     describe '#update' do
-      before { allow(job).to receive(:needed_instance_plans).with(no_args).and_return([instance_plan1, instance_plan2]) }
-      let(:instance_plan1) { Bosh::Director::DeploymentPlan::InstancePlan.new(existing_instance: nil, desired_instance: nil, instance: nil) }
-      let(:instance_plan2) { Bosh::Director::DeploymentPlan::InstancePlan.new(existing_instance: nil, desired_instance: nil, instance: nil) }
 
 
       it 'binds vms to instances, creates jobs configurations and updates dns' do
@@ -50,8 +44,6 @@ module Bosh::Director
       let(:vm_type) { instance_double('Bosh::Director::DeploymentPlan::VmType') }
       let(:stemcell) { instance_double('Bosh::Director::DeploymentPlan::Stemcell') }
 
-      let(:vm1) { instance_double('Bosh::Director::DeploymentPlan::Vm', clean: nil) }
-      let(:vm2) { instance_double('Bosh::Director::DeploymentPlan::Vm', clean: nil) }
 
       let(:instance_plan1) { Bosh::Director::DeploymentPlan::InstancePlan.new(existing_instance: nil, desired_instance: nil, instance: instance1) }
       let(:instance_plan2) { Bosh::Director::DeploymentPlan::InstancePlan.new(existing_instance: nil, desired_instance: nil, instance: instance2) }
@@ -63,8 +55,6 @@ module Bosh::Director
         allow(instance_deleter).to receive(:delete_instance_plans)
         allow(Config.event_log).to receive(:begin_stage).and_return(event_log_stage)
 
-        allow(job).to receive(:vm_type).and_return(vm_type)
-        allow(job).to receive(:stemcell).and_return(stemcell)
       end
 
       it 'creates an event log stage' do
@@ -86,13 +76,11 @@ module Bosh::Director
         it 'does not create an event log stage' do
           expect(Config.event_log).not_to receive(:begin_stage)
 
-          subject.delete_instances
         end
 
         it 'does not delete instances' do
           expect(instance_deleter).not_to receive(:delete_instance_plans)
 
-          subject.delete_instances
         end
       end
     end

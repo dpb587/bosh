@@ -8,8 +8,6 @@ module Bosh::Director::DeploymentPlan
       let (:desired_instance) { DesiredInstance.new(job) }
       let (:job) do
         job = InstanceGroup.new(logger)
-        job.name = 'job_name'
-        job
       end
       let (:bootstrap_az) { AvailabilityZone.new('bootstrap_name', {}) }
       let (:bootstrap_instance) {
@@ -28,8 +26,6 @@ module Bosh::Director::DeploymentPlan
         let (:az_2) { AvailabilityZone.new('az2_name', {}) }
         let (:instance_in_bootstrap_az) {
           instance = Instance.create_from_job(job, 4, 'started', nil, {}, bootstrap_az, logger)
-          instance.bind_existing_instance_model(BD::Models::Instance.make(uuid: 'bb-uuid1', index: 4, job: 'job_name'))
-          instance
         }
 
         let (:instance_plan_in_bootstrap_az) { InstancePlan.new(
@@ -57,7 +53,6 @@ module Bosh::Director::DeploymentPlan
 
         it 'should sort instance plans in alphanum order in alphanum sorted az' do
           instance2_not_in_bootstrap_az = Instance.create_from_job(job, 2, 'started', nil, {}, az_2, logger)
-          instance2_not_in_bootstrap_az.bind_existing_instance_model(BD::Models::Instance.make(uuid: '1-uuid2', index: 2, job: 'job_name'))
           instance_plan2_not_in_bootstrap_az = InstancePlan.new(
             existing_instance: instance2_not_in_bootstrap_az.model,
             desired_instance: desired_instance,
@@ -70,7 +65,6 @@ module Bosh::Director::DeploymentPlan
 
         it 'should set instance plans from az with bootstrap node first' do
           instance2_not_in_bootstrap_az = Instance.create_from_job(job, 2, 'started', nil, {}, az_2, logger)
-          instance2_not_in_bootstrap_az.bind_existing_instance_model(BD::Models::Instance.make(uuid: '1-uuid2', index: 2, job: 'job_name'))
           instance_plan2_not_in_bootstrap_az = InstancePlan.new(
             existing_instance: instance2_not_in_bootstrap_az.model,
             desired_instance: desired_instance,
@@ -78,7 +72,6 @@ module Bosh::Director::DeploymentPlan
             network_plans: [])
 
           instance3_not_in_bootstrap_az = Instance.create_from_job(job, 3, 'started', nil, {}, az_2, logger)
-          instance3_not_in_bootstrap_az.bind_existing_instance_model(BD::Models::Instance.make(uuid: '2-uuid2', index: 3, job: 'job_name'))
           instance_plan3_not_in_bootstrap_az = InstancePlan.new(
             existing_instance: instance3_not_in_bootstrap_az.model,
             desired_instance: desired_instance,
@@ -94,7 +87,6 @@ module Bosh::Director::DeploymentPlan
           az_4 = AvailabilityZone.new('az4_name', {})
 
           instance4_az_3 = Instance.create_from_job(job, 7, 'started', nil, {}, az_3, logger)
-          instance4_az_3.bind_existing_instance_model(BD::Models::Instance.make(uuid: '1234-uuid2', index: 7, job: 'job_name'))
           instance_plan3_az_3 = InstancePlan.new(
             existing_instance: instance4_az_3.model,
             desired_instance: desired_instance,
@@ -102,7 +94,6 @@ module Bosh::Director::DeploymentPlan
             network_plans: [])
 
           instance5_az_4 = Instance.create_from_job(job, 8, 'started', nil, {}, az_4, logger)
-          instance5_az_4.bind_existing_instance_model(BD::Models::Instance.make(uuid: '42341-uuid2', index: 8, job: 'job_name'))
           instance_plan5_az_4 = InstancePlan.new(
             existing_instance: instance5_az_4.model,
             desired_instance: desired_instance,
@@ -117,7 +108,6 @@ module Bosh::Director::DeploymentPlan
         context 'when instance does not have az' do
           it 'should sort it without errors' do
             instance2_without_az = Instance.create_from_job(job, 2, 'started', nil, {}, nil, logger)
-            instance2_without_az.bind_existing_instance_model(BD::Models::Instance.make(uuid: '1-uuid2', index: 2, job: 'job_name'))
             instance_plan2_without_az = InstancePlan.new(
               existing_instance: instance2_without_az.model,
               desired_instance: desired_instance,

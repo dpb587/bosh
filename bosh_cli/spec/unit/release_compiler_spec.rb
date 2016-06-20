@@ -10,8 +10,6 @@ module Bosh::Cli
     let(:artifacts_dir) { release_source.artifacts_dir }
 
     after do
-      FileUtils.rm_rf(workspace_dir)
-      release_source.cleanup
     end
 
     let(:blobstore) { Bosh::Blobstore::Client.create('local', 'blobstore_path' => blobstore_dir) }
@@ -27,20 +25,15 @@ module Bosh::Cli
     end
 
     before do
-      blobstore.create(File.read(job_tarball), 'fake-job-blobstore_id')
-      blobstore.create(File.read(package_tarball), 'fake-package-blobstore_id')
-      blobstore.create(File.read(license_tarball.path), 'fake-license-blobstore_id')
     end
 
     let(:release_manifest_file) { File.join(workspace_dir, 'release-1.yml') }
-    let(:release_index) { Versions::VersionsIndex.new(workspace_dir) }
     let(:original_release_manifest) do
       {
         'name' => 'fake-release-name',
         'version' => 'fake-release-version'
       }
     end
-    let(:release_manifest) { original_release_manifest }
 
     before { File.write(release_manifest_file, YAML.dump(release_manifest)) }
 
@@ -55,7 +48,6 @@ module Bosh::Cli
             File.read(package_tarball),
             {
               'version' => 'fake-package-fingerprint',
-              'blobstore_id' => 'fake-package-blobstore_id',
             }
           )
         end
@@ -64,10 +56,7 @@ module Bosh::Cli
           original_release_manifest.merge(
             'packages' => [{
               'name' => 'fake-package-name',
-              'version' => 'fake-package-fingerprint',
               'sha1' => Digest::SHA1.file(package_tarball).hexdigest,
-              'fingerpint' => 'fake-package-fingerprint',
-              'blobstore_id' => 'fake-package-blobstore_id',
             }])
         end
 
@@ -85,7 +74,6 @@ module Bosh::Cli
             File.read(job_tarball),
             {
               'version' => 'fake-job-fingerprint',
-              'blobstore_id' => 'fake-job-blobstore_id',
             }
           )
         end
@@ -94,10 +82,7 @@ module Bosh::Cli
           original_release_manifest.merge(
             'jobs' => [{
               'name' => 'fake-job-name',
-              'version' => 'fake-job-fingerprint',
               'sha1' => Digest::SHA1.file(job_tarball).hexdigest,
-              'fingerpint' => 'fake-job-fingerprint',
-              'blobstore_id' => 'fake-job-blobstore_id',
             }])
         end
 
@@ -115,7 +100,6 @@ module Bosh::Cli
             File.read(license_tarball.path),
             {
               'version' => 'fake-license-fingerprint',
-              'blobstore_id' => 'fake-license-blobstore_id',
             }
           )
         end
@@ -123,10 +107,7 @@ module Bosh::Cli
         let(:release_manifest) do
           original_release_manifest.merge(
             'license' => {
-              'version' => 'fake-license-version',
               'sha1' => Digest::SHA1.file(license_tarball.path).hexdigest,
-              'fingerprint' => 'fake-license-fingerprint',
-              'blobstore_id' => 'fake-license-blobstore_id'
             })
         end
 

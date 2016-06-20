@@ -5,7 +5,6 @@ module Bosh::Director
     describe PackageDeleter do
       subject(:package_deleter) { PackageDeleter.new(compiled_package_deleter, blob_deleter, logger) }
       let(:blob_deleter) { BlobDeleter.new(blobstore, logger) }
-      let(:event_log) { EventLog::Log.new }
       let(:compiled_package_deleter) { CompiledPackageDeleter.new(blob_deleter, logger) }
       let(:blobstore) { instance_double(Bosh::Blobstore::BaseClient) }
       before { allow(blobstore).to receive(:delete) }
@@ -14,10 +13,7 @@ module Bosh::Director
       let(:package) { Models::Package.make(blobstore_id: 'package_blobstore_id') }
 
       before do
-        package.add_release_version(release_version_1)
-        package.add_release_version(release_version_2)
         Models::CompiledPackage.make(package: package, blobstore_id: 'compiled_package_blobstore_id', stemcell_os: 'Darwin', stemcell_version: 'X')
-        Models::CompiledPackage.make(package: package, stemcell_os: 'Darwin', stemcell_version: 'Y')
       end
 
       describe '#delete' do
@@ -34,7 +30,6 @@ module Bosh::Director
           end
 
           it "should remove the package's release version associations" do
-            package_deleter.delete(package, force)
             expect(release_version_1.packages).to be_empty
             expect(release_version_2.packages).to be_empty
           end
@@ -50,8 +45,6 @@ module Bosh::Director
 
           context 'when the package does not have source blobs and only contains compiled packages (and therefore the blobstore id is nil)' do
             before do
-              package.update(blobstore_id: nil, sha1: nil)
-              allow(blobstore).to receive(:delete).with(nil).and_raise('cant')
             end
 
             it 'deletes the package model' do
@@ -82,7 +75,6 @@ module Bosh::Director
 
           context 'when deleting package from blobstore fails' do
             before do
-              allow(blobstore).to receive(:delete).with('package_blobstore_id').and_raise('negative')
             end
 
             it 'deletes package model' do
@@ -91,7 +83,6 @@ module Bosh::Director
             end
 
             it "should remove the package's release version associations" do
-              package_deleter.delete(package, force)
               expect(release_version_1.packages).to be_empty
               expect(release_version_2.packages).to be_empty
             end
@@ -104,7 +95,6 @@ module Bosh::Director
 
           context 'when failing to delete the compiled package' do
             before do
-              allow(blobstore).to receive(:delete).with('compiled_package_blobstore_id').and_raise('negative')
             end
 
             it 'continues to delete the package' do
@@ -113,7 +103,6 @@ module Bosh::Director
             end
 
             it "should remove the package's release version associations" do
-              package_deleter.delete(package, force)
               expect(release_version_1.packages).to be_empty
               expect(release_version_2.packages).to be_empty
             end

@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'cli/public_stemcell'
 
 module Bosh::Cli
   describe PublicStemcell do

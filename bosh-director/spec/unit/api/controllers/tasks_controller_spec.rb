@@ -23,7 +23,6 @@ module Bosh::Director
         config
       end
 
-      after { FileUtils.rm_rf(temp_dir) }
 
       it 'requires auth' do
         get '/'
@@ -64,17 +63,7 @@ module Bosh::Director
 
             context 'collection of tasks associated with different deployments' do
               before do
-                make_task_with_team(type: 'attach_disk', deployment_name: deployment_name_1, teams: [team_rocket, dev])
-                make_task_with_team(type: 'delete_deployment', deployment_name: deployment_name_1, teams: [team_rocket, dev])
-                make_task_with_team(type: 'run_errand', deployment_name: deployment_name_2, teams: [team_rocket])
                 make_task_with_team(type: 'snapshot_deployment', deployment_name: deployment_name_1, teams: [team_rocket, dev])
-                make_task_with_team(type: 'update_deployment', deployment_name: deployment_name_2, teams: [team_rocket])
-                Models::Task.make(type: 'create_snapshot')
-                Models::Task.make(type: 'delete_release')
-                Models::Task.make(type: 'delete_snapshot')
-                Models::Task.make(type: 'delete_stemcell')
-                Models::Task.make(type: 'update_release')
-                Models::Task.make(type: 'update_stemcell')
               end
 
               context 'when deployment name 1 is used as a query parameter' do
@@ -93,7 +82,6 @@ module Bosh::Director
                   type: :update_deployment, state: :queued
                 )
                 filtered_task = Models::Task.make(
-                  type: :update_deployment, state: :processing
                 )
                 get '/?state=queued'
                 expect(last_response.status).to eq(200)
@@ -108,7 +96,6 @@ module Bosh::Director
                 (1..20).map { |i|
                   Models::Task.make(
                     :type => :update_deployment,
-                    :state => :queued,
                   )
                 }
               end
@@ -152,12 +139,10 @@ module Bosh::Director
                 Bosh::Director::Jobs.constants.inject([]) { |memo, const|
                   klass = Bosh::Director::Jobs.const_get(const)
                   if klass.ancestors.include?(Bosh::Director::Jobs::BaseJob)
-                    memo << klass
                   end
                   memo
                 } - [Bosh::Director::Jobs::BaseJob]
                 ).map(&:job_type).map { |job_type|
-                  Models::Task.make(type: job_type)
                 }
               end
 
@@ -200,8 +185,6 @@ module Bosh::Director
               (1..20).map { |i|
                 make_task_with_team(
                   :type => :update_deployment,
-                  :state => :queued,
-                  :deployment_name => "deployment_dev#{i%2}",
                   :teams => i%2 == 0 ? [team_a, team_rocket] : [team_rocket, dev]
                 )
               }
@@ -218,7 +201,6 @@ module Bosh::Director
 
           context 'when user has team admin permissions' do
             before do
-              Models::Task.make(type: 'update_stemcell', deployment_name: nil, teams: nil)
               make_task_with_team(type: 'attach_disk', deployment_name: deployment_name_1, teams: [team_rocket, dev])
             end
 
@@ -230,7 +212,6 @@ module Bosh::Director
               before do
                 10.times do
                   make_task_with_team(type: 'attach_disk', deployment_name: deployment_name_2, teams: [team_rocket, dev])
-                  make_task_with_team(type: 'attach_disk', deployment_name: deployment_name_3, teams: [team_rocket])
                 end
               end
               it 'shows the limit amount of tasks' do
@@ -267,7 +248,6 @@ module Bosh::Director
             context 'when task has a deployment associated with it and the deployment has already been deleted' do
               let(:prod) { Models::Team.make(name: 'prod')}
               it 'should show up in the response' do
-                make_task_with_team(type: 'update_deployment', deployment_name: 'deleted_deployment', teams: [team_rocket, prod])
                 make_task_with_team(type: 'delete_deployment', deployment_name: 'deleted_deployment', teams: [team_rocket, dev])
                 get '/'
                 expect(last_response.status).to eq(200)
@@ -294,7 +274,6 @@ module Bosh::Director
             before(:each) { basic_authorize 'admin', 'admin' }
 
             it 'has API call that return task status' do
-              task = Models::Task.make(state: 'queued', description: 'fake-description')
 
               get "/#{task.id}"
               expect(last_response.status).to eq(200)
@@ -315,7 +294,6 @@ module Bosh::Director
             end
 
             context 'user has access to task' do
-              let(:task) { make_task_with_team(state: 'queued', deployment_name: deployment_name_1, teams: [team_rocket, dev]) }
 
               it 'returns task' do
                 get "/#{task.id}"
@@ -324,7 +302,6 @@ module Bosh::Director
             end
 
             context 'user does not have access to task' do
-              let(:task) { make_task_with_team(state: 'queued', deployment_name: deployment_name_1, teams: [team_rocket]) }
 
               it 'returns task' do
                 get "/#{task.id}"
@@ -336,10 +313,8 @@ module Bosh::Director
           context 'user has team admin access' do
             context "user doesn't have access to task" do
               before do
-                basic_authorize 'dev-team-member', 'dev-team-member'
               end
 
-              let(:task) { make_task_with_team(state: 'queued', deployment_name: deployment_name_1, :teams =>[team_rocket]) }
               it 'returns 401' do
                 get "/#{task.id}"
                 expect(last_response.status).to eq(401)
@@ -371,7 +346,6 @@ module Bosh::Director
               output_file.print('Test output')
               output_file.close
 
-              task = Models::Task.make(output: temp_dir)
 
               get "/#{task.id}/output"
               expect(last_response.status).to eq(200)
@@ -405,13 +379,6 @@ module Bosh::Director
                 output_file.close
               end
 
-              task = Models::Task.new
-              task.state = 'done'
-              task.type = :update_deployment
-              task.timestamp = Time.now
-              task.description = 'description'
-              task.output = temp_dir
-              task.save
 
               %w(debug event cpi).each do |log_type|
                 get "/#{task.id}/output?type=#{log_type}"
@@ -426,7 +393,6 @@ module Bosh::Director
             end
 
             context "task's deployment doesn't exist" do
-              let(:task) { Models::Task.make(output: temp_dir, deployment_name: 'deleted') }
               it 'gets task output' do
                 get "/#{task.id}/output"
                 expect(last_response.status).to eq(204)
@@ -475,17 +441,11 @@ module Bosh::Director
           context 'user has team admin access' do
             let(:task_1) do
               make_task_with_team(
-                type: :update_deployment,
-                state: :queued,
-                deployment_name: deployment_name_1,
                 teams: [team_rocket, dev],
               )
             end
             let(:task_2) do
               make_task_with_team(
-                type: :update_deployment,
-                state: :queued,
-                deployment_name: deployment_name_2,
                 teams: [team_rocket],
               )
             end
@@ -497,10 +457,8 @@ module Bosh::Director
 
             before(:each) do
               Models::Deployment.create_with_teams(:name => deployment_name_1,
-                :teams => [team_rocket, dev]
               )
               Models::Deployment.create_with_teams(:name => deployment_name_2,
-                :teams => [team_rocket]
               )
               basic_authorize 'dev-team-member', 'dev-team-member'
             end

@@ -8,7 +8,6 @@ module Bosh::Director
     before { DBSpecHelper.migrate_all_before(migration_file) }
 
     it 'ensures that fields allow texts longer than 65535 character' do
-      DBSpecHelper.migrate(migration_file)
 
       really_long_links_spec = 'a' * 65536
       db[:deployments] << {name: 'deployment', link_spec_json: really_long_links_spec}
@@ -19,7 +18,6 @@ module Bosh::Director
     it 'migrates data over without data loss' do
       db[:stemcells] << {
         name: 'bosh-aws-xen-hvm-ubuntu-trusty-go_agent',
-        operating_system: 'stemcell_os',
         version: '9999.1',
         cid: 'ami-12341234'
       }
@@ -104,7 +102,6 @@ module Bosh::Director
       }
 
 
-      DBSpecHelper.migrate(migration_file)
 
       expect(db[:compiled_packages].map{|cp| cp[:dependency_key]}).to eq(['dependency_key'])
       expect(db[:deployment_problems].map{|cp| cp[:data_json]}).to eq(['data_json'])

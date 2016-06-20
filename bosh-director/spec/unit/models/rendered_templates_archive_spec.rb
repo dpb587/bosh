@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'bosh/director/models/rendered_templates_archive'
 
 module Bosh::Director::Models
   describe RenderedTemplatesArchive do

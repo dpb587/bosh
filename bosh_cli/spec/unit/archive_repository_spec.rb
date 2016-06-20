@@ -4,7 +4,6 @@ describe Bosh::Cli::ArchiveRepository do
   let(:archive_dir_path) { Pathname(Dir.mktmpdir('bosh-archive-dir')) }
   let(:cache_dir_path) { Pathname(Dir.mktmpdir('bosh-cache-dir')) }
   let(:tarball) { Tempfile.new(['tarball', '.tgz']) }
-  after { archive_dir_path.rmtree; cache_dir_path.rmtree; tarball.unlink }
 
   let(:blobstore) { instance_double(Bosh::Blobstore::SimpleBlobstoreClient) }
   let(:resource) do
@@ -58,7 +57,6 @@ describe Bosh::Cli::ArchiveRepository do
 
   describe '#install' do
     context 'when installing a dev artifact' do
-      let(:final) { false }
 
       it 'places file in cache storage' do
         archive_repository.install(artifact)
@@ -82,7 +80,6 @@ describe Bosh::Cli::ArchiveRepository do
         before do
           dev_version_index.add_version(fingerprint, {
               'version' => fingerprint,
-              'sha1' => '289ecbf3fa7359e84d84e5d7c5edd22689ad81d4',
             })
         end
 
@@ -135,7 +132,6 @@ describe Bosh::Cli::ArchiveRepository do
         before do
           final_version_index.add_version('fake-fingerprint', {
               'version' => 'fake-fingerprint',
-              'sha1' => '289ecbf3fa7359e84d84e5d7c5edd22689ad81d4',
             })
         end
 
@@ -181,7 +177,6 @@ describe Bosh::Cli::ArchiveRepository do
 
       it 'finds artifacts using final resolver' do
         expect(final_resolver).to receive(:find_file).
-          with('fake-blobstore-id', sha1, 'package package-name (fake-fingerprint)').
           and_return('fake-tarball-path')
 
         artifact = archive_repository.lookup(resource)
@@ -191,7 +186,6 @@ describe Bosh::Cli::ArchiveRepository do
       context 'when artifact is not found in blobstore' do
         before do
           expect(final_resolver).to receive(:find_file).
-            with('fake-blobstore-id', sha1, 'package package-name (fake-fingerprint)').
             and_raise(Bosh::Blobstore::NotFound)
         end
 
@@ -205,7 +199,6 @@ describe Bosh::Cli::ArchiveRepository do
       context 'when blobstore lookup raises an error' do
         before do
           expect(final_resolver).to receive(:find_file).
-            with('fake-blobstore-id', sha1, 'package package-name (fake-fingerprint)').
             and_raise(Bosh::Blobstore::BlobstoreError)
         end
 
@@ -221,7 +214,6 @@ describe Bosh::Cli::ArchiveRepository do
       before do
         final_version_index.add_version(fingerprint, {
           'version' => fingerprint,
-          'sha1' => sha1
         })
       end
 
@@ -238,7 +230,6 @@ describe Bosh::Cli::ArchiveRepository do
           before { storage.put_file(sha1, tarball.path) }
 
           context 'when checksum does not match' do
-            let(:sha1) { 'fake-sha1' }
 
             it 'raises CorruptedArchive error' do
               expect {

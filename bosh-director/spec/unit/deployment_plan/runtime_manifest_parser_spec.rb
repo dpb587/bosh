@@ -39,25 +39,15 @@ module Bosh::Director
           deployment_model = Models::Deployment.make
           deployment_model.cloud_config_id = 1
           deployment_model.save
-          deployment_model
         end
 
         let(:manifest_hash) do
           {
-            'name' => 'deployment-name',
-            'releases' => [],
-            'networks' => [{ 'name' => 'network-name' }],
-            'compilation' => {},
-            'update' => {},
-            'resource_pools' => []
           }
         end
 
         let(:cloud_config) do
           cloud_config = Models::CloudConfig.make
-          cloud_config.manifest = Bosh::Spec::Deployments.simple_cloud_config
-          cloud_config.save
-          cloud_config
         end
 
         let(:planner_attributes) {
@@ -110,7 +100,6 @@ module Bosh::Director
                                                   }
                                               }))
 
-          subject.parse(runtime_manifest)
         end
 
         it "appends addon jobs to deployment job templates and addon properties to deployment job properties" do

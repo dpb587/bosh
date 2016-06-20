@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'logging'
 
 module Bosh::Director
   describe JobRunner do
@@ -15,7 +14,6 @@ module Bosh::Director
 
     let(:tasks_dir) { Dir.mktmpdir }
     before { allow(Config).to receive(:base_dir).and_return(tasks_dir) }
-    after { FileUtils.rm_rf(tasks_dir) }
 
     let(:task_dir) { File.join(tasks_dir, 'tasks', task.id.to_s) }
     before { FileUtils.mkdir_p(task_dir) }
@@ -50,8 +48,6 @@ module Bosh::Director
       let(:task) { Models::Task.make(id: 188) }
 
       it 'creates task directory if it is missing' do
-        task.save
-        make_runner(sample_job_class, 188)
         expect(File).to exist(task_dir)
       end
     end
@@ -62,11 +58,9 @@ module Bosh::Director
 
       allow(EventLog::Log)
         .to receive(:new)
-        .with(File.join(task_dir, 'event'))
         .and_return(event_log)
 
       allow(TaskResultFile).to receive(:new).
-        with(File.join(task_dir, 'result')).
         and_return(result_file)
 
       make_runner(sample_job_class, 42)
@@ -108,7 +102,6 @@ module Bosh::Director
 
     it 'updates task checkpoint time' do
       task = Models::Task[42]
-      task.update(:state => 'processing')
       expect(task.checkpoint_time).to be(nil)
       TaskCheckPointer.new(task.id).checkpoint
 

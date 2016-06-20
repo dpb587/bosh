@@ -7,7 +7,6 @@ module Bosh::Director
     let(:username) { 'username-1' }
     let(:job_queue) { instance_double('Bosh::Director::JobQueue') }
 
-    subject(:problem_manager) { described_class.new }
 
     before do
       allow(JobQueue).to receive(:new).and_return(job_queue)

@@ -11,7 +11,6 @@ describe Bosh::AwsCliPlugin::MicroBoshBootstrap do
       end
 
       after(:all) do
-        ENV.delete "BOSH_OVERRIDE_MICRO_STEMCELL_AMI"
       end
 
       it "uses the given AMI" do
@@ -36,7 +35,6 @@ describe Bosh::AwsCliPlugin::MicroBoshBootstrap do
     before do
       allow_any_instance_of(Bosh::Cli::Command::Micro).to receive(:micro_deployment)
       allow_any_instance_of(Bosh::Cli::Command::Micro).to receive(:perform)
-      allow_any_instance_of(Bosh::Cli::Command::User).to receive(:create)
       allow_any_instance_of(Bosh::Cli::Command::Login).to receive(:login)
       allow_any_instance_of(Bosh::AwsCliPlugin::MicroBoshBootstrap).to receive(:micro_ami).and_return("ami-123456")
     end
@@ -52,14 +50,12 @@ describe Bosh::AwsCliPlugin::MicroBoshBootstrap do
     end
 
     it "should generate a microbosh.yml in the right location" do
-      allow_any_instance_of(::Bosh::Cli::Command::Base).to receive(:non_interactive?).and_return(true)
       expect(File.exist?("deployments/micro/micro_bosh.yml")).to eq(false)
       microbosh_bootstrap.start
       expect(File.exist?("deployments/micro/micro_bosh.yml")).to eq(true)
     end
 
     it "should remove any existing deployment artifacts first" do
-      allow_any_instance_of(::Bosh::Cli::Command::Base).to receive(:non_interactive?).and_return(true)
       FileUtils.mkdir_p("deployments/micro")
       File.open("deployments/bosh-registry.log", "w") { |f| f.write("old stuff!") }
       File.open("deployments/micro/leftover.yml", "w") { |f| f.write("old stuff!") }
@@ -71,7 +67,6 @@ describe Bosh::AwsCliPlugin::MicroBoshBootstrap do
     end
 
     it "should deploy a micro bosh" do
-      allow_any_instance_of(::Bosh::Cli::Command::Base).to receive(:non_interactive?).and_return(true)
       expect_any_instance_of(Bosh::Cli::Command::Micro).to receive(:micro_deployment).with("micro")
       expect_any_instance_of(Bosh::Cli::Command::Micro).to receive(:perform).with("ami-123456")
       microbosh_bootstrap.start

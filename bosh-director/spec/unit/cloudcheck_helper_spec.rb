@@ -24,11 +24,8 @@ module Bosh::Director
         deployment: deployment_model,
         job: 'mysql_node',
         index: 0,
-        vm_cid: 'vm-cid',
-        spec: spec
       )
     end
-    let(:spec) { {'apply' => 'spec', 'env' => {'vm_env' => 'json'}} }
     let(:deployment_model) { Models::Deployment.make(manifest: YAML.dump(Bosh::Spec::Deployments.legacy_manifest), :name => 'name-1') }
     let(:test_problem_handler) { ProblemHandlers::Base.create_by_type(:test_problem_handler, instance.uuid, {}) }
     let(:fake_cloud) { instance_double('Bosh::Cloud') }
@@ -45,8 +42,6 @@ module Bosh::Director
       allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instance.credentials, instance.agent_id, anything).and_return(agent_client)
       allow(VmDeleter).to receive(:new).and_return(vm_deleter)
       allow(VmCreator).to receive(:new).and_return(vm_creator)
-      allow(fake_cloud).to receive(:create_vm)
-      allow(fake_cloud).to receive(:delete_vm)
       allow(Config).to receive(:current_job).and_return(update_job)
       fake_app
     end
@@ -81,7 +76,6 @@ module Bosh::Director
     describe '#recreate_vm' do
       describe 'error handling' do
         it "doesn't recreate VM if apply spec is unknown" do
-          instance.update(spec_json: nil)
 
           expect {
             test_problem_handler.apply_resolution(:recreate_vm)

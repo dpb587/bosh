@@ -9,25 +9,21 @@ module Bosh::Director
       DBSpecHelper.migrate_all_before(migration_file)
 
       db[:stemcells] << {
-        id: 1,
         name: 'bosh-aws-xen-hvm-ubuntu-trusty-go_agent',
         operating_system: stemcell_os,
         version: '9999.1',
         cid: 'ami-12341234'
       }
       db[:releases] << {
-        id: 1,
         name: 'test_release',
       }
       db[:packages] << {
-        id: 1,
         release_id: 1,
         name: 'test_package',
         version: 'abcd1234',
         dependency_set_json: '{}',
       }
       db[:compiled_packages] << {
-        id: 1,
         build: 1,
         package_id: 1,
         stemcell_id: 1,

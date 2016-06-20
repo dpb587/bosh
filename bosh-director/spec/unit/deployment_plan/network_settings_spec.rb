@@ -26,12 +26,9 @@ module Bosh::Director::DeploymentPlan
     let(:manual_network) {
       ManualNetwork.parse({
           'name' => 'net_a',
-          'dns' => ['1.2.3.4'],
           'subnets' => [{
               'range' => '10.0.0.1/24',
               'gateway' => '10.0.0.1',
-              'dns' => ['1.2.3.4'],
-              'cloud_properties' => {'foo' => 'bar'}
             }]
         },
         [],
@@ -44,8 +41,6 @@ module Bosh::Director::DeploymentPlan
     describe '#network_settings' do
       let(:job) do
         job = InstanceGroup.new(logger)
-        job.name = 'fake-job'
-        job
       end
 
       context 'dynamic network' do

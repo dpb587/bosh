@@ -37,8 +37,6 @@ module Bosh::Director
         'network' => 'a',
         'env' => compilation_env,
         'cloud_properties' => cloud_properties,
-        'reuse_compilation_vms' => false,
-        'az' => '',
       }
       DeploymentPlan::CompilationConfig.new(compilation_spec, {}, [])
     end
@@ -47,9 +45,7 @@ module Bosh::Director
       instance_double(Bosh::Director::DeploymentPlan::Planner,
         compilation: compilation_config,
         model: deployment_model,
-        name: 'mycloud',
         ip_provider: ip_provider,
-        recreate: false
       )
     end
     let(:subnet) {instance_double('Bosh::Director::DeploymentPlan::ManualNetworkSubnet', range: NetAddr::CIDR.create('192.168.0.0/24'))}
@@ -67,7 +63,6 @@ module Bosh::Director
       thread_pool = instance_double('Bosh::Director::ThreadPool')
       allow(thread_pool).to receive(:wrap).and_yield(thread_pool)
       allow(thread_pool).to receive(:process).and_yield
-      allow(thread_pool).to receive(:working?).and_return(false)
       thread_pool
     end
     let(:instance_deleter) { instance_double(Bosh::Director::InstanceDeleter) }
@@ -94,11 +89,6 @@ module Bosh::Director
       allow(agent_client).to receive(:update_settings)
       allow(agent_client).to receive(:get_state)
       allow(agent_client).to receive(:apply)
-      allow(another_agent_client).to receive(:wait_until_ready)
-      allow(another_agent_client).to receive(:update_settings)
-      allow(another_agent_client).to receive(:get_state)
-      allow(another_agent_client).to receive(:apply)
-      allow(ThreadPool).to receive_messages(new: thread_pool)
       allow(deployment_plan).to receive(:network).with('a').and_return(network)
       allow(instance_deleter).to receive(:delete_instance_plan)
       allow(Config).to receive(:current_job).and_return(update_job)
@@ -245,9 +235,6 @@ module Bosh::Director
           compilation_spec = {
             'workers' => n_workers,
             'network' => 'a',
-            'env' => compilation_env,
-            'cloud_properties' => cloud_properties,
-            'reuse_compilation_vms' => false,
             'az' => 'foo-az',
           }
           DeploymentPlan::CompilationConfig.new(compilation_spec, {'foo-az' => availability_zone }, [])
@@ -318,7 +305,6 @@ module Bosh::Director
         end
 
         context 'when keep_unreachable_vms is set' do
-          before { Config.keep_unreachable_vms = true }
 
           it 'removes the vm from the reuser so that it is not cleaned up later when reuser deletes all instances' do
             expect(instance_reuser).to receive(:remove_instance)
@@ -333,7 +319,6 @@ module Bosh::Director
         it 'no longer offers that vm for reuse' do
           original = nil
           compilation_instance_pool.with_reused_vm(stemcell) do |instance|
-            original = instance
           end
 
           expect {

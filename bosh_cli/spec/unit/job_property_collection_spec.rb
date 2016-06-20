@@ -56,8 +56,6 @@ describe Bosh::Cli::JobPropertyCollection do
 
     manifest_properties = {
       "cc" => {
-        "token" => "deadbeef",
-        "foo" => %w(bar baz zaz)
       },
       "router" => {
         "token" => "zbb"

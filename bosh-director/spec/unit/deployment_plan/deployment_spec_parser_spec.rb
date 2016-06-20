@@ -14,12 +14,8 @@ module Bosh::Director
       let(:deployment_model) { Models::Deployment.make }
       let(:manifest_hash) do
         {
-          'name' => 'deployment-name',
           'releases' => [],
-          'networks' => [{ 'name' => 'network-name' }],
-          'compilation' => {},
           'update' => {},
-          'resource_pools' => [],
         }
       end
       let(:planner_attributes) {
@@ -29,8 +25,6 @@ module Bosh::Director
         }
       }
 
-      before { allow(DeploymentPlan::CompilationConfig).to receive(:new).and_return(compilation_config) }
-      let(:compilation_config) { instance_double('Bosh::Director::DeploymentPlan::CompilationConfig') }
 
       before { allow(DeploymentPlan::UpdateConfig).to receive(:new).and_return(update_config) }
       let(:update_config) { instance_double('Bosh::Director::DeploymentPlan::UpdateConfig') }
@@ -50,7 +44,6 @@ module Bosh::Director
       describe 'stemcells' do
         context 'when no top level stemcells' do
           before do
-            manifest_hash.delete('stemcells')
           end
 
           it 'should not error out' do
@@ -151,7 +144,6 @@ module Bosh::Director
         end
 
         it 'allows to not include properties key' do
-          manifest_hash.delete('properties')
           expect(parsed_deployment.properties).to eq({})
         end
       end
@@ -159,8 +151,6 @@ module Bosh::Director
       describe 'releases/release key' do
         let(:releases_spec) do
           [
-            { 'name' => 'foo', 'version' => '27' },
-            { 'name' => 'bar', 'version' => '42' },
           ]
         end
 
@@ -185,7 +175,6 @@ module Bosh::Director
         end
 
         context "when 'releases' section is specified" do
-          before { manifest_hash.delete('release') }
 
           context 'when non-duplicate releases are included' do
             before do
@@ -239,7 +228,6 @@ module Bosh::Director
         end
 
         context "when both 'releases' and 'release' sections are specified" do
-          before { manifest_hash.merge!('releases' => []) }
           before { manifest_hash.merge!('release' => {}) }
 
           it 'raises an error' do
@@ -251,14 +239,11 @@ module Bosh::Director
 
         context "when neither 'releases' or 'release' section is specified" do
           before { manifest_hash.delete('releases') }
-          before { manifest_hash.delete('release') }
 
           it 'raises an error' do
             expect {
               parsed_deployment
             }.to raise_error(
-              ValidationMissingField,
-              /Required property 'releases' was not specified in object .+/,
             )
           end
         end
@@ -272,7 +257,6 @@ module Bosh::Director
             update = instance_double('Bosh::Director::DeploymentPlan::UpdateConfig')
 
             expect(DeploymentPlan::UpdateConfig).to receive(:new).
-              with('foo' => 'bar').
               and_return(update)
 
             expect(parsed_deployment.update).to eq(update)
@@ -282,8 +266,6 @@ module Bosh::Director
               let(:options) { { 'canaries'=> '42' } }
               it "replaces canaries value from job's update section with option's value" do
                 expect(DeploymentPlan::UpdateConfig).to receive(:new)
-                  .with( {'foo'=> 'bar', 'canaries' => '42'} )
-                  .and_return(update_config)
                 parsed_deployment.update
               end
           end
@@ -291,8 +273,6 @@ module Bosh::Director
             let(:options) { { 'max_in_flight'=> '42' } }
             it "replaces max_in_flight value from job's update section with option's value" do
               expect(DeploymentPlan::UpdateConfig).to receive(:new)
-                .with( {'foo'=> 'bar', 'max_in_flight' => '42'} )
-                .and_return(update_config)
               parsed_deployment.update
             end
           end
@@ -305,8 +285,6 @@ module Bosh::Director
             expect {
               parsed_deployment
             }.to raise_error(
-              ValidationMissingField,
-              /Required property 'update' was not specified in object .+/,
             )
           end
         end
@@ -314,9 +292,7 @@ module Bosh::Director
 
       shared_examples_for 'jobs/instance_groups key' do
         context 'when there is at least one job' do
-          before { manifest_hash.merge!(keyword => []) }
 
-          let(:event_log) { instance_double('Bosh::Director::EventLog::Log') }
 
           context 'when job names are unique' do
             before do
@@ -330,7 +306,6 @@ module Bosh::Director
               instance_double('Bosh::Director::DeploymentPlan::InstanceGroup', {
                 name: 'job1-name',
                 canonical_name: 'job1-canonical-name',
-                templates: []
               })
             end
 
@@ -338,31 +313,25 @@ module Bosh::Director
               instance_double('Bosh::Director::DeploymentPlan::InstanceGroup', {
                 name: 'job2-name',
                 canonical_name: 'job2-canonical-name',
-                templates: []
               })
             end
 
             it 'delegates to Job to parse job specs' do
               expect(DeploymentPlan::InstanceGroup).to receive(:parse).
-                with(be_a(DeploymentPlan::Planner), {'name' => 'job1-name'}, event_log, logger, {}).
                 and_return(job1)
 
               expect(DeploymentPlan::InstanceGroup).to receive(:parse).
-                with(be_a(DeploymentPlan::Planner), {'name' => 'job2-name'}, event_log, logger, {}).
                 and_return(job2)
 
               expect(parsed_deployment.instance_groups).to eq([job1, job2])
             end
 
             context 'when canaries value is present in options' do
-              let(:options) { { 'canaries'=> '42' } }
               it "replaces canaries value from job's update section with option's value" do
                 expect(DeploymentPlan::InstanceGroup).to receive(:parse)
-                  .with(be_a(DeploymentPlan::Planner), {'name' => 'job1-name'}, event_log, logger, options)
                   .and_return(job1)
 
                 expect(DeploymentPlan::InstanceGroup).to receive(:parse).
-                  with(be_a(DeploymentPlan::Planner), {'name' => 'job2-name'}, event_log, logger, options).
                   and_return(job2)
 
                 parsed_deployment.instance_groups
@@ -370,14 +339,11 @@ module Bosh::Director
             end
 
             context 'when max_in_flight value is present in options' do
-              let(:options) { { 'max_in_flight'=> '42' } }
               it "replaces max_in_flight value from job's update section with option's value" do
                 expect(DeploymentPlan::InstanceGroup).to receive(:parse)
-                   .with(be_a(DeploymentPlan::Planner), {'name' => 'job1-name'}, event_log, logger, options)
                    .and_return(job1)
 
                 expect(DeploymentPlan::InstanceGroup).to receive(:parse).
-                  with(be_a(DeploymentPlan::Planner), {'name' => 'job2-name'}, event_log, logger, options).
                   and_return(job2)
 
                 parsed_deployment.instance_groups
@@ -386,7 +352,6 @@ module Bosh::Director
 
             it 'allows to look up job by name' do
               allow(DeploymentPlan::InstanceGroup).to receive(:parse).
-                with(be_a(DeploymentPlan::Planner), {'name' => 'job1-name'}, event_log, logger, {}).
                 and_return(job1)
 
               allow(DeploymentPlan::InstanceGroup).to receive(:parse).
@@ -423,25 +388,20 @@ module Bosh::Director
 
             it 'raises an error' do
               allow(DeploymentPlan::InstanceGroup).to receive(:parse).
-                with(be_a(DeploymentPlan::Planner), {'name' => 'job1-name'}, event_log, logger, {}).
                 and_return(job1)
 
               allow(DeploymentPlan::InstanceGroup).to receive(:parse).
-                with(be_a(DeploymentPlan::Planner), {'name' => 'job2-name'}, event_log, logger, {}).
                 and_return(job2)
 
               expect {
                 parsed_deployment
               }.to raise_error(
-                DeploymentCanonicalJobNameTaken,
-                "Invalid instance group name 'job2-name', canonical name already taken",
               )
             end
           end
         end
 
         context 'when there are no jobs' do
-          before { manifest_hash.merge!(keyword => []) }
 
           it 'parses jobs and return empty array' do
             expect(parsed_deployment.instance_groups).to eq([])
@@ -449,7 +409,6 @@ module Bosh::Director
         end
 
         context 'when jobs key is not specified' do
-          before { manifest_hash.delete(keyword) }
 
           it 'parses jobs and return empty array' do
             expect(parsed_deployment.instance_groups).to eq([])
@@ -469,12 +428,8 @@ module Bosh::Director
         context 'when there are both jobs and instance_groups' do
           before do
             manifest_hash.merge!('jobs' => [
-                                     { 'name' => 'job1-name' },
-                                     { 'name' => 'job2-name' },
                                  ],
                                  'instance_groups' => [
-                                     { 'name' => 'job1-name' },
-                                     { 'name' => 'job2-name' },
                                  ])
           end
 

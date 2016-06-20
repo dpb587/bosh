@@ -60,8 +60,6 @@ module Bosh::Director::Models
 
       it 'will return 1 for new, unique combinations of packages and stemcells' do
         5.times do
-          package = Package.make
-          stemcell = Stemcell.make
 
           expect(CompiledPackage.generate_build_number(package, stemcell.operating_system, stemcell.version)).to eq(1)
         end
@@ -75,9 +73,6 @@ module Bosh::Director::Models
       context 'when creating new compiled package' do
         it 'generates dependency key sha' do
           compiled_package = CompiledPackage.make(
-            package: package,
-            stemcell_os: stemcell.operating_system,
-            stemcell_version: stemcell.version,
             dependency_key: dependency_key
           )
 
@@ -88,10 +83,6 @@ module Bosh::Director::Models
       context 'when updating existing compiled package' do
         it 'updates dependency key sha' do
           compiled_package = CompiledPackage.make(
-            package: package,
-            stemcell_os: stemcell.operating_system,
-            stemcell_version: stemcell.version,
-            dependency_key: dependency_key
           )
 
           compiled_package.update dependency_key: 'new-fake-key'

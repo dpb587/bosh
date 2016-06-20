@@ -17,19 +17,15 @@ module Bosh::Director
     def make_instance_plan
       instance_model = Models::Instance.make
       instance = DeploymentPlan::Instance.create_from_job(job, instance_model.index, 'started', deployment, {}, nil, logger)
-      instance.bind_existing_instance_model(instance_model)
       DeploymentPlan::InstancePlan.new({
         existing_instance: instance_model,
         desired_instance: DeploymentPlan::DesiredInstance.new,
         instance: instance,
-        network_plans: [],
       })
     end
     let(:deployment) { instance_double(DeploymentPlan::Planner) }
     let(:job) do
       job = DeploymentPlan::InstanceGroup.new(logger)
-      job.name = 'fake-job'
-      job
     end
 
     context 'when there are vip networks' do
@@ -75,13 +71,11 @@ module Bosh::Director
 
         context 'when existing instance static IP is no longer in the list of IPs' do
           before do
-            Models::IpAddress.make(address: ip_to_i('65.65.65.65'), network_name: 'fake-network-1', instance: instance_plan.existing_instance)
             Models::IpAddress.make(address: ip_to_i('79.79.79.79'), network_name: 'fake-network-2', instance: instance_plan.existing_instance)
           end
 
           it 'picks new IP for instance' do
             planner.add_vip_network_plans(instance_plans, vip_networks)
-            instance_plan = instance_plans.first
             expect(instance_plan.network_plans[0].reservation.ip).to eq(ip_to_i('68.68.68.68'))
             expect(instance_plan.network_plans[0].reservation.network).to eq(vip_deployment_network_1)
 
@@ -122,7 +116,6 @@ module Bosh::Director
       let(:vip_networks) { [] }
 
       it 'does not modify instance plans' do
-        planner.add_vip_network_plans(instance_plans, vip_networks)
         expect(instance_plans).to eq(instance_plans)
       end
     end

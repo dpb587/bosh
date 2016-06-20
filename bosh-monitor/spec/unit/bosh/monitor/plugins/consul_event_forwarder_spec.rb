@@ -18,7 +18,6 @@ describe Bhm::Plugins::ConsulEventForwarder do
   let(:agent_base_url){ "http://fake-consul-cluster:8500/v1/agent/check/" }
   let(:ttl_pass_uri){ URI.parse( agent_base_url + "pass/#{heartbeat_name}?") }
   let(:ttl_fail_uri){ URI.parse( agent_base_url + "fail/#{heartbeat_name}?") }
-  let(:ttl_warn_uri){ URI.parse( agent_base_url + "warn/#{heartbeat_name}?") }
   let(:register_uri){ URI.parse( agent_base_url + "register?") }
   let(:register_uri_with_port){ URI.parse("http://fake-consul-cluster:#{new_port}/v1/agent/check/register?")}
   let(:register_uri_with_protocol){ URI.parse("#{new_protocol}://fake-consul-cluster:8500/v1/agent/check/register?")}
@@ -49,7 +48,6 @@ describe Bhm::Plugins::ConsulEventForwarder do
     context "when we specify host, endpoint and port" do
       let(:options){ { 'host' => "fake-consul-cluster", 'protocol' => 'http', 'events_api' => '/v1/api', 'port' => 8500 } }
       it "is valid" do
-        subject.run
         expect(subject.validate_options).to eq(true)
       end
     end
@@ -57,7 +55,6 @@ describe Bhm::Plugins::ConsulEventForwarder do
     context "when we omit the host" do
       let(:options){ {'host' => nil} }
       it "is not valid" do
-        subject.run
         expect(subject.validate_options).to eq(false)
       end
     end
@@ -65,7 +62,6 @@ describe Bhm::Plugins::ConsulEventForwarder do
     context "when we omit the enpoint and port" do
       let(:options){ {'host' => 'fake-consul-cluster', 'protocol' => 'https', 'port' => 8500} }
       it "is valid" do
-        subject.run
         expect(subject.validate_options).to eq(true)
       end
     end
@@ -78,9 +74,7 @@ describe Bhm::Plugins::ConsulEventForwarder do
     context "without valid options" do
       let(:options){ { 'host' => nil } }
       it "it should not forward events if options are invalid" do
-        subject.run
         expect(subject).to_not receive(:send_http_put_request).with(alert_uri, event_request)
-        subject.process(alert)
       end
     end
 
@@ -114,7 +108,6 @@ describe Bhm::Plugins::ConsulEventForwarder do
     end
 
     it "should properly send namespaced job name when namespace used" do
-      options.merge!({'namespace' => namespace })
       subject.run
       expect(subject).to receive(:send_http_put_request).with(register_uri, register_request_with_namespace)
       subject.process(heartbeat)
@@ -175,27 +168,20 @@ describe Bhm::Plugins::ConsulEventForwarder do
     end
 
     it "should not send a registration request if an event is already registered" do
-      subject.run
       EM.run do
-        subject.process(heartbeat)
         EM.stop
       end
 
       expect(subject).to_not receive(:send_http_put_request).with(register_uri, register_request)
-      subject.process(heartbeat)
     end
 
     describe "when events are not enabled" do
-      let(:options){ { 'host' => 'fake-consul-cluster', 'events' => false } }
       it "should not forward events" do
-        subject.run
 
         EM.run do
-          subject.process(heartbeat)
           EM.stop
         end
         expect(subject).to_not receive(:send_http_put_request).with(alert_uri, event_request)
-        subject.process(alert)
       end
     end
 
@@ -233,19 +219,13 @@ describe Bhm::Plugins::ConsulEventForwarder do
     describe "when node_id is missing from the heartbeat event" do
 
       it "should not forward the event when heartbeats_as_alerts is set" do
-        options.merge({'heartbeats_as_alerts' => true, 'ttl' => nil})
-        subject.run
 
         expect(subject).to_not receive(:notify_consul)
-        subject.process(make_heartbeat({time: Time.now, node_id: nil}))
       end
 
       it "should not forward the ttl for event when use_ttl is set" do
-        options.merge({'heartbeats_as_alerts' => nil, 'ttl' => "120s"})
-        subject.run
 
         expect(subject).to_not receive(:notify_consul)
-        subject.process(make_heartbeat({time: Time.now, node_id: nil}))
       end
     end
   end

@@ -16,20 +16,14 @@ module Bosh::Director
       let(:stemcell_sha1) { 'sha1' }
       let(:stemcell) { double('stemcell', sha1: stemcell_sha1) }
       let(:package) { double('package', name: package_name, fingerprint: package_fingerprint) }
-      let(:dep_pkg2) { double('dependent package 2', fingerprint: 'dp_fingerprint2', version: '9.2-dev', name: 'zyx') }
-      let(:dep_pkg1) { double('dependent package 1', fingerprint: 'dp_fingerprint1', version: '10.1-dev', name: 'abc') }
 
-      let(:dep_task2) { make(dep_pkg2, stemcell) }
-      let(:dep_task1) { make(dep_pkg1, stemcell) }
 
-      let(:dependent_packages) { [] }
 
       subject(:task) do
         CompileTask.new(package, stemcell, job, 'fake-dependency-key', 'fake-cache-key')
       end
 
       context 'with an initial job' do
-        let(:job) { double('job') }
 
         it 'can create' do
           expect(task.jobs).to eq([job])
@@ -60,11 +54,9 @@ module Bosh::Director
         dep1_task = make(dep1, stemcell)
         dep2_task = make(dep2, stemcell)
 
-        task.add_dependency(dep1_task)
         task.add_dependency(dep2_task)
 
         expect(task.all_dependencies_compiled?).to be(false)
-        dep1_task.use_compiled_package(compiled_package)
         expect(task.all_dependencies_compiled?).to be(false)
         dep2_task.use_compiled_package(compiled_package)
         expect(task.all_dependencies_compiled?).to be(true)
@@ -97,7 +89,6 @@ module Bosh::Director
     end
 
     describe 'using compiled package' do
-      let(:job) { instance_double('Bosh::Director::DeploymentPlan::InstanceGroup') }
 
       it 'registers compiled package with job' do
         package = Models::Package.make
@@ -115,7 +106,6 @@ module Bosh::Director
         expect(job_b).to receive(:use_compiled_package).with(cp)
 
         task.use_compiled_package(cp)
-        task.add_job(job_a)
         task.add_job(job_b)
 
         expect(task.jobs).to eq([job_a, job_b])
@@ -187,7 +177,6 @@ module Bosh::Director
 
     describe '#find_compiled_package' do
       let(:event_log) { double("event_log") }
-      let(:logger) { double("logger", info:nil) }
       let(:package) { Models::Package.make }
       let(:stemcell) { make_stemcell(operating_system: 'chrome-os', version: '48.0') }
       let(:dependency_key) { 'fake-dependency-key' }
@@ -206,7 +195,6 @@ module Bosh::Director
         end
 
         context 'when the stemcell os & version do not match exactly' do
-          let!(:compiled_package) {Models::CompiledPackage.make(package: package, stemcell_os: stemcell.os, stemcell_version: '48.1', dependency_key: dependency_key)}
 
           context 'when using the compiled package cache' do
             before { allow(Config).to receive(:use_compiled_package_cache?).and_return(true) }
@@ -238,7 +226,6 @@ module Bosh::Director
           end
 
           context 'when not using the compiled package cache' do
-            before { allow(Config).to receive(:use_compiled_package_cache?).and_return(false) }
             it 'returns nil' do
               expect(BlobUtil).not_to receive(:fetch_from_global_cache)
               expect(task.find_compiled_package(logger, event_log)).to eq(nil)
@@ -250,13 +237,10 @@ module Bosh::Director
       context 'when source is NOT available' do
         before do
           package.blobstore_id = nil
-          package.sha1 = nil
         end
 
         context 'when the stemcell os matches and there is an exact patch-level match' do
           it 'returns an exact match' do
-            Models::CompiledPackage.make(package: package, stemcell_os: stemcell.os, stemcell_version: '48.2', dependency_key: dependency_key)
-            Models::CompiledPackage.make(package: package, stemcell_os: stemcell.os, stemcell_version: '48.1', dependency_key: dependency_key)
             Models::CompiledPackage.make(package: package, stemcell_os: stemcell.os, stemcell_version: '48.0', dependency_key: dependency_key)
 
             expect(BlobUtil).not_to receive(:fetch_from_global_cache)
@@ -266,10 +250,7 @@ module Bosh::Director
 
         context 'when the stemcell os matches but there is not an exact patch-level match' do
           it 'returns the highest patch level' do
-            Models::CompiledPackage.make(package: package, stemcell_os: stemcell.os, stemcell_version: '48', dependency_key: dependency_key)
-            Models::CompiledPackage.make(package: package, stemcell_os: stemcell.os, stemcell_version: '48.1', dependency_key: dependency_key)
             Models::CompiledPackage.make(package: package, stemcell_os: stemcell.os, stemcell_version: '48.3', dependency_key: dependency_key)
-            Models::CompiledPackage.make(package: package, stemcell_os: stemcell.os, stemcell_version: '48.2', dependency_key: dependency_key)
 
             expect(BlobUtil).not_to receive(:fetch_from_global_cache)
             expect(task.find_compiled_package(logger, event_log).stemcell_version).to eq('48.3')
@@ -286,7 +267,6 @@ module Bosh::Director
         end
 
         context 'when there is no compatible compiled package' do
-          let!(:compiled_package) { Models::CompiledPackage.make(package: package, stemcell_os: stemcell.os, stemcell_version: '50', dependency_key: dependency_key) }
 
           it 'returns nil' do
             expect(task.find_compiled_package(logger, event_log)).to be_nil

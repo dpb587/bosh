@@ -6,13 +6,10 @@ module Bosh::Cli::Command::Release
 
     describe 'inspect release' do
       with_director
-      with_target
       with_logged_in_user
 
       it 'should raise an error when the response looks like it is from an old director' do
         allow(director).to receive(:inspect_release).and_return({
-                                                                    'jobs' => [],
-                                                                    'packages' => [],
                                                                     'versions' => [],
                                                                 })
         expect { command.inspect('foo/123') }.to raise_error(Bosh::Cli::DirectorError,

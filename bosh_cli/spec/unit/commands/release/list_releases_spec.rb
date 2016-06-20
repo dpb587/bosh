@@ -7,7 +7,6 @@ module Bosh::Cli::Command::Release
     let(:director) do
       instance_double(
         'Bosh::Cli::Client::Director',
-        get_status: { 'version' => '1.2580.0' }
       )
     end
 
@@ -27,7 +26,6 @@ module Bosh::Cli::Command::Release
               {
                 'version' => '0+dev.3',
                 'commit_hash' => 'fake-hash-3',
-                'currently_deployed' => false,
                 'uncommitted_changes' => true
               },
               {
@@ -38,7 +36,6 @@ module Bosh::Cli::Command::Release
               {
                 'version' => '0+dev.1',
                 'commit_hash' => 'fake-hash-1',
-                'currently_deployed' => false,
               }
             ],
           }
@@ -47,24 +44,13 @@ module Bosh::Cli::Command::Release
 
       before do
         allow(command).to receive(:logged_in?).and_return(true)
-        command.options[:target] = 'http://bosh-target.example.com'
         allow(director).to receive(:list_releases).and_return(releases)
       end
 
       it 'lists all releases' do
         command.list
         expect(actual).to match_output %(
-          +--------------+----------+--------------+
-          | Name         | Versions | Commit Hash  |
-          +--------------+----------+--------------+
-          | bosh-release | 0+dev.1  | fake-hash-1  |
-          |              | 0+dev.2* | fake-hash-2  |
-          |              | 0+dev.3  | fake-hash-3+ |
-          +--------------+----------+--------------+
-          (*) Currently deployed
-          (+) Uncommitted changes
 
-          Releases total: 1
         )
       end
 
@@ -78,7 +64,6 @@ module Bosh::Cli::Command::Release
                   'version' => '0+dev.3',
                   'commit_hash' => 'fake-hash-3',
                   'currently_deployed' => true,
-                  'uncommitted_changes' => false
                 }
               ],
             }
@@ -88,14 +73,7 @@ module Bosh::Cli::Command::Release
         it 'prints Currently deployed' do
           command.list
           expect(actual).to match_output %(
-            +--------------+----------+-------------+
-            | Name         | Versions | Commit Hash |
-            +--------------+----------+-------------+
-            | bosh-release | 0+dev.3* | fake-hash-3 |
-            +--------------+----------+-------------+
-            (*) Currently deployed
 
-            Releases total: 1
           )
         end
       end
@@ -109,7 +87,6 @@ module Bosh::Cli::Command::Release
                 {
                   'version' => '0+dev.3',
                   'commit_hash' => 'fake-hash-3',
-                  'currently_deployed' => false,
                   'uncommitted_changes' => true
                 }
               ],
@@ -120,14 +97,7 @@ module Bosh::Cli::Command::Release
         it 'prints Uncommited changes' do
           command.list
           expect(actual).to match_output %(
-            +--------------+----------+--------------+
-            | Name         | Versions | Commit Hash  |
-            +--------------+----------+--------------+
-            | bosh-release | 0+dev.3  | fake-hash-3+ |
-            +--------------+----------+--------------+
-            (+) Uncommitted changes
 
-            Releases total: 1
           )
         end
       end
@@ -145,13 +115,7 @@ module Bosh::Cli::Command::Release
         it 'prints Uncommited changes' do
           command.list
           expect(actual).to match_output %(
-            +--------------+----------+-------------+
-            | Name         | Versions | Commit Hash |
-            +--------------+----------+-------------+
-            | bosh-release | unknown  | unknown     |
-            +--------------+----------+-------------+
 
-            Releases total: 1
           )
         end
       end

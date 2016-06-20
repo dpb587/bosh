@@ -10,7 +10,6 @@ module Bosh::Director
     it 'runs drop_vm_env_json_from_instance migration and retains data' do
       db[:deployments] << {id: 1, name: 'fake-deployment-name', manifest: '{}'}
       db[:vms] << {
-        id: 1,
         agent_id: 'fake-agent-id',
         cid: 'fake-vm-cid',
         env_json: 'fake-env-json',

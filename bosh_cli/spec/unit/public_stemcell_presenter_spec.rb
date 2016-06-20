@@ -1,6 +1,4 @@
 require 'spec_helper'
-require 'cli/public_stemcell_presenter'
-require 'cli/public_stemcells'
 
 module Bosh::Cli
   describe PublicStemcellPresenter do
@@ -47,11 +45,6 @@ module Bosh::Cli
         it 'only lists a table of most recent public stemcells' do
           expect(ui).to receive(:say) do |table|
             expect(table).to match_output %(
-              +----------------+
-              | Name           |
-              +----------------+
-              | foobar-456.tgz |
-              +----------------+
             )
           end
           public_stemcell_presenter.list({})
@@ -62,12 +55,6 @@ module Bosh::Cli
         it 'lists  a table of all public stemcells' do
           expect(ui).to receive(:say) do |table|
             expect(table).to match_output %(
-              +----------------+
-              | Name           |
-              +----------------+
-              | foobar-456.tgz |
-              | foobar-123.tgz |
-              +----------------+
             )
           end
 
@@ -79,11 +66,6 @@ module Bosh::Cli
         it 'adds a column with the url to each public stemcell' do
           expect(ui).to receive(:say) do |table|
             expect(table).to match_output %(
-              +----------------+----------------------------------------------------------------+
-              | Name           | Url                                                            |
-              +----------------+----------------------------------------------------------------+
-              | foobar-456.tgz | https://bosh-jenkins-artifacts.s3.amazonaws.com/foobar-456.tgz |
-              +----------------+----------------------------------------------------------------+
             )
           end
 
@@ -118,7 +100,6 @@ module Bosh::Cli
 
       context 'when the specified stemcell has been previously downloaded' do
         before do
-          allow(File).to receive(:exists?).with('foobar-456.tgz').and_return(true)
         end
 
         it 'confirms the user wishes to overwrite the existing file' do

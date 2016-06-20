@@ -23,11 +23,8 @@ describe Bosh::Director::Config do
   describe 'director ips' do
     before do
       allow(Socket).to receive(:ip_address_list).and_return([
-        instance_double(Addrinfo, ip_address: '127.0.0.1', ip?: true, ipv4?: true, ipv6?: false, ipv4_loopback?: true, ipv6_loopback?: false),
         instance_double(Addrinfo, ip_address: '10.10.0.6', ip?: true, ipv4?: true, ipv6?: false, ipv4_loopback?: false, ipv6_loopback?: false),
         instance_double(Addrinfo, ip_address: '10.11.0.16', ip?: true, ipv4?: true, ipv6?: false, ipv4_loopback?: false, ipv6_loopback?: false),
-        instance_double(Addrinfo, ip_address: '::1', ip?: true, ipv4?: false, ipv6?: true, ipv4_loopback?: false, ipv6_loopback?: true),
-        instance_double(Addrinfo, ip_address: 'fe80::10bf:eff:fe2c:7405%eth0', ip?: true, ipv4?: false, ipv6?: true, ipv4_loopback?: false, ipv6_loopback?: false),
       ])
     end
 
@@ -50,7 +47,6 @@ describe Bosh::Director::Config do
       it 'returns default value of five as per previous behavior' do
         # our fixture does not have this set so this is a no-op
         # i'm doing this because i want to be more explicit
-        test_config.delete('max_vm_create_tries')
         described_class.configure(test_config)
         expect(described_class.max_vm_create_tries).to eq(5)
       end
@@ -79,7 +75,6 @@ describe Bosh::Director::Config do
       it 'returns default value of false' do
         # our fixture does not have this set so this is a no-op
         # i'm doing this because the test we copied did it
-        test_config.delete('flush_arp')
         described_class.configure(test_config)
         expect(described_class.flush_arp).to eq(false)
       end
@@ -114,7 +109,6 @@ describe Bosh::Director::Config do
 
     context 'when hash does not have value set' do
       it 'returns default value of false' do
-        test_config.delete('keep_unreachable_vms')
         described_class.configure(test_config)
         expect(described_class.keep_unreachable_vms).to eq(false)
       end
@@ -169,20 +163,12 @@ describe Bosh::Director::Config do
     let(:temp_dir) { Dir.mktmpdir }
     let(:base_config) do
       blobstore_dir = File.join(temp_dir, 'blobstore')
-      FileUtils.mkdir_p(blobstore_dir)
 
       config = Psych.load(spec_asset('test-director-config.yml'))
-      config['dir'] = temp_dir
       config['blobstore'] = {
-        'provider' => 'local',
-        'options' => {'blobstore_path' => blobstore_dir}
       }
-      config['snapshots']['enabled'] = true
-      config
     end
-    let(:provider_options) { {'blobstore_path' => blobstore_dir} }
 
-    after { FileUtils.rm_rf(temp_dir) }
 
     describe 'authentication configuration' do
       let(:test_config) { base_config.merge({'user_management' => {'provider' => provider}}) }
@@ -241,7 +227,6 @@ describe Bosh::Director::Config do
         File.open(state_file, 'a+') { |f| f.write(JSON.dump({'uuid' => 'fake-uuid'})) }
       end
 
-      after { FileUtils.rm_rf(state_file) }
 
       it 'migrates director uuid to database' do
         expect(described_class.override_uuid).to eq('fake-uuid')

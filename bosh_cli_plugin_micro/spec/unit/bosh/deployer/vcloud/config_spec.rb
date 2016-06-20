@@ -2,7 +2,6 @@ require 'spec_helper'
 
 describe Bosh::Deployer::Config do
   before { @dir = Dir.mktmpdir('bdc_spec') }
-  after { FileUtils.remove_entry_secure @dir }
 
   it 'should default agent properties' do
     config = Psych.load_file(spec_asset('test-bootstrap-config-vcloud.yml'))
@@ -18,7 +17,6 @@ describe Bosh::Deployer::Config do
   it 'should map network properties' do
     config = Psych.load_file(spec_asset('test-bootstrap-config-vcloud.yml'))
     config['dir'] = @dir
-    Bosh::Deployer::Config.configure(config)
 
     networks = Bosh::Deployer::Config.networks
     expect(networks).to be_kind_of(Hash)
@@ -41,7 +39,6 @@ describe Bosh::Deployer::Config do
   end
 
   it 'should contain default vm resource properties' do
-    Bosh::Deployer::Config.configure('dir' => @dir, 'cloud' => { 'plugin' => 'vcloud' })
     resources = Bosh::Deployer::Config.resources
     expect(resources).to be_kind_of(Hash)
 

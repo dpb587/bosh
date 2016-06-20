@@ -22,7 +22,6 @@ describe Bosh::Cli::Command::Biff do
         expect {
           biff.biff(template_file)
         }.to raise_error(
-                     Bosh::Cli::CliError,
                      "IP range '2..9' is not within " +
                          "the bounds of network 'default', which only has 1 IPs.")
       end
@@ -199,7 +198,6 @@ describe Bosh::Cli::Command::Biff do
         end
 
         it "allows ip_range to take negative ranges" do
-          biff.ip_helper =
               expect(biff.ip_range(-11..-2, "default")).to eq("192.168.3.245 - 192.168.3.254")
         end
       end

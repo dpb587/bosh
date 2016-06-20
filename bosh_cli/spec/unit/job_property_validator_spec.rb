@@ -33,22 +33,13 @@ describe Bosh::Cli::JobPropertyValidator do
     {
         'properties' => deployment_properties,
         'networks' => [{
-          'name' => 'foo',
-          'type' => 'manual',
           'subnets' => [{
-            'range' => '10.10.0.0/24',
             'reserved' => [
-                '10.0.0.2 - 10.0.0.9',
-                '10.0.0.255 - 10.0.0.255'
             ],
-            'static' => ['10.0.0.10 - 10.0.0.20'],
-            'gateway' => '10.0.0.1',
-            'dns' => ['10.0.0.2']
           }]
         }],
         'jobs' => [{
           'name' => 'bosh',
-          'instances' => 2,
           'template' => job_template_list,
           'networks' => [
             'name' => 'foo',
@@ -97,18 +88,15 @@ describe Bosh::Cli::JobPropertyValidator do
     let(:job_template_list) { %w[director blobstore] }
 
     it 'should not have template errors' do
-      validator.validate
 
       expect(validator.template_errors).to be_empty
     end
 
     context 'with index' do
       before do
-        allow(File).to receive(:read).with('/jobs/blobstore/templates/blobstore.yml.erb').and_return("---\nprovider: <%= index %>")
       end
 
       it 'should not have template errors' do
-        validator.validate
 
         expect(validator.template_errors).to be_empty
       end
@@ -130,7 +118,6 @@ describe Bosh::Cli::JobPropertyValidator do
     let(:deployment_properties) { {} }
 
     it 'should identify legacy jobs with no properties' do
-      validator.validate
 
       expect(validator.jobs_without_properties.size).to eq(1)
       expect(validator.jobs_without_properties.first.name).to eq 'noprops'

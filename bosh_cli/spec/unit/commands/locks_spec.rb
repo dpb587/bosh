@@ -9,7 +9,6 @@ describe Bosh::Cli::Command::Locks do
     allow(command).to receive(:director).and_return(director)
     allow(command).to receive(:nl)
     allow(command).to receive(:logged_in?).and_return(true)
-    command.options[:target] = target
     allow(command).to receive(:show_current_state)
   end
 
@@ -31,9 +30,6 @@ describe Bosh::Cli::Command::Locks do
       let(:lock_timeout) { Time.now.to_i }
       let(:locks) {
         [
-          { 'type'  => 'deployment', 'resource' => %w(test-deployment),               'timeout' => lock_timeout },
-          { 'type'  => 'stemcells',  'resource' => %w(test-stemcell 1),            'timeout' => lock_timeout },
-          { 'type'  => 'release',    'resource' => %w(test-release),                  'timeout' => lock_timeout },
           { 'type'  => 'compile',    'resource' => %w(test-package test-stemcell), 'timeout' => lock_timeout },
         ]
       }

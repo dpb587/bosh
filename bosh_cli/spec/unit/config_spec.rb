@@ -5,7 +5,6 @@ require "spec_helper"
 describe Bosh::Cli::Config do
   before :each do
     @config    = File.join(Dir.mktmpdir, "bosh_config")
-    @cache_dir = Dir.mktmpdir
   end
 
   def add_config(object)
@@ -25,7 +24,6 @@ describe Bosh::Cli::Config do
 
     context 'when colorize is set to false' do
       it 'returns false' do
-        Bosh::Cli::Config.colorize = false
         expect(Bosh::Cli::Config.use_color?).to eq(false)
       end
     end
@@ -47,14 +45,12 @@ describe Bosh::Cli::Config do
     context 'when output is tty but colorized is forced to false' do
       it 'returns false' do
         Bosh::Cli::Config.colorize = false
-        Bosh::Cli::Config.output = double(:output, :tty? => true)
         expect(Bosh::Cli::Config.use_color?).to eq(false)
       end
     end
 
     context 'when output is not tty' do
       it 'returns false' do
-        Bosh::Cli::Config.output = double(:output, :tty? => false)
         expect(Bosh::Cli::Config.use_color?).to eq(false)
       end
     end
@@ -88,11 +84,9 @@ describe Bosh::Cli::Config do
   end
 
   it "should save a deployment for each target" do
-    add_config({})
     cfg = create_config
     cfg.target = "localhost:1"
     cfg.set_deployment("/path/to/deploy/1")
-    cfg.save
     cfg.target = "localhost:2"
     cfg.set_deployment("/path/to/deploy/2")
     cfg.save
@@ -111,7 +105,6 @@ describe Bosh::Cli::Config do
   end
 
   it "returns nil when the deployments key exists but has no value" do
-    add_config("target" => "localhost:8080", "deployment" => nil)
 
     cfg = create_config
     yaml_file = load_yaml_file(@config, nil)
@@ -120,7 +113,6 @@ describe Bosh::Cli::Config do
   end
 
   it "should throw MissingTarget when getting deployment without target set" do
-    add_config({})
     cfg = create_config
     expect { cfg.set_deployment("/path/to/deploy/1") }.
         to raise_error(Bosh::Cli::MissingTarget)
@@ -135,7 +127,6 @@ describe Bosh::Cli::Config do
 
 
   it "effectively ignores config file if it is malformed" do
-    add_config([1, 2, 3])
     cfg = create_config
 
     expect(cfg.target).to eq(nil)
@@ -143,8 +134,6 @@ describe Bosh::Cli::Config do
 
   it "fetches auth information from the config file" do
     config = {
-      "target" => "localhost:8080",
-      "deployment" => "test",
       "auth" => {
         "localhost:8080" => { "username" => "a", "password" => "b" },
         "localhost:8081" => { "username" => "c", "password" => "d" }

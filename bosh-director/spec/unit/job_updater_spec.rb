@@ -10,7 +10,6 @@ describe Bosh::Director::JobUpdater do
 
   let(:deployment_plan) { instance_double('Bosh::Director::DeploymentPlan::Planner', {
       ip_provider: ip_provider,
-      skip_drain: skip_drain
     }) }
 
   let(:job) do
@@ -37,7 +36,6 @@ describe Bosh::Director::JobUpdater do
       allow(job).to receive(:needed_instance_plans).and_return(needed_instance_plans)
       allow(job).to receive(:did_change=)
     }
-    before {allow(links_resolver).to receive(:resolve)}
 
     let(:update_error) { RuntimeError.new('update failed') }
 
@@ -51,7 +49,6 @@ describe Bosh::Director::JobUpdater do
           desired_instance: BD::DeploymentPlan::DesiredInstance.new(nil, 'started', nil),
           existing_instance: nil
         )
-        allow(instance_plan).to receive(:changed?) { false }
         allow(instance_plan).to receive(:should_be_ignored?) { false }
         allow(instance_plan).to receive(:changes) { [] }
         allow(instance_plan).to receive(:persist_current_spec)
@@ -59,7 +56,6 @@ describe Bosh::Director::JobUpdater do
       end
 
       it 'should not begin the updating job event stage' do
-        job_updater.update
 
         check_event_log do |events|
           expect(events).to be_empty
@@ -79,15 +75,11 @@ describe Bosh::Director::JobUpdater do
             desired_instance: BD::DeploymentPlan::DesiredInstance.new(nil, 'started', nil),
             existing_instance: nil
         )
-        allow(instance_plan).to receive(:changed?) { true }
         allow(instance_plan).to receive(:should_be_ignored?) { true }
-        allow(instance_plan).to receive(:changes) { [] }
-        allow(instance_plan).to receive(:persist_current_spec)
         [instance_plan]
       end
 
       it 'should apply the insatnce plan' do
-        job_updater.update
 
         check_event_log do |events|
           expect(events).to be_empty
@@ -101,7 +93,6 @@ describe Bosh::Director::JobUpdater do
       let(:canary) { instance_double('Bosh::Director::DeploymentPlan::Instance', availability_zone: nil, index: 1, model: canary_model) }
       let(:changed_instance) { instance_double('Bosh::Director::DeploymentPlan::Instance', availability_zone: nil, index: 2, model: changed_instance_model) }
       let(:unchanged_instance) do
-        instance_double('Bosh::Director::DeploymentPlan::Instance', availability_zone: nil, index: 3)
       end
       let(:canary_plan) do
         plan = BD::DeploymentPlan::InstancePlan.new(
@@ -109,7 +100,6 @@ describe Bosh::Director::JobUpdater do
           desired_instance:  BD::DeploymentPlan::DesiredInstance.new(nil, 'started', nil),
           existing_instance: nil
         )
-        allow(plan).to receive(:changed?) { true }
         allow(plan).to receive(:should_be_ignored?) { false }
         allow(plan).to receive(:changes) { ['dns']}
         plan
@@ -120,8 +110,6 @@ describe Bosh::Director::JobUpdater do
           desired_instance:  BD::DeploymentPlan::DesiredInstance.new(nil, 'started', nil),
           existing_instance: BD::Models::Instance.make
         )
-        allow(plan).to receive(:changed?) { true }
-        allow(plan).to receive(:should_be_ignored?) { false }
         allow(plan).to receive(:changes) { ['network']}
         plan
       end
@@ -131,8 +119,6 @@ describe Bosh::Director::JobUpdater do
           desired_instance: BD::DeploymentPlan::DesiredInstance.new(nil, 'started', nil),
           existing_instance: BD::Models::Instance.make
         )
-        allow(plan).to receive(:changed?) { false }
-        allow(plan).to receive(:should_be_ignored?) { false }
         allow(plan).to receive(:changes) { [] }
         allow(plan).to receive(:persist_current_spec)
         plan
@@ -146,7 +132,6 @@ describe Bosh::Director::JobUpdater do
 
       before do
         allow(Bosh::Director::InstanceUpdater).to receive(:new_instance_updater)
-                                                    .with(ip_provider)
                                                     .and_return(canary_updater, changed_updater, unchanged_updater)
       end
 
@@ -162,7 +147,6 @@ describe Bosh::Director::JobUpdater do
             updating_stage_event(index: 1, total: 2, task: 'job_name/fake_uuid (1) (canary)', state: 'started'),
             updating_stage_event(index: 1, total: 2, task: 'job_name/fake_uuid (1) (canary)', state: 'finished'),
             updating_stage_event(index: 2, total: 2, task: 'job_name/fake_uuid (2)', state: 'started'),
-            updating_stage_event(index: 2, total: 2, task: 'job_name/fake_uuid (2)', state: 'finished'),
           ].each_with_index do |expected_event, index|
             expect(events[index]).to include(expected_event)
           end
@@ -179,7 +163,6 @@ describe Bosh::Director::JobUpdater do
         check_event_log do |events|
           [
             updating_stage_event(index: 1, total: 2, task: 'job_name/fake_uuid (1) (canary)', state: 'started'),
-            updating_stage_event(index: 1, total: 2, task: 'job_name/fake_uuid (1) (canary)', state: 'failed'),
           ].each_with_index do |expected_event, index|
             expect(events[index]).to include(expected_event)
           end
@@ -198,7 +181,6 @@ describe Bosh::Director::JobUpdater do
             updating_stage_event(index: 1, total: 2, task: 'job_name/fake_uuid (1) (canary)', state: 'started'),
             updating_stage_event(index: 1, total: 2, task: 'job_name/fake_uuid (1) (canary)', state: 'finished'),
             updating_stage_event(index: 2, total: 2, task: 'job_name/fake_uuid (2)', state: 'started'),
-            updating_stage_event(index: 2, total: 2, task: 'job_name/fake_uuid (2)', state: 'failed'),
           ].each_with_index do |expected_event, index|
             expect(events[index]).to include(expected_event)
           end
@@ -224,11 +206,9 @@ describe Bosh::Director::JobUpdater do
     end
 
     context 'when the job has no unneeded instances' do
-      before { allow(job).to receive(:unneeded_instances).and_return([]) }
 
       it 'should not delete instances if there are not any unneeded instances' do
         expect(instance_deleter).to_not receive(:delete_instance_plans)
-        job_updater.update
       end
     end
 
@@ -255,7 +235,6 @@ describe Bosh::Director::JobUpdater do
           desired_instance:  BD::DeploymentPlan::DesiredInstance.new(nil, 'started', nil),
           existing_instance: nil
         )
-        allow(plan).to receive(:changed?) { true }
         allow(plan).to receive(:should_be_ignored?) { false }
         allow(plan).to receive(:changes) { ['dns']}
         plan
@@ -266,8 +245,6 @@ describe Bosh::Director::JobUpdater do
           desired_instance:  BD::DeploymentPlan::DesiredInstance.new(nil, 'started', nil),
           existing_instance: BD::Models::Instance.make
         )
-        allow(plan).to receive(:changed?) { true }
-        allow(plan).to receive(:should_be_ignored?) { false }
         allow(plan).to receive(:changes) { ['network']}
         plan
       end
@@ -277,8 +254,6 @@ describe Bosh::Director::JobUpdater do
           desired_instance:  BD::DeploymentPlan::DesiredInstance.new(nil, 'started', nil),
           existing_instance: BD::Models::Instance.make
         )
-        allow(plan).to receive(:changed?) { true }
-        allow(plan).to receive(:should_be_ignored?) { false }
         allow(plan).to receive(:changes) { ['network']}
         plan
       end
@@ -288,8 +263,6 @@ describe Bosh::Director::JobUpdater do
           desired_instance:  BD::DeploymentPlan::DesiredInstance.new(nil, 'started', nil),
           existing_instance: BD::Models::Instance.make
         )
-        allow(plan).to receive(:changed?) { true }
-        allow(plan).to receive(:should_be_ignored?) { false }
         allow(plan).to receive(:changes) { ['network']}
         plan
       end
@@ -301,7 +274,6 @@ describe Bosh::Director::JobUpdater do
 
       before do
         allow(Bosh::Director::InstanceUpdater).to receive(:new_instance_updater)
-                                                    .with(ip_provider)
                                                     .and_return(canary_updater, changed_updater)
       end
 
@@ -318,7 +290,6 @@ describe Bosh::Director::JobUpdater do
             updating_stage_event(index: 1, total: 4, task: 'job_name/fake_uuid (1) (canary)', state: 'started'),
             updating_stage_event(index: 1, total: 4, task: 'job_name/fake_uuid (1) (canary)', state: 'finished'),
             updating_stage_event(index: 2, total: 4, task: 'job_name/fake_uuid (2)', state: 'started'),
-            updating_stage_event(index: 2, total: 4, task: 'job_name/fake_uuid (2)', state: 'finished'),
           ].each_with_index do |expected_event, index|
             expect(events[index]).to include(expected_event)
           end
@@ -326,10 +297,6 @@ describe Bosh::Director::JobUpdater do
           # blocked until next az...
           last_events = events[3..-1]
           expected_events = [
-            updating_stage_event(total: 4, task: 'job_name/fake_uuid (3)', state: 'started'),
-            updating_stage_event(total: 4, task: 'job_name/fake_uuid (4)', state: 'started'),
-            updating_stage_event(total: 4, task: 'job_name/fake_uuid (3)', state: 'finished'),
-            updating_stage_event(total: 4, task: 'job_name/fake_uuid (4)', state: 'finished'),
           ]
           expected_events.map do |expected_event|
             expect(last_events.select { |event| same_event?(event, expected_event) }).not_to be_empty
@@ -341,20 +308,11 @@ describe Bosh::Director::JobUpdater do
 
   def updating_stage_event(options)
     events = {
-      'stage' => 'Updating job',
-      'tags' => ['job_name'],
-      'total' => options[:total],
-      'task' => options[:task],
-      'state' => options[:state]
     }
-    events['index'] = options[:index] if options.has_key?(:index)
-    events
   end
 
   def same_event?(event, expected_event)
     expected_event.each do |k,v|
-      return false if event[k] != v
     end
-    true
   end
 end

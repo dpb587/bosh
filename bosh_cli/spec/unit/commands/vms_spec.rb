@@ -37,7 +37,6 @@ describe Bosh::Cli::Command::Vms do
 
     context 'with a deployment argument' do
       def perform
-        command.list('dep1')
       end
 
       context 'when deployment with given name can be found' do
@@ -63,7 +62,6 @@ describe Bosh::Cli::Command::Vms do
         'index' => 0,
         'ips' => %w{192.168.0.1 192.168.0.2},
         'dns' => %w{index.job.network.deployment.microbosh index.job.network2.deployment.microbosh},
-        'vitals' => 'vitals',
         'job_state' => 'awesome',
         'resource_pool' => 'rp1',
         'vm_cid' => 'cid1',
@@ -96,7 +94,6 @@ describe Bosh::Cli::Command::Vms do
 
     context 'sorting multiple instances' do
       it 'sort by job name first' do
-        vm_state.delete('az')
 
         vm_state2 = vm_state.clone
         vm_state2['job_name'] = 'job0'
@@ -106,21 +103,12 @@ describe Bosh::Cli::Command::Vms do
 
         expect(command).to receive(:say) do |display_output|
           expect(display_output.to_s).to match_output '
-              +--------+---------+-----+---------+-------------+
-              | VM     | State   | AZ  | VM Type | IPs         |
-              +--------+---------+-----+---------+-------------+
-              | job0/0 | awesome | az2 | rp1     | 192.168.0.1 |
-              |        |         |     |         | 192.168.0.2 |
-              | job1/0 | awesome | n/a | rp1     | 192.168.0.1 |
-              |        |         |     |         | 192.168.0.2 |
-              +--------+---------+-----+---------+-------------+
               '
         end
         perform
       end
 
       it 'if name is the same, sort by AZ' do
-        vm_state.delete('az')
 
         vm_state2 = vm_state.clone
         vm_state2['az'] = 'az1'
@@ -135,18 +123,6 @@ describe Bosh::Cli::Command::Vms do
 
         expect(command).to receive(:say) do |display_output|
           expect(display_output.to_s).to match_output '
-              +--------+---------+-------+---------+-------------+
-              | VM     | State   | AZ    | VM Type | IPs         |
-              +--------+---------+-------+---------+-------------+
-              | job1/0 | awesome | n/a   | rp1     | 192.168.0.1 |
-              |        |         |       |         | 192.168.0.2 |
-              | job1/0 | awesome | az1   | rp1     | 192.168.0.1 |
-              |        |         |       |         | 192.168.0.2 |
-              | job1/0 | awesome | az2   | rp1     | 192.168.0.1 |
-              |        |         |       |         | 192.168.0.2 |
-              | job1/0 | awesome | zone1 | rp1     | 192.168.0.1 |
-              |        |         |       |         | 192.168.0.2 |
-              +--------+---------+-------+---------+-------------+
               '
         end
         perform
@@ -168,18 +144,6 @@ describe Bosh::Cli::Command::Vms do
 
         expect(command).to receive(:say) do |display_output|
           expect(display_output.to_s).to match_output '
-              +--------+---------+-----+---------+-------------+
-              | VM     | State   | AZ  | VM Type | IPs         |
-              +--------+---------+-----+---------+-------------+
-              | job1/0 | awesome | az1 | rp1     | 192.168.0.1 |
-              |        |         |     |         | 192.168.0.2 |
-              | job1/1 | awesome | az1 | rp1     | 192.168.0.1 |
-              |        |         |     |         | 192.168.0.2 |
-              | job1/2 | awesome | az1 | rp1     | 192.168.0.1 |
-              |        |         |     |         | 192.168.0.2 |
-              | job1/3 | awesome | az1 | rp1     | 192.168.0.1 |
-              |        |         |     |         | 192.168.0.2 |
-              +--------+---------+-----+---------+-------------+
               '
         end
         perform
@@ -207,12 +171,6 @@ describe Bosh::Cli::Command::Vms do
         it 'show basic vms information' do
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +--------+---------+---------+-------------+
-              | VM     | State   | VM Type | IPs         |
-              +--------+---------+---------+-------------+
-              | job1/0 | awesome | rp1     | 192.168.0.1 |
-              |        |         |         | 192.168.0.2 |
-              +--------+---------+---------+-------------+
             '
           end
           expect(command).to receive(:say).with('VMs total: 1')
@@ -242,12 +200,6 @@ describe Bosh::Cli::Command::Vms do
         it 'shows vm details' do
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
-              | VM     | State   | VM Type | IPs         | CID  | Agent ID | Resurrection | Ignore |
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
-              | job1/0 | awesome | rp1     | 192.168.0.1 | cid1 | agent1   | paused       | false  |
-              |        |         |         | 192.168.0.2 |      |          |              |        |
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
             '
           end
           expect(command).to receive(:say).with('VMs total: 1')
@@ -259,12 +211,6 @@ describe Bosh::Cli::Command::Vms do
 
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
-              | VM     | State   | VM Type | IPs         | CID  | Agent ID | Resurrection | Ignore |
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
-              | job1/0 | awesome | rp1     | 192.168.0.1 | cid1 | agent1   | paused       | true   |
-              |        |         |         | 192.168.0.2 |      |          |              |        |
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
             '
           end
           expect(command).to receive(:say).with('VMs total: 1')
@@ -276,12 +222,6 @@ describe Bosh::Cli::Command::Vms do
 
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
-              | VM     | State   | VM Type | IPs         | CID  | Agent ID | Resurrection | Ignore |
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
-              | job1/0 | awesome | rp1     | 192.168.0.1 | cid1 | agent1   | paused       | n/a    |
-              |        |         |         | 192.168.0.2 |      |          |              |        |
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
             '
           end
           expect(command).to receive(:say).with('VMs total: 1')
@@ -292,23 +232,13 @@ describe Bosh::Cli::Command::Vms do
           vm_state2 = vm_state.clone
 
           vm_state.delete('ignore')
-          vm_state['index'] = 0
 
-          vm_state2['ignore'] = false
           vm_state2['index'] = 1
 
           allow(director).to receive(:fetch_vm_state).with(deployment) { [vm_state, vm_state2] }
 
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
-              | VM     | State   | VM Type | IPs         | CID  | Agent ID | Resurrection | Ignore |
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
-              | job1/0 | awesome | rp1     | 192.168.0.1 | cid1 | agent1   | paused       | n/a    |
-              |        |         |         | 192.168.0.2 |      |          |              |        |
-              | job1/1 | awesome | rp1     | 192.168.0.1 | cid1 | agent1   | paused       | false  |
-              |        |         |         | 192.168.0.2 |      |          |              |        |
-              +--------+---------+---------+-------------+------+----------+--------------+--------+
             '
           end
           expect(command).to receive(:say).with('VMs total: 2')
@@ -322,12 +252,6 @@ describe Bosh::Cli::Command::Vms do
         it 'shows DNS A records' do
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +--------+---------+---------+-------------+-----------------------------------------+
-              | VM     | State   | VM Type | IPs         | DNS A records                           |
-              +--------+---------+---------+-------------+-----------------------------------------+
-              | job1/0 | awesome | rp1     | 192.168.0.1 | index.job.network.deployment.microbosh  |
-              |        |         |         | 192.168.0.2 | index.job.network2.deployment.microbosh |
-              +--------+---------+---------+-------------+-----------------------------------------+
             '
           end
           expect(command).to receive(:say).with('VMs total: 1')
@@ -341,13 +265,6 @@ describe Bosh::Cli::Command::Vms do
         it 'shows the vm vitals' do
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +--------+---------+---------+-------------+-----------------------+------+-----+------+--------------+------------+------------+------------+------------+
-              | VM     | State   | VM Type | IPs         |         Load          | CPU  | CPU | CPU  | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-              |        |         |         |             | (avg01, avg05, avg15) | User | Sys | Wait |              |            | Disk Usage | Disk Usage | Disk Usage |
-              +--------+---------+---------+-------------+-----------------------+------+-----+------+--------------+------------+------------+------------+------------+
-              | job1/0 | awesome | rp1     | 192.168.0.1 | 1, 2, 3               | 4%   | 5%  | 6%   | 7% (8.0K)    | 9% (10.0K) | 11%        | 12%        | 13%        |
-              |        |         |         | 192.168.0.2 |                       |      |     |      |              |            |            |            |            |
-              +--------+---------+---------+-------------+-----------------------+------+-----+------+--------------+------------+------------+------------+------------+
             '
           end
           expect(command).to receive(:say).with('VMs total: 1')
@@ -358,17 +275,9 @@ describe Bosh::Cli::Command::Vms do
           new_vm_state = vm_state
           new_vm_state['vitals']['disk'].delete('ephemeral')
           new_vm_state['vitals']['disk'].delete('persistent')
-          allow(director).to receive(:fetch_vm_state).with(deployment) { [new_vm_state] }
 
           expect(command).to receive(:say) do |table|
             expect(table.to_s).to match_output '
-              +--------+---------+---------+-------------+-----------------------+------+-----+------+--------------+------------+------------+------------+------------+
-              | VM     | State   | VM Type | IPs         |         Load          | CPU  | CPU | CPU  | Memory Usage | Swap Usage | System     | Ephemeral  | Persistent |
-              |        |         |         |             | (avg01, avg05, avg15) | User | Sys | Wait |              |            | Disk Usage | Disk Usage | Disk Usage |
-              +--------+---------+---------+-------------+-----------------------+------+-----+------+--------------+------------+------------+------------+------------+
-              | job1/0 | awesome | rp1     | 192.168.0.1 | 1, 2, 3               | 4%   | 5%  | 6%   | 7% (8.0K)    | 9% (10.0K) | 11%        | n/a        | n/a        |
-              |        |         |         | 192.168.0.2 |                       |      |     |      |              |            |            |            |            |
-              +--------+---------+---------+-------------+-----------------------+------+-----+------+--------------+------------+------------+------------+------------+
             '
           end
           expect(command).to receive(:say).with('VMs total: 1')

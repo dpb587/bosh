@@ -11,10 +11,8 @@ module Bosh::Cli::Command::Release
       let(:fake_manifest) do
         <<-MANIFEST
           { 'name': 'my-release',
-            'version': '#{ORIG_DEV_VERSION}',
             'packages': [],
             'jobs': [],
-            'license': ~
           }
         MANIFEST
       end
@@ -38,21 +36,15 @@ module Bosh::Cli::Command::Release
         allow(release).to receive(:blobstore).and_return(blobstore)
 
         allow(File).to receive(:open).and_return(file)
-        allow(file).to receive(:puts)
 
         allow(Bosh::Cli::ReleaseTarball).to receive(:new).and_return(tarball)
         allow(tarball).to receive(:manifest).and_return(fake_manifest)
         allow(tarball).to receive(:exists?).and_return(true)
         allow(tarball).to receive(:valid?).and_return(true)
-        allow(tarball).to receive(:version).and_return(ORIG_DEV_VERSION)
         allow(tarball).to receive(:replace_manifest)
         allow(tarball).to receive(:create_from_unpacked)
         allow(tarball).to receive(:license_resource).and_return('this is the license resource')
 
-        allow(Bosh::Cli::BlobManager).to receive(:new).and_return(blob_manager)
-        allow(blob_manager).to receive(:sync)
-        allow(blob_manager).to receive(:print_status)
-        allow(blob_manager).to receive(:dirty?).and_return(false)
 
         allow(Bosh::Cli::ArchiveBuilder).to receive(:new).and_return(archive_builder)
         allow(archive_builder).to receive(:build)
@@ -125,14 +117,12 @@ module Bosh::Cli::Command::Release
       end
 
       it 'saves the final release manifest into the release directory' do
-        file = instance_double(File)
         expect(File).to receive(:open).with(File.absolute_path('releases/my-release/my-release-3.yml'), 'w').and_yield(file)
         expect(file).to receive(:puts).with(fake_manifest)
         command.finalize('ignored.tgz')
       end
 
       it 'updates release index file' do
-        command.options[:version] = '3'
         command.finalize('ignored.tgz')
         expect(version_index).to have_received(:add_version).with(anything, 'version' => '3')
       end
@@ -146,13 +136,9 @@ module Bosh::Cli::Command::Release
         let(:fake_manifest) do
           <<-MANIFEST
           { 'name': 'my-release',
-            'version': '#{ORIG_DEV_VERSION}',
             'packages': [],
             'jobs': [],
             'license': {
-              'version': 'oldfingerprint',
-              'fingerprint': 'oldfingerprint',
-              'sha1': 'oldsha1'
             }
           }
           MANIFEST
@@ -160,7 +146,6 @@ module Bosh::Cli::Command::Release
 
         before do
           expect(archive_builder).to receive(:build)
-                                       .with('this is the license resource')
                                        .and_return(Bosh::Cli::BuildArtifact.new('license', 'newfingerprint', 'path', 'newsha1', [], true, false))
         end
 
@@ -187,13 +172,11 @@ module Bosh::Cli::Command::Release
         let(:fake_manifest) do
           <<-MANIFEST
           { 'name': 'my-release',
-            'version': '#{ORIG_DEV_VERSION}',
             'packages': [
               {
                 'name': 'testpackage',
                 'version': 'packagefingerprint',
                 'fingerprint': 'packagefingerprint',
-                'sha1': 'original_sha1'
               },
               {
                 'name': 'other_testpackage',
@@ -207,7 +190,6 @@ module Bosh::Cli::Command::Release
                 'name': 'testjob',
                 'version': 'jobfingerprint',
                 'fingerprint': 'jobfingerprint',
-                'sha1': 'old_sha_for_job'
               },
               {
                 'name': 'other_testjob',
@@ -260,18 +242,14 @@ module Bosh::Cli::Command::Release
           versions_index.add_version(
             'packagefingerprint',
             {
-              'name' => 'testpackage',
               'version'=> 'packagefingerprint',
-              'fingerprint'=> 'packagefingerprint',
               'sha1'=> 'different_sha_for_same_package'
             }
           )
           versions_index.add_version(
             'jobfingerprint',
             {
-              'name' => 'testjob',
               'version' => 'jobfingerprint',
-              'fingerprint' => 'jobfingerprint',
               'sha1' => 'different_sha_for_same_job'
             }
           )
@@ -279,7 +257,6 @@ module Bosh::Cli::Command::Release
         end
 
         it 'uses sha1 from preexisting package' do
-          allow(command).to receive(:final_builds_for_artifact).and_return(version_index)
           expect(tarball).to receive(:package_tarball_path).twice
           expect(tarball).to receive(:job_tarball_path).twice
 
@@ -290,7 +267,6 @@ module Bosh::Cli::Command::Release
 
       it 'can do a dry run' do
         command.options[:dry_run] = true
-        command.finalize('ignored.tgz')
         expect(tarball).to_not have_received(:replace_manifest)
         expect(version_index).to_not have_received(:add_version)
         expect(tarball).to_not have_received(:create_from_unpacked)

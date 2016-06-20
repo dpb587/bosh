@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe Bosh::Cli::Manifest do
-  include FakeFS::SpecHelpers
 
   subject(:manifest) do
     deployment_file = 'fake-deployment-file'
@@ -17,25 +16,15 @@ describe Bosh::Cli::Manifest do
   let(:release_list) do
     [
       {
-        'name' => 'bat',
         'release_versions' => [
           {
             'version' => '1',
-            'commit_hash' => 'unknown',
-            'uncommitted_changes' => false,
-            'currently_deployed' => false,
           },
           {
             'version' => '3.1-dev',
-            'commit_hash' => 'unknown',
-            'uncommitted_changes' => false,
-            'currently_deployed' => false,
           },
           {
             'version' => '3',
-            'commit_hash' => 'unknown',
-            'uncommitted_changes' => false,
-            'currently_deployed' => false,
           },
         ],
       },
@@ -44,15 +33,9 @@ describe Bosh::Cli::Manifest do
         'release_versions' => [
           {
             'version' => '2',
-            'commit_hash' => 'unknown',
-            'uncommitted_changes' => false,
-            'currently_deployed' => false,
           },
           {
             'version' => '1.2-dev',
-            'commit_hash' => 'unknown',
-            'uncommitted_changes' => false,
-            'currently_deployed' => false,
           },
         ],
       },
@@ -73,8 +56,6 @@ describe Bosh::Cli::Manifest do
     it 'resolves latest alias' do
       stemcells = [
         {'name' => 'foo', 'version' => '22.6.4'},
-        {'name' => 'foo', 'version' => '22'},
-        {'name' => 'bar', 'version' => '4.0.8'},
         {'name' => 'bar', 'version' => '4.1'}
       ]
 
@@ -93,12 +74,10 @@ describe Bosh::Cli::Manifest do
               {
                 'name' => 'bat',
                 'versions' => ['1', '8.2-dev', '2', '8.1-dev'],
-                'in_use' => ['1'],
               },
               {
                 'name' => 'bosh',
                 'versions' => ['2', '1.2-dev'],
-                'in_use' => [],
               },
             ])
       end
@@ -116,12 +95,10 @@ describe Bosh::Cli::Manifest do
             {
               'name' => 'bat',
               'versions' => ['1', '8.2-dev', '8+dev.3', '2', '8+dev.1'],
-              'in_use' => ['1'],
             },
             {
               'name' => 'bosh',
               'versions' => ['2', '1.2-dev'],
-              'in_use' => [],
             },
           ])
       }
@@ -141,14 +118,12 @@ describe Bosh::Cli::Manifest do
         let(:manifest_data) do
           {
             'release' => {
-              'name' => 'bat',
               'version' => '3.1-dev'
             }
           }
         end
 
         it 'should leave the version as is' do
-          manifest.resolve_release_aliases
           expect(manifest.hash['release']['version']).to eq('3.1-dev')
         end
       end
@@ -164,7 +139,6 @@ describe Bosh::Cli::Manifest do
         end
 
         it 'should leave the versions as they are' do
-          manifest.resolve_release_aliases
           expect(manifest.hash['releases'].detect { |release| release['name'] == 'bat' }['version']).to eq('3.1-dev')
           expect(manifest.hash['releases'].detect { |release| release['name'] == 'bosh' }['version']).to eq('1.2-dev')
         end
@@ -197,8 +171,6 @@ describe Bosh::Cli::Manifest do
           expect {
             manifest.resolve_release_aliases
           }.to raise_error(
-              Bosh::Cli::CliError,
-              "Release 'bosh' not found on director. Unable to resolve 'latest' alias in manifest.",
             )
         end
       end
