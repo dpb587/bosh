@@ -366,7 +366,17 @@ module Bosh::Director
       end
 
       def deployment_manifest_object
-        @deployment_manifest_object ||= Manifest.load_from_hash(manifest_hash, manifest_text, cloud_config_models, runtime_config_models)
+        if @deployment_manifest_object.nil?
+          @deployment_manifest_object = Manifest.load_from_hash(manifest_hash, manifest_text, cloud_config_models, runtime_config_models)
+          Config.update_deployment_pre_start.each do |hook|
+            event_log_stage.advance_and_track(hook['name']) do
+              stdout, stderr, exit = Open3.capture3(hook['cmd'], stdin_data: YAML.dump(deployment_manifest_object.manifest_hash))
+              raise Exception, "Unsuccessful exit: stdout: #{stdout}; stderr: #{stderr}; exit: #{exit}" unless exit.success?
+            end
+          end
+        end
+
+        @deployment_manifest_object
       end
 
       def notifier

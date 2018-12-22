@@ -42,6 +42,11 @@ params = {
       'use_dns_addresses' => p('director.local_dns.use_dns_addresses'),
   },
   'audit_log_path' => '/var/vcap/sys/log/director',
+  'jobs' => {
+    'update_deployment' => {
+      'pre_start' => p('director.jobs.update_deployment.pre_start'),
+    },
+  },
 }
 
 director_db = {

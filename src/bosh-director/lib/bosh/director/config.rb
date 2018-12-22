@@ -67,6 +67,7 @@ module Bosh::Director
         :nats_client_private_key_path,
         :record_events,
         :runtime,
+        :update_deployment_pre_start,
       )
 
       def clear
@@ -143,6 +144,7 @@ module Bosh::Director
         @nats_client_private_key_path = config['nats']['client_private_key_path']
         @nats_client_ca_certificate_path = config['nats']['client_ca_certificate_path']
         @nats_client_ca_private_key_path = config['nats']['client_ca_private_key_path']
+        @update_deployment_pre_start = config['jobs']['update_deployment']['pre_start']
         @nats_server_ca = File.read(@nats_server_ca_path)
 
         @director_certificate_expiry_json_path = config['director_certificate_expiry_json_path']

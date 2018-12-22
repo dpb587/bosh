@@ -295,6 +295,13 @@ properties:
     description: Skip host verification for Server CA certificate. Must be true if database is hosted on GCP.
     default: false
 
+  director.jobs.update_deployment.pre_start:
+    description: A list of commands to run before deployment starts (receives the partially-interpolated manifest via STDIN).
+    default: []
+    example:
+    - name: "checking for compiled releases"
+      cmd: "/var/vcap/jobs/boshua/bin/boshua deployment upload-compiled-releases"
+
   # DNS
   dns.address:
     description: Address of the powerdns server
