@@ -1,0 +1,41 @@
+- path: /releases/name=boshua?
+  type: replace
+  value:
+    name: boshua
+    version: latest
+    url: file:///tmp/boshua.tgz
+- path: /instance_groups/name=bosh/jobs/name=boshua?
+  type: replace
+  value:
+    name: boshua
+    release: boshua
+    properties:
+      server: ((boshua_server))
+      env:
+        BOSH_ENVIRONMENT: https://((internal_ip)):25555
+        BOSH_CA_CERT: ((director_ssl.ca))
+        BOSH_CLIENT: boshua
+        BOSH_CLIENT_SECRET: ((boshua_password))
+- path: /instance_groups/name=bosh/properties/director/jobs?/update_deployment/pre_start/-
+  type: replace
+  value:
+    name: Preparing stemcells
+    cmd: /var/vcap/jobs/boshua/bin/boshua deployment upload-stemcells --stemcell-iaas=warden --stemcell-hypervisor=boshlite
+- path: /instance_groups/name=bosh/properties/director/jobs?/update_deployment/pre_start/-
+  type: replace
+  value:
+    name: Preparing compiled releases
+    cmd: /var/vcap/jobs/boshua/bin/boshua deployment upload-compiled-releases
+- path: /instance_groups/name=bosh/jobs/name=uaa/properties/uaa/clients/boshua?
+  type: replace
+  value:
+    override: true
+    authorized-grant-types: client_credentials
+    scope: ""
+    authorities: bosh.admin
+    secret: ((boshua_password))
+- path: /variables/-
+  type: replace
+  value:
+    name: boshua_password
+    type: password
