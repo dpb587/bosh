@@ -3,7 +3,8 @@
   value:
     name: boshua
     version: latest
-    url: file:///tmp/boshua.tgz
+    url: https://dpb587-tmp-us-west-2.s3.amazonaws.com/boshua-0.0.0-date.20190107031348.commit.b4beaab5b.tgz
+    sha1: c13378fa73d1189b1ade4cb67d7dd90760be1c9d
 - path: /instance_groups/name=bosh/jobs/name=boshua?
   type: replace
   value:
@@ -20,7 +21,7 @@
   type: replace
   value:
     name: Preparing stemcells
-    cmd: /var/vcap/jobs/boshua/bin/boshua deployment upload-stemcells --stemcell-iaas=warden --stemcell-hypervisor=boshlite
+    cmd: /var/vcap/jobs/boshua/bin/boshua deployment upload-stemcells --stemcell-iaas=((stemcell_iaas)) --stemcell-hypervisor=((stemcell_hypervisor))
 - path: /instance_groups/name=bosh/properties/director/jobs?/update_deployment/pre_start/-
   type: replace
   value:

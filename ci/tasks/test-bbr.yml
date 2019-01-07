@@ -14,7 +14,7 @@ inputs:
     optional: true
   - name: gcp-ssl-config
     optional: true
-  - name: bbr-compiled-release
+  - name: bbr-sdk-release
 
 run:
   path: bosh-src/ci/tasks/test-bbr.sh

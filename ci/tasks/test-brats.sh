@@ -5,7 +5,11 @@ set -eu
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 src_dir="${script_dir}/../../.."
 
-"${src_dir}/bosh-src/ci/docker/main-bosh-docker/start-bosh.sh"
+"${src_dir}/bosh-src/ci/docker/main-bosh-docker/start-bosh.sh" \
+  -o "${src_dir}/bosh-src/ci/director-with-boshua.yml" \
+  -v boshua_server=$BOSHUA_SERVER \
+  -v stemcell_iaas=warden \
+  -v stemcell_hypervisor=boshlite
 
 source /tmp/local-bosh/director/env
 

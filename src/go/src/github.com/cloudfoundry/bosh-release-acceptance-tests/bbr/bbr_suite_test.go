@@ -28,6 +28,7 @@ var (
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	bbrReleasePath = bratsutils.AssertEnvExists("BBR_RELEASE_PATH")
+	bbrReleaseVersion = bratsutils.AssertEnvExists("BBR_RELEASE_VERSION")
 
 	bratsutils.Bootstrap()
 	bratsutils.CreateAndUploadBOSHRelease()
@@ -37,7 +38,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	bratsutils.StartInnerBosh(
 		fmt.Sprintf("-o %s", bratsutils.BoshDeploymentAssetPath("bbr.yml")),
-		fmt.Sprintf("-o %s", bratsutils.AssetPath("latest-bbr-release.yml")),
+		fmt.Sprintf("-o %s", bratsutils.AssetPath("bbr-release.yml")),
+		fmt.Sprintf("-v bbr_version=%s", bbrReleaseVersion),
 	)
 
 	return nil

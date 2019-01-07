@@ -13,4 +13,4 @@ cd bosh-src
 
 sed -i "s/\['version'\] = ..*/['version'] = '$version'/" jobs/director/templates/director.yml.erb
 
-$GO_CLI_PATH create-release --tarball=../release/bosh-dev-release.tgz --timestamp-version --force
+$GO_CLI_PATH create-release --tarball=../release/bosh-dev-release.tgz --version=0.$( date -u +%s ).0-commit.$( git rev-parse HEAD | cut -c-9 ) --force
