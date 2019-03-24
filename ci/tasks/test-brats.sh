@@ -5,8 +5,12 @@ set -eu
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 src_dir="${script_dir}/../../.."
 
+# temporarily use local-bosh-release.yml to ensure outer bosh has proper pre-deploy hooks
 "${src_dir}/bosh-src/ci/docker/main-bosh-docker/start-bosh.sh" \
+  -o "/usr/local/bosh-deployment/uaa.yml" \
+  -o "/usr/local/bosh-deployment/local-bosh-release.yml" \
   -o "${src_dir}/bosh-src/ci/director-with-boshua.yml" \
+  -v local_bosh_release="${src_dir}/bosh-src" \
   -v boshua_server=$BOSHUA_SERVER \
   -v stemcell_iaas=warden \
   -v stemcell_hypervisor=boshlite
